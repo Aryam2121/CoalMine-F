@@ -1,0 +1,39 @@
+/* Center the card */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Full viewport height */
+    background-color: #f0f2f5; /* Light gray background */
+  }
+  
+  .login-card {
+    width: 400px; /* Set the card width to a small size */
+    max-width: 100%;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .auth-image {
+    width: 100%; /* Make the image responsive */
+    max-height: 250px;
+    object-fit: contain;
+  }
+  
+  .title {
+    margin-bottom: 16px;
+  }
+  
+  .slogan {
+    margin-bottom: 24px;
+  }
+  
+  .btn {
+    width: 100%; /* Full-width buttons */
+  }
+  
+  .alert {
+    margin-bottom: 16px;
+  }
+  
