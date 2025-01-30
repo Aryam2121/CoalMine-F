@@ -856,6 +856,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { motion } from 'framer-motion';
 import { heatLayer } from 'leaflet';
+import Chatbot from './chatbot';
 ChartJS.register(Title, Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement, ArcElement);
 
 const Heatmap = ({ data }) => {
@@ -1379,8 +1380,8 @@ const Dashboard = () => {
     </div>
   </div>
 )}
-
-        </div>
+</div>
+  <Chatbot/>
       </div>
    
   );

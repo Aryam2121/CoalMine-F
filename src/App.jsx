@@ -7,6 +7,8 @@ import Layout from './components/Layout'; // Import the Layout component
 import WeatherTrivia from './components/weatherQuiz';
 
 // Lazy-loaded components
+const Notifications = lazy(() => import('./components/Notificationweb'));
+const SafetyProtocol = lazy(() => import('./components/Safetyprotocol')); 
 const CoalMineCards = lazy(() => import('./components/CoalMineCards'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const WeatherAlerts = lazy(() => import('./components/WeatherWidget'));
@@ -16,7 +18,7 @@ const DataVisualization = lazy(() => import('./components/DataVisualization'));
 const ReportGeneration = lazy(() => import('./components/ReportGeneration'));
 const ShiftHandoverLog = lazy(() => import('./components/ShiftLogs'));
 const SafetyManagementPlan = lazy(() => import('./components/Safetymanagement'));
-const Notifications = lazy(() => import('./components/Notifications'));
+const NotificationsFire = lazy(() => import('./components/NotificationFire'));
 const Login = lazy(() => import('./pages/Login'));
 const Resources = lazy(() => import('./components/Resources'));
 const Inventory = lazy(() => import('./components/Inventory'));
@@ -25,7 +27,7 @@ const Signup = lazy(() => import('./pages/Signup'));
 const CreateCoalMines = lazy(() => import('./components/CoalMineCards'));
 const Attendance = lazy(() => import('./components/Attendance'));
 const Chatbot = lazy(() => import('./components/chatbot'));
-
+const VoiceDictation = lazy(()=> import('./components/voiceDictation'));
 const Achievements = lazy(() => import('./components/Achievements'));
 function App() {
   return (
@@ -36,6 +38,9 @@ function App() {
           <Layout>
             <Suspense fallback={<div>Loading...</div>}>
               <Routes>
+                <Route path='/voiceDictation' element={<VoiceDictation />} />
+                <Route path='/notificationsfire' element={<NotificationsFire />} />
+                <Route path='/safety-protocol' element={<SafetyProtocol />} />
                 <Route path='/achievements' element={<Achievements />} />
                 <Route path='/weatherQuiz' element={<WeatherTrivia />} />
                 <Route path="/chatbot" element={<Chatbot />} />
