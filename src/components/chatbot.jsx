@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 const getChatResponse = async (message, language) => {
   try {
   
-    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyAYIAIPhO-g0GQR9CXD-DfXKNTa_ePG5YU`;
+    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`;
 
     // Payload for Gemini API
     const payload = {
