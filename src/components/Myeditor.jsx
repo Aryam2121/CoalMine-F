@@ -2,7 +2,7 @@ import React from 'react';
 import { Editor } from '@tinymce/tinymce-react';
 
 const MyEditor = () => {
-  const apiKey = process.env.REACT_APP_TINYMCE_API_KEY;
+  const apiKey =import.meta.env.VITE_TINYMCE_API_KEY;
 
   return (
     <Editor
