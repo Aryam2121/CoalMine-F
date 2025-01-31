@@ -1,836 +1,3 @@
-// import React, { useState, useEffect } from 'react';
-// import { Line, Pie, Bar } from 'react-chartjs-2';
-// import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, ArcElement, PointElement } from 'chart.js';
-// import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-// import 'leaflet/dist/leaflet.css';
-// import DatePicker from 'react-datepicker';
-// import 'react-datepicker/dist/react-datepicker.css';
-
-// // Registering Chart.js components
-// ChartJS.register(Title, Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement, ArcElement);
-
-// const Dashboard = () => {
-//   const [startDate, setStartDate] = useState(new Date());
-//   const [endDate, setEndDate] = useState(new Date());
-//   const [searchTerm, setSearchTerm] = useState('');
-//   const [isDarkMode, setIsDarkMode] = useState(false); // Dark Mode Toggle
-
-//   // Dummy Data for Charts
-//   const lineChartData = {
-//     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-//     datasets: [
-//       {
-//         label: 'Productivity Over the Week',
-//         data: [70, 75, 80, 85, 90, 85, 80],
-//         borderColor: '#3b82f6',
-//         backgroundColor: 'rgba(59, 130, 246, 0.1)',
-//         fill: true,
-//       },
-//     ],
-//   };
-
-//   const pieChartData = {
-//     labels: ['Safe', 'Warning', 'Critical'],
-//     datasets: [
-//       {
-//         label: 'Safety Compliance Breakdown',
-//         data: [70, 20, 10],
-//         backgroundColor: ['#34D399', '#FBBF24', '#F87171'],
-//         borderColor: '#ffffff',
-//         borderWidth: 1,
-//       },
-//     ],
-//   };
-
-//   const barChartData = {
-//     labels: ['Dept A', 'Dept B', 'Dept C', 'Dept D'],
-//     datasets: [
-//       {
-//         label: 'Department Performance',
-//         data: [60, 80, 70, 90],
-//         backgroundColor: '#3b82f6',
-//         borderColor: '#2563eb',
-//         borderWidth: 1,
-//       },
-//     ],
-//   };
-
-//   // Dummy mine locations data
-//   const mineLocations = [
-//     { name: 'Mine 1', latitude: 20.5937, longitude: 78.9629 },
-//     { name: 'Mine 2', latitude: 22.5726, longitude: 88.3639 },
-//     { name: 'Mine 3', latitude: 19.0760, longitude: 72.8777 },
-//   ];
-
-//   // Dummy upcoming maintenance data
-//   const upcomingMaintenance = [
-//     { task: 'Conveyor Belt Inspection', date: '2024-09-30' },
-//     { task: 'Equipment Calibration', date: '2024-10-05' },
-//   ];
-
-//   // Filter upcoming maintenance based on search term
-//   const filteredMaintenance = upcomingMaintenance.filter(item =>
-//     item.task.toLowerCase().includes(searchTerm.toLowerCase())
-//   );
-
-//   // Dark Mode Styling Toggle
-//   const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
-
-//   return (
-//     <div
-//     className={`min-h-screen ${
-//       isDarkMode
-//         ? 'bg-gradient-to-b from-gray-800 via-gray-900 to-black text-gray-100'
-//         : 'bg-gradient-to-b from-gray-100 via-gray-200 to-gray-300 text-gray-900'
-//     } transition-all`}
-//   >
-//     <div className="p-8 space-y-8">
-//       {/* Header Section */}
-//       <div className="flex justify-between items-center">
-//         <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-blue-500">
-//           Dashboard
-//         </h1>
-//         <button
-//           onClick={toggleDarkMode}
-//           className={`px-5 py-2 rounded-lg font-medium transition-all transform hover:scale-105 ${
-//             isDarkMode
-//               ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-//               : 'bg-blue-600 text-white hover:bg-blue-500'
-//           }`}
-//         >
-//           {isDarkMode ? 'Light Mode' : 'Dark Mode'}
-//         </button>
-//       </div>
-  
-//       {/* Date Range Picker */}
-//       <div className="flex space-x-4">
-//         <DatePicker
-//           selected={startDate}
-//           onChange={(date) => setStartDate(date)}
-//           selectsStart
-//           startDate={startDate}
-//           endDate={endDate}
-//           className={`w-full max-w-xs border rounded-lg p-3 transition ${
-//             isDarkMode
-//               ? 'bg-gray-800 text-gray-300 border-gray-700'
-//               : 'bg-gray-100 text-gray-900 border-gray-300'
-//           }`}
-//         />
-//         <DatePicker
-//           selected={endDate}
-//           onChange={(date) => setEndDate(date)}
-//           selectsEnd
-//           startDate={startDate}
-//           endDate={endDate}
-//           minDate={startDate}
-//           className={`w-full max-w-xs border rounded-lg p-3 transition ${
-//             isDarkMode
-//               ? 'bg-gray-800 text-gray-300 border-gray-700'
-//               : 'bg-gray-100 text-gray-900 border-gray-300'
-//           }`}
-//         />
-//       </div>
-  
-//       {/* Main Grid */}
-//       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-//         {/* Chart Cards */}
-//         {[
-//           {
-//             title: 'Productivity Over the Week',
-//             bg: 'from-teal-500 to-teal-600',
-//             chart: <Line data={lineChartData} options={{ responsive: true }} />,
-//           },
-//           {
-//             title: 'Safety Compliance Breakdown',
-//             bg: 'from-emerald-400 to-green-500',
-//             chart: <Pie data={pieChartData} />,
-//           },
-//           {
-//             title: 'Department Performance',
-//             bg: 'from-blue-500 to-blue-600',
-//             chart: <Bar data={barChartData} />,
-//           },
-//         ].map(({ title, bg, chart }, index) => (
-//           <div
-//             key={index}
-//             className={`bg-gradient-to-r ${bg} p-6 rounded-xl shadow-md hover:shadow-lg transition-all transform hover:scale-105`}
-//           >
-//             <h3 className="text-lg font-semibold text-gray-100 mb-3">{title}</h3>
-//             <div className="h-48">{chart}</div>
-//           </div>
-//         ))}
-  
-//         {/* Statistic Cards */}
-//         {[
-//           { title: 'Total Production', value: '1,500 Tons', bg: 'from-blue-600 to-blue-700' },
-//           { title: 'Safety Compliance', value: '95%', bg: 'from-green-500 to-green-600' },
-//         ].map(({ title, value, bg }, index) => (
-//           <div
-//             key={index}
-//             className={`bg-gradient-to-r ${bg} p-6 rounded-xl shadow-md hover:shadow-lg transition-all transform hover:scale-105`}
-//           >
-//             <h3 className="text-lg font-semibold text-gray-100">{title}</h3>
-//             <p className="text-2xl font-bold text-gray-100 mt-2">{value}</p>
-//           </div>
-//         ))}
-  
-//         {/* Map Visualization */}
-//         <div className="col-span-1 lg:col-span-2 bg-gradient-to-r from-gray-200 to-gray-300 p-6 rounded-xl shadow-md hover:shadow-lg transition-all transform hover:scale-105">
-//           <h3 className="text-lg font-semibold text-gray-800 mb-4">Mine Locations</h3>
-//           <div className="h-96 rounded-lg overflow-hidden">
-//             <MapContainer
-//               center={[20.5937, 78.9629]}
-//               zoom={5}
-//               className="h-full w-full"
-//             >
-//               <TileLayer
-//                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-//                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-//               />
-//               {mineLocations.map((mine, index) => (
-//                 <Marker key={index} position={[mine.latitude, mine.longitude]}>
-//                   <Popup>{mine.name}</Popup>
-//                 </Marker>
-//               ))}
-//             </MapContainer>
-//           </div>
-//         </div>
-  
-//         {/* Maintenance Search */}
-//         <div className="col-span-1 lg:col-span-2 bg-gradient-to-r from-gray-100 to-gray-200 p-6 rounded-xl shadow-md hover:shadow-lg transition-all">
-//           <input
-//             type="text"
-//             placeholder="Search Maintenance"
-//             value={searchTerm}
-//             onChange={(e) => setSearchTerm(e.target.value)}
-//             className={`w-full p-3 rounded-lg mb-4 ${
-//               isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
-//             }`}
-//           />
-//           <ul className="space-y-2">
-//             {filteredMaintenance.map((item, index) => (
-//               <li
-//                 key={index}
-//                 className="flex justify-between items-center p-3 rounded-lg bg-gray-100 shadow-md dark:bg-gray-700 dark:text-white"
-//               >
-//                 <span className="font-medium">{item.task}</span>
-//                 <span className="text-sm text-gray-500 dark:text-gray-300">
-//                   {item.date}
-//                 </span>
-//               </li>
-//             ))}
-//           </ul>
-//         </div>
-//       </div>
-//     </div>
-//   </div>
-  
-//   );
-// };
-
-// export default Dashboard;
-// import React, { useState, useEffect } from 'react';
-// import { ToastContainer, toast } from 'react-toastify';
-// import 'react-toastify/dist/ReactToastify.css';
-// import { Line, Pie, Bar } from 'react-chartjs-2';
-// import {
-//   Chart as ChartJS,
-//   Title,
-//   Tooltip,
-//   Legend,
-//   LineElement,
-//   BarElement,
-//   CategoryScale,
-//   LinearScale,
-//   ArcElement,
-//   PointElement,
-// } from 'chart.js';
-// import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-// import 'leaflet.heat';
-// import L from 'leaflet';
-// import 'leaflet/dist/leaflet.css';
-// import DatePicker from 'react-datepicker';
-// import 'react-datepicker/dist/react-datepicker.css';
-
-// ChartJS.register(Title, Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement, ArcElement);
-
-// const Heatmap = ({ data }) => {
-//   const map = useMap();
-
-//   useEffect(() => {
-//     if (!map || !data.length) return;
-
-//     const heatmapData = data.filter(({ lat, lng, intensity }) => lat && lng && intensity);
-
-//     const heatLayer = L.heatLayer(
-//       heatmapData.map(({ lat, lng, intensity }) => [lat, lng, intensity]),
-//       {
-//         radius: 25,
-//         blur: 15,
-//         maxZoom: 17,
-//       }
-//     );
-
-//     heatLayer.addTo(map);
-
-//     return () => {
-//       map.removeLayer(heatLayer);
-//     };
-//   }, [map, data]);
-
-//   return null;
-// };
-
-// const Dashboard = () => {
-//   const [startDate, setStartDate] = useState(new Date());
-//   const [endDate, setEndDate] = useState(new Date());
-//   const [searchTerm, setSearchTerm] = useState('');
-//   const [isDarkMode, setIsDarkMode] = useState(false);
-
-//   const lineChartData = {
-//     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-//     datasets: [
-//       {
-//         label: 'Productivity Over the Week',
-//         data: [70, 75, 80, 85, 90, 85, 80],
-//         borderColor: '#3b82f6',
-//         backgroundColor: 'rgba(59, 130, 246, 0.1)',
-//         fill: true,
-//       },
-//     ],
-//   };
-
-//   const pieChartData = {
-//     labels: ['Safe', 'Warning', 'Critical'],
-//     datasets: [
-//       {
-//         label: 'Safety Compliance Breakdown',
-//         data: [70, 20, 10],
-//         backgroundColor: ['#34D399', '#FBBF24', '#F87171'],
-//         borderColor: '#ffffff',
-//         borderWidth: 1,
-//       },
-//     ],
-//   };
-
-//   const barChartData = {
-//     labels: ['Dept A', 'Dept B', 'Dept C', 'Dept D'],
-//     datasets: [
-//       {
-//         label: 'Department Performance',
-//         data: [60, 80, 70, 90],
-//         backgroundColor: '#3b82f6',
-//         borderColor: '#2563eb',
-//         borderWidth: 1,
-//       },
-//     ],
-//   };
-
-//   const mineLocations = [
-//     { name: 'Mine 1', latitude: 20.5937, longitude: 78.9629 },
-//     { name: 'Mine 2', latitude: 22.5726, longitude: 88.3639 },
-//     { name: 'Mine 3', latitude: 19.0760, longitude: 72.8777 },
-//   ];
-
-//   const heatmapData = [
-//     { lat: 20.5937, lng: 78.9629, intensity: 5 },
-//     { lat: 22.5726, lng: 88.3639, intensity: 3 },
-//     { lat: 19.0760, lng: 72.8777, intensity: 7 },
-//   ];
-
-//   const upcomingMaintenance = [
-//     { task: 'Conveyor Belt Inspection', date: '2024-09-30' },
-//     { task: 'Equipment Calibration', date: '2024-10-05' },
-//   ];
-
-//   const filteredMaintenance = upcomingMaintenance.filter(item =>
-//     item.task.toLowerCase().includes(searchTerm.toLowerCase())
-//   );
-
-//   const notifications = [
-//     { message: 'Safety gear check overdue', type: 'warning' },
-//     { message: 'Gas leakage detected in Mine 2', type: 'critical' },
-//   ];
-
-//   const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
-
-//   // Toastify Alerts
-//   const generateToast = () => {
-//     const alert = notifications[Math.floor(Math.random() * notifications.length)];
-//     if (alert.type === 'critical') {
-//       toast.error(alert.message);
-//     } else {
-//       toast.warning(alert.message);
-//     }
-//   };
-
-//   useEffect(() => {
-//     const interval = setInterval(generateToast, 5000); // Randomly trigger toast every 5 seconds
-//     return () => clearInterval(interval);
-//   }, [notifications]);
-
-//   const averageLat = mineLocations.reduce((sum, mine) => sum + mine.latitude, 0) / mineLocations.length;
-//   const averageLng = mineLocations.reduce((sum, mine) => sum + mine.longitude, 0) / mineLocations.length;
-
-//   return (
-//     <div
-//       className={`min-h-screen ${
-//         isDarkMode
-//           ? 'bg-gradient-to-b from-gray-800 via-gray-900 to-black text-gray-100'
-//           : 'bg-gradient-to-b from-gray-100 via-gray-200 to-gray-300 text-gray-900'
-//       } transition-all`}
-//     >
-//       <ToastContainer />
-//       <div className="p-8 space-y-8">
-//         <div className="flex justify-between items-center">
-//           <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-blue-500">
-//             Dashboard
-//           </h1>
-//           <button
-//             onClick={toggleDarkMode}
-//             className={`px-5 py-2 rounded-lg font-medium transition-all transform hover:scale-105 ${
-//               isDarkMode
-//                 ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-//                 : 'bg-blue-600 text-white hover:bg-blue-500'
-//             }`}
-//           >
-//             {isDarkMode ? 'Light Mode' : 'Dark Mode'}
-//           </button>
-//         </div>
-
-//         <div className="flex space-x-4">
-//           <DatePicker
-//             selected={startDate}
-//             onChange={(date) => setStartDate(date)}
-//             selectsStart
-//             startDate={startDate}
-//             endDate={endDate}
-//             className={`w-full max-w-xs border rounded-lg p-3 transition ${
-//               isDarkMode
-//                 ? 'bg-gray-800 text-gray-300 border-gray-700'
-//                 : 'bg-gray-100 text-gray-900 border-gray-300'
-//             }`}
-//           />
-//           <DatePicker
-//             selected={endDate}
-//             onChange={(date) => setEndDate(date)}
-//             selectsEnd
-//             startDate={startDate}
-//             endDate={endDate}
-//             minDate={startDate}
-//             className={`w-full max-w-xs border rounded-lg p-3 transition ${
-//               isDarkMode
-//                 ? 'bg-gray-800 text-gray-300 border-gray-700'
-//                 : 'bg-gray-100 text-gray-900 border-gray-300'
-//             }`}
-//           />
-//         </div>
-
-//         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-//           {[{
-//               title: 'Productivity Over the Week',
-//               bg: 'from-teal-500 to-teal-600',
-//               chart: <Line data={lineChartData} options={{
-//                 responsive: true,
-//                 scales: {
-//                   x: { ticks: { color: isDarkMode ? '#fff' : '#000' } },
-//                   y: { ticks: { color: isDarkMode ? '#fff' : '#000' } },
-//                 },
-//               }} />,
-//             },
-//             {
-//               title: 'Safety Compliance Breakdown',
-//               bg: 'from-emerald-400 to-green-500',
-//               chart: <Pie data={pieChartData} />,
-//             },
-//             {
-//               title: 'Department Performance',
-//               bg: 'from-blue-500 to-blue-600',
-//               chart: <Bar data={barChartData} />,
-//             },
-//           ].map(({ title, bg, chart }, index) => (
-//             <div
-//               key={index}
-//               className={`bg-gradient-to-r ${bg} p-6 rounded-xl shadow-md hover:shadow-lg transition-all transform hover:scale-105`}
-//             >
-//               <h3 className="text-lg font-semibold text-gray-100 mb-3">{title}</h3>
-//               <div className="h-48">{chart}</div>
-//             </div>
-//           ))}
-
-//         {/* Alert Notification Container */}
-//         <div className="bg-gray-100 p-4 rounded-xl shadow-lg">
-//           <h2 className="font-bold text-lg mb-3">Alerts</h2>
-//           <ul className="space-y-2">
-//             {activeAlerts.map((alert) => (
-//               <li
-//                 key={alert.id}
-//                 className={`p-3 rounded-lg shadow-md ${
-//                   alert.type === 'critical'
-//                     ? 'bg-red-100 text-red-600'
-//                     : 'bg-yellow-100 text-yellow-600'
-//                 }`}
-//               >
-//                 {alert.message}
-//               </li>
-//             ))}
-//           </ul>
-//         </div>
-
-
-//           {/* Map and Heatmap */}
-//           <div className="col-span-1 lg:col-span-2 bg-gradient-to-r from-gray-200 to-gray-300 p-6 rounded-xl shadow-md hover:shadow-lg transition-all transform hover:scale-105">
-//             <h3 className="text-lg font-semibold text-gray-800 mb-4">Mine Locations</h3>
-//             <div className="h-[400px] lg:h-96 rounded-lg overflow-hidden">
-//               <MapContainer center={[averageLat, averageLng]} zoom={5} className="h-full w-full">
-//                 <TileLayer
-//                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-//                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-//                 />
-//                 {mineLocations.map((mine, index) => (
-//                   <Marker key={index} position={[mine.latitude, mine.longitude]}>
-//                     <Popup>{mine.name}</Popup>
-//                   </Marker>
-//                 ))}
-//                 <Heatmap data={heatmapData} />
-//               </MapContainer>
-//             </div>
-//           </div>
-//         </div>
-
-//         <div className="col-span-1 lg:col-span-2 bg-gradient-to-r from-gray-100 to-gray-200 p-6 rounded-xl shadow-md hover:shadow-lg transition-all">
-//           <input
-//             type="text"
-//             placeholder="Search Maintenance"
-//             value={searchTerm}
-//             onChange={(e) => setSearchTerm(e.target.value)}
-//             className={`w-full p-3 rounded-lg mb-4 ${
-//               isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
-//             }`}
-//           />
-//           <ul className="space-y-2">
-//             {filteredMaintenance.map((item, index) => (
-//               <li
-//                 key={index}
-//                 className="flex justify-between items-center p-3 bg-gray-100 rounded-lg shadow-md"
-//               >
-//                 <span>{item.task}</span>
-//                 <span className="text-sm text-gray-600">{item.date}</span>
-//               </li>
-//             ))}
-//           </ul>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default Dashboard;
-// import React, { useState, useEffect } from 'react';
-// import { ToastContainer, toast } from 'react-toastify';
-// import 'react-toastify/dist/ReactToastify.css';
-// import { Line, Pie, Bar } from 'react-chartjs-2';
-// import {
-//   Chart as ChartJS,
-//   Title,
-//   Tooltip,
-//   Legend,
-//   LineElement,
-//   BarElement,
-//   CategoryScale,
-//   LinearScale,
-//   ArcElement,
-//   PointElement,
-// } from 'chart.js';
-// import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-// import 'leaflet.heat';
-// import L from 'leaflet';
-// import 'leaflet/dist/leaflet.css';
-// import DatePicker from 'react-datepicker';
-// import 'react-datepicker/dist/react-datepicker.css';
-
-// ChartJS.register(Title, Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement, ArcElement);
-
-// const Heatmap = ({ data }) => {
-//   const map = useMap();
-
-//   useEffect(() => {
-//     if (!map || !data.length) return;
-
-//     const heatmapData = data.filter(({ lat, lng, intensity }) => lat && lng && intensity);
-
-//     const heatLayer = L.heatLayer(
-//       heatmapData.map(({ lat, lng, intensity }) => [lat, lng, intensity]),
-//       {
-//         radius: 25,
-//         blur: 15,
-//         maxZoom: 17,
-//       }
-//     );
-
-//     heatLayer.addTo(map);
-
-//     return () => {
-//       map.removeLayer(heatLayer);
-//     };
-//   }, [map, data]);
-
-//   return null;
-// };
-
-// const Dashboard = () => {
-//   const [startDate, setStartDate] = useState(new Date());
-//   const [endDate, setEndDate] = useState(new Date());
-//   const [searchTerm, setSearchTerm] = useState('');
-//   const [isDarkMode, setIsDarkMode] = useState(false);
-//   const [activeAlerts, setActiveAlerts] = useState([]);
-
-//   const lineChartData = {
-//     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-//     datasets: [
-//       {
-//         label: 'Productivity Over the Week',
-//         data: [70, 75, 80, 85, 90, 85, 80],
-//         borderColor: '#4CAF50',
-//         backgroundColor: 'rgba(76, 175, 80, 0.2)',
-//         fill: true,
-//       },
-//     ],
-//   };
-
-//   const pieChartData = {
-//     labels: ['Safe', 'Warning', 'Critical'],
-//     datasets: [
-//       {
-//         label: 'Safety Compliance Breakdown',
-//         data: [70, 20, 10],
-//         backgroundColor: ['#4CAF50', '#FFEB3B', '#F44336'],
-//         borderColor: '#ffffff',
-//         borderWidth: 1,
-//       },
-//     ],
-//   };
-
-//   const barChartData = {
-//     labels: ['Dept A', 'Dept B', 'Dept C', 'Dept D'],
-//     datasets: [
-//       {
-//         label: 'Department Performance',
-//         data: [60, 80, 70, 90],
-//         backgroundColor: '#2196F3',
-//         borderColor: '#1976D2',
-//         borderWidth: 1,
-//       },
-//     ],
-//   };
-
-//   const mineLocations = [
-//     { name: 'Mine 1', latitude: 20.5937, longitude: 78.9629 },
-//     { name: 'Mine 2', latitude: 22.5726, longitude: 88.3639 },
-//     { name: 'Mine 3', latitude: 19.0760, longitude: 72.8777 },
-//   ];
-
-//   const heatmapData = [
-//     { lat: 20.5937, lng: 78.9629, intensity: 5 },
-//     { lat: 22.5726, lng: 88.3639, intensity: 3 },
-//     { lat: 19.0760, lng: 72.8777, intensity: 7 },
-//   ];
-
-//   const upcomingMaintenance = [
-//     { task: 'Conveyor Belt Inspection', date: '2024-09-30' },
-//     { task: 'Equipment Calibration', date: '2024-10-05' },
-//   ];
-
-//   const filteredMaintenance = upcomingMaintenance.filter(item =>
-//     item.task.toLowerCase().includes(searchTerm.toLowerCase())
-//   );
-
-//   const notifications = [
-//     { message: 'Safety gear check overdue', type: 'warning' },
-//     { message: 'Gas leakage detected in Mine 2', type: 'critical' },
-//   ];
-
-//   const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
-
-//   // Toastify Alerts
-//   const generateToast = () => {
-//     const alert = notifications[Math.floor(Math.random() * notifications.length)];
-//     if (alert.type === 'critical') {
-//       toast.error(alert.message);
-//     } else {
-//       toast.warning(alert.message);
-//     }
-//   };
-
-//   useEffect(() => {
-//     const interval = setInterval(generateToast, 5000); // Randomly trigger toast every 5 seconds
-//     return () => clearInterval(interval);
-//   }, [notifications]);
-
-//   const averageLat = mineLocations.reduce((sum, mine) => sum + mine.latitude, 0) / mineLocations.length;
-//   const averageLng = mineLocations.reduce((sum, mine) => sum + mine.longitude, 0) / mineLocations.length;
-
-//   // Handling Active Alerts (for the container)
-//   const addActiveAlert = () => {
-//     const alert = notifications[Math.floor(Math.random() * notifications.length)];
-//     const newAlert = { ...alert, id: Date.now() };
-//     setActiveAlerts((prev) => [newAlert, ...prev]);
-
-//     setTimeout(() => {
-//       setActiveAlerts((prev) => prev.filter((alert) => alert.id !== newAlert.id));
-//     }, 5000);
-//   };
-
-//   useEffect(() => {
-//     const interval = setInterval(addActiveAlert, 5000); // Randomly add alerts every 5 seconds
-//     return () => clearInterval(interval);
-//   }, [notifications]);
-
-//   return (
-//     <div
-//       className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-b from-gray-800 via-gray-900 to-black text-gray-100' : 'bg-gradient-to-b from-white via-gray-100 to-gray-300 text-gray-900'} transition-all`}
-//     >
-//       <ToastContainer />
-//       <div className="p-8 space-y-8">
-//         <div className="flex justify-between items-center">
-//           <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-blue-500">
-//             Dashboard
-//           </h1>
-//           <button
-//             onClick={toggleDarkMode}
-//             className={`px-6 py-2 rounded-full text-lg font-semibold transition-all transform hover:scale-105 ${
-//               isDarkMode
-//                 ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-//                 : 'bg-blue-600 text-white hover:bg-blue-500'
-//             }`}
-//           >
-//             {isDarkMode ? 'Light Mode' : 'Dark Mode'}
-//           </button>
-//         </div>
-
-//         <div className="flex space-x-4">
-//           <DatePicker
-//             selected={startDate}
-//             onChange={(date) => setStartDate(date)}
-//             selectsStart
-//             startDate={startDate}
-//             endDate={endDate}
-//             className={`w-full max-w-xs border rounded-lg p-3 transition ${
-//               isDarkMode
-//                 ? 'bg-gray-800 text-gray-300 border-gray-700'
-//                 : 'bg-white text-gray-900 border-gray-300'
-//             }`}
-//           />
-//           <DatePicker
-//             selected={endDate}
-//             onChange={(date) => setEndDate(date)}
-//             selectsEnd
-//             startDate={startDate}
-//             endDate={endDate}
-//             minDate={startDate}
-//             className={`w-full max-w-xs border rounded-lg p-3 transition ${
-//               isDarkMode
-//                 ? 'bg-gray-800 text-gray-300 border-gray-700'
-//                 : 'bg-white text-gray-900 border-gray-300'
-//             }`}
-//           />
-//         </div>
-
-//         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-//           {[{
-//               title: 'Productivity Over the Week',
-//               bg: 'from-teal-500 to-teal-600',
-//               chart: <Line data={lineChartData} options={{
-//                 responsive: true,
-//                 scales: {
-//                   x: { ticks: { color: isDarkMode ? '#fff' : '#000' } },
-//                   y: { ticks: { color: isDarkMode ? '#fff' : '#000' } },
-//                 },
-//               }} />,
-//             },
-//             {
-//               title: 'Safety Compliance Breakdown',
-//               bg: 'from-emerald-400 to-green-500',
-//               chart: <Pie data={pieChartData} />,
-//             },
-//             {
-//               title: 'Department Performance',
-//               bg: 'from-blue-500 to-blue-600',
-//               chart: <Bar data={barChartData} />,
-//             },
-//           ].map(({ title, bg, chart }, index) => (
-//             <div
-//               key={index}
-//               className={`bg-gradient-to-r ${bg} p-6 rounded-xl shadow-xl hover:shadow-lg transition-all transform hover:scale-105`}
-//             >
-//               <h3 className="text-lg font-semibold text-gray-100 mb-3">{title}</h3>
-//               <div className="h-48">{chart}</div>
-//             </div>
-//           ))}
-
-//         {/* Alert Notification Container */}
-//         <div className="bg-gray-100 p-4 rounded-xl shadow-lg">
-//           <h2 className="font-bold text-lg mb-3">Alerts</h2>
-//           <ul className="space-y-2">
-//             {activeAlerts.map((alert) => (
-//               <li
-//                 key={alert.id}
-//                 className={`p-3 rounded-lg shadow-md ${
-//                   alert.type === 'critical'
-//                     ? 'bg-red-100 text-red-600'
-//                     : 'bg-yellow-100 text-yellow-600'
-//                 }`}
-//               >
-//                 {alert.message}
-//               </li>
-//             ))}
-//           </ul>
-//         </div>
-
-//         {/* Map and Heatmap */}
-//         <div className="col-span-1 lg:col-span-2 bg-gradient-to-r from-gray-200 to-gray-300 p-6 rounded-xl shadow-md hover:shadow-lg transition-all transform hover:scale-105">
-//           <h3 className="text-lg font-semibold text-gray-800 mb-4">Mine Locations</h3>
-//           <div className="h-[400px] lg:h-96 rounded-lg overflow-hidden">
-//             <MapContainer center={[averageLat, averageLng]} zoom={5} className="h-full w-full">
-//               <TileLayer
-//                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-//                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-//               />
-//               {mineLocations.map((mine, index) => (
-//                 <Marker key={index} position={[mine.latitude, mine.longitude]}>
-//                   <Popup>{mine.name}</Popup>
-//                 </Marker>
-//               ))}
-//               <Heatmap data={heatmapData} />
-//             </MapContainer>
-//           </div>
-//         </div>
-
-//         <div className="col-span-1 lg:col-span-2 space-y-4">
-//           <input
-//             type="text"
-//             placeholder="Search Maintenance Tasks..."
-//             value={searchTerm}
-//             onChange={(e) => setSearchTerm(e.target.value)}
-//             className="w-full border rounded-lg p-3"
-//           />
-//           <div className="space-y-2">
-//             {filteredMaintenance.map((item, index) => (
-//               <div key={index} className="bg-gray-200 p-4 rounded-lg shadow-md">
-//                 <h4 className="font-medium text-gray-800">{item.task}</h4>
-//                 <p className="text-gray-600">{item.date}</p>
-//               </div>
-//             ))}
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//     </div>
-//   );
-// };
-
-// export default Dashboard;
-
 import React, { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -847,6 +14,7 @@ import {
   LinearScale,
   ArcElement,
   PointElement,
+  Filler,
 } from 'chart.js';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet.heat';
@@ -855,9 +23,10 @@ import 'leaflet/dist/leaflet.css';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { motion } from 'framer-motion';
-import { heatLayer } from 'leaflet';
 import Chatbot from './chatbot';
-ChartJS.register(Title, Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement, ArcElement);
+import axios from 'axios'; // Added import for axios
+
+ChartJS.register(Filler,Title, Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement, ArcElement);
 
 const Heatmap = ({ data }) => {
   const map = useMap();
@@ -885,23 +54,31 @@ const Heatmap = ({ data }) => {
 
   return null;
 };
-
 const Dashboard = () => {
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [activeAlerts, setActiveAlerts] = useState([]);
-
   const [heatmapData, setHeatmapData] = useState([]);
   const { id } = useParams();
-  const [coalMine, setCoalMine] = React.useState(null);
+  const [coalMine, setCoalMine] = useState(null);
   const [mineLocations, setMineLocations] = useState([]);
   const [locations, setLocations] = useState([]);
   const [userLocation, setUserLocation] = useState([12.9716, 77.5946]); 
-  const [name, setName] = useState("");
-  const [lat, setLat] = useState("");
-  const [lng, setLng] = useState("");
+  const [name, setName] = useState('');
+  const [lat, setLat] = useState('');
+  const [lng, setLng] = useState('');
+  const [filteredMaintenance, setFilteredMaintenance] = useState([]);
+  const [maintenanceTasks, setMaintenanceTasks] = useState([]);
+  const [newTask, setNewTask] = useState({
+    task: '',
+    date: '',
+    description: '',
+    priority: 3,
+    status: 'pending',
+  });
+
   const lineChartData = {
     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     datasets: [
@@ -940,13 +117,7 @@ const Dashboard = () => {
       },
     ],
   };
-
- 
- 
-
- 
-
-  const notifications = [
+const notifications = [
     { message: 'Safety gear check overdue', type: 'warning' },
     { message: 'Gas leakage detected in Mine 2', type: 'critical' },
   ];
@@ -967,9 +138,6 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [notifications]);
 
-  const averageLat = mineLocations.reduce((sum, mine) => sum + mine.latitude, 0) / mineLocations.length;
-  const averageLng = mineLocations.reduce((sum, mine) => sum + mine.longitude, 0) / mineLocations.length;
-
   const addActiveAlert = () => {
     const alert = notifications[Math.floor(Math.random() * notifications.length)];
     const newAlert = { ...alert, id: Date.now() };
@@ -985,32 +153,28 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [notifications]);
 
- 
-  const [filteredMaintenance, setFilteredMaintenance] = useState([]);
-  const [maintenanceTasks, setMaintenanceTasks] = useState([]);
-  const fetchMaintenanceTasks = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/getallTask'); // Adjust the API endpoint if needed
-      const data = await response.json();
-      if (data && data.length) {
-        setMaintenanceTasks(data);
-        setFilteredMaintenance(data);
-      } else {
-        console.log('No tasks found');
+  useEffect(() => {
+    const fetchMaintenanceTasks = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/getallTask'); 
+        const data = await response.json();
+        if (data && data.length) {
+          setMaintenanceTasks(data);
+          setFilteredMaintenance(data);
+        } else {
+          console.log('No tasks found');
+        }
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
       }
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-    }
-  };
+    };
+
+    fetchMaintenanceTasks();
+  }, []);
+
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   // Filter maintenance tasks based on search term
-  const [newTask, setNewTask] = useState({
-    task: '',
-    date: '',
-    description: '',
-    priority: 3,
-    status: 'pending',
-  });
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -1027,39 +191,38 @@ const Dashboard = () => {
       }
 
       const data = await response.json();
-      setMaintenanceData((prevData) => [data, ...prevData]);
+      setMaintenanceTasks((prevData) => [data, ...prevData]);
       setNewTask({ task: '', date: '', description: '', priority: 3, status: 'pending' });
       alert('Maintenance task created successfully');
-      setIsModalOpen(false); // Close the modal after submission
+      setIsModalOpen(false);
     } catch (error) {
       console.error('Error creating maintenance task:', error);
     }
   };
 
+
  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   useEffect(() => {
-    // Fetch all locations
     const fetchLocations = async () => {
       try {
         const response = await axios.get("http://localhost:5000/api/getAllloc");
         setLocations(response.data);
       } catch (error) {
+        setError('Error fetching locations');
         console.error("Error fetching locations:", error);
       }
     };
 
     fetchLocations();
 
-    // Get user's current location
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setUserLocation([position.coords.latitude, position.coords.longitude]);
-      },
-      (error) => console.error("Error getting user location:", error)
+      (position) => setUserLocation([position.coords.latitude, position.coords.longitude]),
+      (error) => setError('Error getting user location')
     );
   }, []);
+
   const handleSubmitloc = async (e) => {
     e.preventDefault();
     try {
@@ -1076,12 +239,6 @@ const Dashboard = () => {
       console.error("Error adding location:", error);
       alert("Failed to add location.");
     }
-  };
-
-  const flyToLocation = (lat, lng) => {
-    // Function to zoom in on a specific mine location
-    const map = document.querySelector('.leaflet-container').__leaflet_map__;
-    map.flyTo([lat, lng], 10);
   };
 
   return (
@@ -1276,7 +433,23 @@ const Dashboard = () => {
       onChange={(e) => setSearchTerm(e.target.value)}
     />
     <button
-      onClick={fetchMaintenanceTasks}
+      onClick={() => {
+        const fetchMaintenanceTasks = async () => {
+          try {
+            const response = await axios.get('http://localhost:5000/api/getallTask'); 
+            const data = await response.json();
+            if (data && data.length) {
+              setMaintenanceTasks(data);
+              setFilteredMaintenance(data);
+            } else {
+              console.log('No tasks found');
+            }
+          } catch (error) {
+            console.error('Error fetching tasks:', error);
+          }
+        };
+        fetchMaintenanceTasks();
+      }}
       className="ml-4 bg-blue-500 text-white rounded-lg py-2 px-6 shadow-md hover:bg-blue-600 transition duration-200 ease-in-out"
     >
       Get All Tasks
