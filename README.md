@@ -104,6 +104,6 @@ We welcome contributions! Follow these steps:
 This project is licensed under the **MIT License**.
 
 ## 📬 Contact
-📌 **GitHub:** [your-username](https://github.com/Aryam2121)  
-📌 **LinkedIn:** [Your Name](https://www.linkedin.com/in/aryaman-gupta-b077b2257/)
+📌 **GitHub:** [](https://github.com/Aryam2121)  
+📌 **LinkedIn:** [](https://www.linkedin.com/in/aryaman-gupta-b077b2257/)
 📌 **Email:** aryamangupta2121@gmail.com
