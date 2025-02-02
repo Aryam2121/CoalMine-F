@@ -1,4 +1,4 @@
-![🚀 Coal Mine Safety & Productivity](https://drive.google.com/drive/folders/1nDLRZmlmvC2nJzgKVBfXwRM7Dg5DUHTx)
+![🚀 Coal Mine Safety & Productivity](https://drive.google.com/file/d/136lnea3hZJ9IDZ-701GUnu4T9e7pnvcz/view?usp=drive_link)
 
 # ⛏️ Coal Mine Safety & Productivity Management System
 
@@ -29,9 +29,9 @@ The **Coal Mine Safety & Productivity Management System** is an advanced digital
 - **APIs & Services:** Google Maps API, Cloudinary (for image handling)
 - **Visualization:** Chart.js for rich data analytics
 
-## 📸 Screenshots
-![📊 Dashboard](https://drive.google.com/drive/folders/1nDLRZmlmvC2nJzgKVBfXwRM7Dg5DUHTx)
-![📝Real Time Alerts](https://drive.google.com/drive/folders/1nDLRZmlmvC2nJzgKVBfXwRM7Dg5DUHTx)
+## 📸 
+![📊 Dashboard](https://drive.google.com/file/d/1vJZPgFTjaZVFodBIhWrRZDd91fbYPTyJ/view?usp=drive_link)
+![📝Real Time Alerts](https://drive.google.com/file/d/1qIicUuPI577vlEo1cQk0k2m-6UcjYV7Q/view?usp=drive_link)
 
 ## 🛠️ Installation Guide
 ### Prerequisites
