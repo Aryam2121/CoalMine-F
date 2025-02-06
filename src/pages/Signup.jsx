@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate,Link } from "react-router-dom";
 import safetyManagement from "../assets/safety management.webp";
 
 const Signup = () => {
@@ -8,6 +8,7 @@ const Signup = () => {
     name: "",
     email: "",
     password: "",
+    role: "worker", // Default role; can be changed to supervisor/admin if needed
     agreed: false,
     otp: "",
   });
@@ -15,8 +16,8 @@ const Signup = () => {
   const [message, setMessage] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
-  const [userExists, setUserExists] = useState(false); // State to check if user exists
-  const navigate = useNavigate(); // Initialize navigate
+  const [userExists, setUserExists] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -34,7 +35,7 @@ const Signup = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/signup", {
+      const response = await fetch(`https://${import.meta.env.VITE_BACKEND}/api/auth/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -43,15 +44,16 @@ const Signup = () => {
           name: formData.name,
           email: formData.email,
           password: formData.password,
+          role: formData.role, // Send the role as part of the signup
         }),
       });
 
       const data = await response.json();
       if (response.ok) {
-        setMessage("User registered successfully!");
+        setMessage("User registered successfully! OTP sent to email.");
         setOtpSent(true);
-      } else if (data.message === "User already exists") {
-        setUserExists(true); // Set userExists to true if the user exists
+      } else if (data.message === "Email already exists") {
+        setUserExists(true);
         setMessage("User already exists. Please log in.");
       } else {
         setMessage(data.message || "An error occurred");
@@ -63,7 +65,7 @@ const Signup = () => {
 
   const handleOtpVerification = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/auth/verify-otp", {
+      const response = await fetch(`https://${import.meta.env.VITE_BACKEND}/api/auth/verify-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -88,7 +90,12 @@ const Signup = () => {
 
   const handleGoogleSignup = async (response) => {
     try {
-      const res = await fetch("http://localhost:5000/api/auth/google", {
+      if (!response?.credential) {
+        setMessage("Google login failed. No token received.");
+        return;
+      }
+      
+      const res = await fetch(`https://${import.meta.env.VITE_BACKEND}/api/auth/google`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -97,10 +104,12 @@ const Signup = () => {
           token: response.credential,
         }),
       });
-
+  
       const data = await res.json();
       if (res.ok) {
         setMessage("User registered successfully with Google!");
+        localStorage.setItem("authToken", data.token);  // Save token in localStorage
+        navigate("/");  // Redirect after login
       } else {
         setMessage(data.message || "An error occurred");
       }
@@ -108,9 +117,10 @@ const Signup = () => {
       setMessage("Server error. Please try again later.");
     }
   };
-
+  
   return (
-    <GoogleOAuthProvider clientId="415677898308-qbe137kknqc0d3j8hnf2gbrvs47k95aa.apps.googleusercontent.com">
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-r from-teal-100 to-teal-300">
         <div className="bg-white w-full max-w-4xl rounded-lg shadow-2xl transform transition hover:scale-105 duration-300 flex overflow-hidden">
           <div className="w-full lg:w-1/2 p-8">
@@ -118,11 +128,17 @@ const Signup = () => {
             <p className="text-gray-600 mb-8 text-lg">
               The Mine Manager community has recently decided to meet new people. Let’s meet.
             </p>
-  
+
             {message && (
               <p className="text-green-600 mb-4 animate-pulse">{message}</p>
             )}
-  
+            {/* Login Instead Button */}
+            <div className="mb-6">
+              <Link to="/login" className="text-teal-500 hover:underline">
+                Already have an account? Login here.
+              </Link>
+            </div>
+
             <div className="mb-6">
               <GoogleLogin
                 onSuccess={handleGoogleSignup}
@@ -130,7 +146,7 @@ const Signup = () => {
                 className="w-full bg-teal-500 text-white py-2 rounded-md hover:bg-teal-600 transition duration-300 mb-4"
               />
             </div>
-  
+
             <form onSubmit={handleSubmit}>
               <label className="block mb-6">
                 <span className="text-gray-700 text-sm">New ID *</span>
@@ -144,7 +160,7 @@ const Signup = () => {
                   required
                 />
               </label>
-  
+
               <label className="block mb-6">
                 <span className="text-gray-700 text-sm">Email *</span>
                 <input
@@ -157,7 +173,7 @@ const Signup = () => {
                   required
                 />
               </label>
-  
+
               <label className="block mb-6">
                 <span className="text-gray-700 text-sm">Password *</span>
                 <input
@@ -170,7 +186,22 @@ const Signup = () => {
                   required
                 />
               </label>
-  
+
+              <label className="block mb-6">
+                <span className="text-gray-700 text-sm">Role *</span>
+                <select
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className="mt-1 block w-full p-3 border-gray-300 rounded-md shadow-sm focus:border-teal-500 focus:ring focus:ring-teal-500 focus:ring-opacity-50 transition duration-300 hover:shadow-lg"
+                  required
+                >
+                  <option value="worker">Worker</option>
+                  <option value="supervisor">Supervisor</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </label>
+
               <div className="flex items-center mb-6">
                 <input
                   type="checkbox"
@@ -189,7 +220,7 @@ const Signup = () => {
                   </a>
                 </label>
               </div>
-  
+
               <button
                 type="submit"
                 className="w-full bg-teal-500 text-white py-3 rounded-md hover:bg-teal-600 hover:shadow-lg transition duration-300"
@@ -197,16 +228,16 @@ const Signup = () => {
                 Next Step
               </button>
             </form>
-  
+
             {userExists && (
               <button
-                onClick={() => navigate("/login")} // Navigate to login
+                onClick={() => navigate("/login")}
                 className="mt-4 w-full bg-gray-500 text-white py-3 rounded-md hover:bg-gray-600 hover:shadow-lg transition duration-300"
               >
                 Login Instead
               </button>
             )}
-  
+
             {otpSent && !isVerified && (
               <div className="mt-6">
                 <label className="block mb-4">
@@ -216,13 +247,13 @@ const Signup = () => {
                     name="otp"
                     value={formData.otp}
                     onChange={handleChange}
-                    placeholder="Enter OTP sent to your email"
+                    placeholder="Enter OTP"
                     className="mt-1 block w-full p-3 border-gray-300 rounded-md shadow-sm focus:border-teal-500 focus:ring focus:ring-teal-500 focus:ring-opacity-50 transition duration-300 hover:shadow-lg"
                     required
                   />
                 </label>
+
                 <button
-                  type="button"
                   onClick={handleOtpVerification}
                   className="w-full bg-teal-500 text-white py-3 rounded-md hover:bg-teal-600 hover:shadow-lg transition duration-300"
                 >
@@ -231,12 +262,12 @@ const Signup = () => {
               </div>
             )}
           </div>
-  
-          <div className="w-full lg:w-1/2c flex justify-center items-center bg-gradient-to-r from-teal-500 to-teal-700">
+
+          <div className="hidden lg:block w-1/2 bg-teal-500 text-white">
             <img
               src={safetyManagement}
-              alt="Mine Manager"
-              className="w-full h-full object-cover rounded-r-lg shadow-2xl"
+              alt="Safety Management"
+              className="object-cover h-full w-full"
             />
           </div>
         </div>
@@ -246,3 +277,4 @@ const Signup = () => {
 };
 
 export default Signup;
+

@@ -20,7 +20,7 @@ const Alerts = () => {
         const fetchAlerts = async () => {
             try {
                 setLoading(true);
-                const res = await axios.get('http://localhost:5000/api/alerts/getallalerts', {
+                const res = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/alerts/getallalerts`, {
                     params: {
                         type,
                         resolved,
@@ -44,7 +44,7 @@ const Alerts = () => {
     const handleAddAlert = async () => {
         try {
             const newAlert = { message, type, createdBy };
-            const res = await axios.post('http://localhost:5000/api/alerts/addAlert', newAlert);
+            const res = await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/alerts/addAlert`, newAlert);
             setAlerts([res.data, ...alerts]);
             setMessage('');
             setType('warning');
@@ -58,7 +58,7 @@ const Alerts = () => {
 
     const handleResolveAlert = async (Id, resolvedBy) => {
         try {
-            const response = await axios.put(`http://localhost:5000/api/alerts/resolveAlert/${Id}`, { resolvedBy });
+            const response = await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/alerts/resolveAlert/${Id}`, { resolvedBy });
             console.log('Alert resolved:', response.data);
             setAlerts(alerts.map(alert => alert._id === Id ? { ...alert, resolved: true } : alert));
         } catch (error) {
@@ -69,7 +69,7 @@ const Alerts = () => {
 
     const handleDeleteAlert = async (id) => {
         try {
-            await axios.delete(`http://localhost:5000/api/alerts/deleteAlert/${id}`);
+            await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/alerts/deleteAlert/${id}`);
             setAlerts(alerts.filter(alert => alert._id !== id));
             setToast({ type: 'success', message: 'Alert deleted successfully!' });
         } catch (error) {
@@ -80,7 +80,7 @@ const Alerts = () => {
 
     const handleMarkAllResolved = async () => {
         try {
-            await axios.put('http://localhost:5000/api/alerts/resolveAllAlerts');
+            await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/alerts/resolveAllAlerts`);
             setAlerts(alerts.map(alert => ({ ...alert, resolved: true })));
             setToast({ type: 'success', message: 'All alerts resolved successfully!' });
         } catch (error) {

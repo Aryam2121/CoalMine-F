@@ -152,104 +152,54 @@
 // };
 
 // export default Navbar;
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext'; // Import AuthContext
 
 const Navbar = ({ activePage }) => {
-  const [isDarkMode, setIsDarkMode] = useState(true); // State to track dark mode
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const { logout } = useContext(AuthContext); // Get logout function from AuthContext
 
   const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode); // Toggle between dark and light mode
+    setIsDarkMode(!isDarkMode);
   };
 
   const getSearchPlaceholder = () => {
     switch (activePage) {
-      case 'Inventory':
-        return 'Search Inventory';
-      case 'Resources':
-        return 'Search Resources';
-      case 'Shift Logs':
-        return 'Search Shift Logs';
-      case 'Safety Plan':
-        return 'Search Safety Plan';
-      case 'User Management':
-        return 'Search Users';
-      case 'Weather':
-        return 'Search Weather';
-      case 'Data Visualization':
-        return 'Search Visualizations';
-      case 'Report Generation':
-        return 'Search Reports';
-      case 'Audit Logs':
-        return 'Search Audit Logs';
-      case 'Notifications':
-        return 'Search Notifications';
-      case 'Alerts':
-        return 'Search Alerts';
-      case 'Dashboard':
-      default:
-        return 'Search Dashboard';
+      case 'Inventory': return 'Search Inventory';
+      case 'Resources': return 'Search Resources';
+      case 'Shift Logs': return 'Search Shift Logs';
+      case 'Safety Plan': return 'Search Safety Plan';
+      case 'User Management': return 'Search Users';
+      case 'Weather': return 'Search Weather';
+      case 'Data Visualization': return 'Search Visualizations';
+      case 'Report Generation': return 'Search Reports';
+      case 'Audit Logs': return 'Search Audit Logs';
+      case 'Notifications': return 'Search Notifications';
+      case 'Alerts': return 'Search Alerts';
+      case 'Dashboard': default: return 'Search Dashboard';
     }
   };
 
   return (
     <div className={`flex items-center p-4 ${isDarkMode ? 'bg-[#0F1E33]' : 'bg-white'} shadow-lg rounded-b-3xl`}>
-      {/* Left Section: Search Bar */}
-      <div className={`flex items-center ${isDarkMode ? 'bg-[#1E2A43]' : 'bg-[#F4F6FA]'} rounded-full shadow-lg px-4 py-2 w-1/2 sm:w-1/3 hover:shadow-xl transition duration-300 ease-in-out`}>
-        <svg
-          className="w-5 h-5 text-gray-400"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
+      {/* Search Bar */}
+      <div className={`flex items-center ${isDarkMode ? 'bg-[#1E2A43]' : 'bg-[#F4F6FA]'} rounded-full shadow-lg px-4 py-2 w-1/2 sm:w-1/3`}>
         <input
           type="text"
           placeholder={getSearchPlaceholder()}
           className={`flex-grow bg-transparent focus:outline-none text-sm ${isDarkMode ? 'text-white' : 'text-black'} placeholder-gray-400 pl-3`}
         />
-        <button className="ml-2 bg-[#3A4C76] text-white px-3 py-1 rounded-md text-xs font-medium hover:bg-[#3A4C76] transition transform hover:scale-105 duration-200">
-          ⌘ F
-        </button>
       </div>
 
-      {/* Right Section: Icons and Profile */}
+      {/* Right Section */}
       <div className="flex items-center ml-8 space-x-6">
-        {/* Email Icon */}
-        <button className={`p-2 rounded-full ${isDarkMode ? 'bg-[#1E2A43]' : 'bg-[#F4F6FA]'} hover:bg-[#2F3B5C] transition ease-in-out duration-200 transform hover:scale-110`}>
-          <svg
-            className="w-5 h-5 text-white"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M4 4h16v16H4z" />
-            <polyline points="22,6 12,13 2,6" />
-          </svg>
-        </button>
-
         {/* Notification Icon */}
-        <button className={`p-2 rounded-full ${isDarkMode ? 'bg-[#1E2A43]' : 'bg-[#F4F6FA]'} hover:bg-[#2F3B5C] transition ease-in-out duration-200 transform hover:scale-110`}>
-          <svg
-            className="w-5 h-5 text-white"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11.5a6.5 6.5 0 00-13 0v2.658c0 .379-.214.725-.595.917L3 17h5" />
-            <path d="M13 21h-2a2 2 0 002 2h2a2 2 0 01-2-2z" />
-          </svg>
+        <button className="p-2 rounded-full bg-[#1E2A43] hover:bg-[#2F3B5C] transition transform hover:scale-110">
+          🔔
         </button>
 
         {/* Profile Section */}
-        <div className={`flex items-center space-x-3 hover:bg-[#2F3B5C] rounded-full p-2 transition duration-300 ease-in-out transform hover:scale-105 ${isDarkMode ? 'text-white' : 'text-black'}`}>
+        <div className="flex items-center space-x-3">
           <img
             src="https://via.placeholder.com/40"
             alt="Profile"
@@ -261,22 +211,17 @@ const Navbar = ({ activePage }) => {
           </div>
         </div>
 
-        {/* Dark Mode Toggle Button */}
-        <button
-          onClick={toggleTheme}
-          className={`p-2 rounded-full ${isDarkMode ? 'bg-[#1E2A43]' : 'bg-[#F4F6FA]'} hover:bg-[#2F3B5C] transition ease-in-out duration-200 transform hover:scale-110`}
+        {/* Dark Mode Toggle */}
+        <button onClick={toggleTheme} className="p-2 rounded-full bg-[#1E2A43] hover:bg-[#2F3B5C] transition transform hover:scale-110">
+          {isDarkMode ? "🌙" : "☀️"}
+        </button>
+
+        {/* 🚀 Logout Button */}
+        <button 
+          onClick={logout} 
+          className="bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-600 transition"
         >
-          {isDarkMode ? (
-            <svg className="w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="5" />
-              <path d="M17 12h5M12 17v5M12 2v5M7 12H2" />
-            </svg>
-          ) : (
-            <svg className="w-5 h-5 text-black" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="9" />
-              <path d="M14.72 9.28a5 5 0 10-7.44 7.44" />
-            </svg>
-          )}
+          Logout
         </button>
       </div>
     </div>

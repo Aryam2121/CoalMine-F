@@ -284,7 +284,7 @@ const ShiftHandoverLog = () => {
   useEffect(() => {
     const fetchShiftLogs = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/getallLogs');
+        const response = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getallLogs`);
         setPreviousLogs(response.data);
       } catch (error) {
         console.error('Error fetching shift logs:', error);
@@ -328,7 +328,7 @@ const ShiftHandoverLog = () => {
 
     try {
       setLoading(true);
-      const response = await axios.post('http://localhost:5000/api/createLogs', formData);
+      const response = await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/createLogs`, formData);
       const newLog = response.data;
       setPreviousLogs([...previousLogs, newLog]);
       resetForm();
@@ -351,7 +351,7 @@ const ShiftHandoverLog = () => {
 
   const deleteLog = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/deleteLog/${id}`);
+      await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/deleteLog/${id}`);
       setPreviousLogs(previousLogs.filter((log) => log._id !== id));
       alert('Log deleted successfully!');
     } catch (error) {
@@ -373,7 +373,7 @@ const ShiftHandoverLog = () => {
   const updateLog = async () => {
     try {
       const updatedLog = { ...logData, id: editLogId };
-      const response = await axios.put(`http://localhost:5000/api/updateLog/${editLogId}`, updatedLog);
+      const response = await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/updateLog/${editLogId}`, updatedLog);
 
       setPreviousLogs(
         previousLogs.map((log) =>

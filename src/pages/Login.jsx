@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import loginImage from "../assets/login.png"; // Update with your login image path
+import { AuthContext } from "../context/AuthContext";  // Import AuthContext
+import loginImage from "../assets/login.png";
+import { GoogleLogin } from "@react-oauth/google"; // Import GoogleLogin
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
@@ -9,35 +11,59 @@ const Login = () => {
   const [otp, setOtp] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isGoogleLogin, setIsGoogleLogin] = useState(false); // New state to track Google login
-  const navigate = useNavigate(); // For navigation after successful login
+  const [isGoogleLogin, setIsGoogleLogin] = useState(false); 
+  const navigate = useNavigate(); 
+
+  // Access the AuthContext
+  const { login } = useContext(AuthContext);  // Use context login function
+
+  const sendOtp = async (email) => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch(`https://${import.meta.env.VITE_BACKEND}/api/auth/send-otp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to send OTP");
+      }
+      setOtpSent(true);
+      alert("OTP sent to your email. Please check your inbox.");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogin = async (values) => {
     setLoading(true);
     setError("");
-  
     try {
       let response;
       let data;
-  
+
       if (isGoogleLogin) {
-        // Handle Google login without password
-        response = await fetch("http://localhost:5000/api/auth/google", {
+        response = await fetch(`https://${import.meta.env.VITE_BACKEND}/api/auth/google`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ email: values.email }),
+          body: JSON.stringify({ token: values.token }),
         });
-  
         data = await response.json();
-  
+
         if (!response.ok) {
           throw new Error(data.message || "Google login failed");
         }
       } else if (otpSent) {
-        // API call for verifying OTP
-        response = await fetch("http://localhost:5000/api/auth/verify-otp", {
+        response = await fetch(`https://${import.meta.env.VITE_BACKEND}/api/auth/verify-otp`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -47,26 +73,22 @@ const Login = () => {
             otp,
           }),
         });
-  
         data = await response.json();
-  
+
         if (!response.ok) {
           throw new Error(data.message || "OTP verification failed");
         }
       } else {
-        // API call for login with email and password
-        response = await fetch("http://localhost:5000/api/auth/login", {
+        response = await fetch(`https://${import.meta.env.VITE_BACKEND}/api/auth/login`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(values),
         });
-  
         data = await response.json();
-  
+
         if (!response.ok) {
-          // If login fails, send OTP as fallback
           if (data.message === "Invalid password") {
             setOtpSent(true);
             alert("Password incorrect. OTP has been sent to your email. Please enter the OTP.");
@@ -75,15 +97,13 @@ const Login = () => {
           throw new Error(data.message || "Something went wrong");
         }
       }
-  
-      // Handle successful login or OTP verification
-      console.log("Login successful:", data);
-  
-      // Check if token is available in the response
+
       if (data.token) {
         localStorage.setItem("token", data.token);
-        navigate("/dashboard");
+        login();  // Update context state after successful login
+        navigate("/");  // Redirect after login
       } else {
+        console.log("No token received", data); 
         throw new Error("Token is missing in response");
       }
     } catch (e) {
@@ -92,19 +112,16 @@ const Login = () => {
       setLoading(false);
     }
   };
-  
 
-  const handleGoogleLogin = () => {
-    setIsGoogleLogin(true);
-    // Simulate Google login process (for example, through Google OAuth)
-    const token = "google-auth-token"; // Replace this with the actual Google token from the OAuth process
-    handleLogin({ token }); // Pass the token to handle login
+  const handleGoogleSuccess = (credentialResponse) => {
+    const token = credentialResponse.credential;
+    setIsGoogleLogin(true);  // Mark as Google login
+    handleLogin({ token });  // Pass token to backend
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="bg-white shadow-lg rounded-lg p-8 max-w-4xl w-full flex">
-        {/* Left side: Form */}
         <div className="w-1/2 pr-8">
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-bold text-gray-700">Login to Your Account</h1>
@@ -188,7 +205,7 @@ const Login = () => {
             </button>
 
             <div className="text-center mt-4">
-              <Link to="/register" className="text-indigo-500 hover:underline">
+              <Link to="/signup" className="text-indigo-500 hover:underline">
                 Create Account
               </Link>
             </div>
@@ -196,15 +213,23 @@ const Login = () => {
 
           <div className="mt-4 text-center">
             <button
-              onClick={handleGoogleLogin}
-              className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-500 transition duration-200"
+              onClick={() => sendOtp(email)}
+              className="w-full bg-gray-600 text-white py-2 rounded hover:bg-gray-500 transition duration-200"
             >
-              Login with Google
+              Send OTP
             </button>
+          </div>
+
+          <div className="mt-4 text-center">
+          <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => console.log("Google Login Failed")}
+              useOneTap
+              shape="rectangular"
+            />
           </div>
         </div>
 
-        {/* Right side: Image */}
         <div className="w-1/2 flex items-center justify-center">
           <img src={loginImage} alt="Login" className="w-full max-w-xs" />
         </div>

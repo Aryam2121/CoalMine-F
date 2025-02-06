@@ -17,7 +17,7 @@ import {
   Filler,
 } from 'chart.js';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import 'leaflet.heat';
+import "leaflet.heat";
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import DatePicker from 'react-datepicker';
@@ -25,35 +25,11 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { motion } from 'framer-motion';
 import Chatbot from './chatbot';
 import axios from 'axios'; // Added import for axios
+import 'leaflet/dist/leaflet.css';
 
 ChartJS.register(Filler,Title, Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement, ArcElement);
 
-const Heatmap = ({ data }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!map || !data.length) return;
-
-    const heatmapData = data.filter(({ lat, lng, intensity }) => lat && lng && intensity);
-
-    const heatLayer = L.heatLayer(
-      heatmapData.map(({ lat, lng, intensity }) => [lat, lng, intensity]),
-      {
-        radius: 25,
-        blur: 15,
-        maxZoom: 17,
-      }
-    );
-
-    heatLayer.addTo(map);
-
-    return () => {
-      map.removeLayer(heatLayer);
-    };
-  }, [map, data]);
-
-  return null;
-};
+ 
 const Dashboard = () => {
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
@@ -117,6 +93,22 @@ const Dashboard = () => {
       },
     ],
   };
+  const Heatmap = ({ data }) => {
+    const map = useMap();
+  
+    useEffect(() => {
+      if (!map || heatmapData.length === 0) return;
+    
+      const heatLayer = L.heatLayer(
+        heatmapData.map(({ lat, lng, intensity }) => [lat, lng, intensity]),
+        { radius: 25, blur: 15, maxZoom: 17 }
+      );
+    
+      heatLayer.addTo(map);
+    
+      return () => map.removeLayer(heatLayer);
+    }, [map, heatmapData]);
+  }; 
 const notifications = [
     { message: 'Safety gear check overdue', type: 'warning' },
     { message: 'Gas leakage detected in Mine 2', type: 'critical' },
@@ -156,8 +148,8 @@ const notifications = [
   useEffect(() => {
     const fetchMaintenanceTasks = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/getallTask'); 
-        const data = await response.json();
+        const { data } = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getallTask`);
+
         if (data && data.length) {
           setMaintenanceTasks(data);
           setFilteredMaintenance(data);
@@ -178,7 +170,7 @@ const notifications = [
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/api/createTask', {
+      const response = await fetch(`https://${import.meta.env.VITE_BACKEND}/api/createTask`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -207,7 +199,8 @@ const notifications = [
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/getAllloc");
+        const response = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getAllloc`);
+        console.log("Fetched Locations:", response.data);
         setLocations(response.data);
       } catch (error) {
         setError('Error fetching locations');
@@ -218,19 +211,26 @@ const notifications = [
     fetchLocations();
 
     navigator.geolocation.getCurrentPosition(
-      (position) => setUserLocation([position.coords.latitude, position.coords.longitude]),
-      (error) => setError('Error getting user location')
+      (position) => console.log(position.coords),
+      (error) => console.error("Error fetching location:", error)
     );
+    
+    
   }, []);
 
   const handleSubmitloc = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post("http://localhost:5000/api/createloc", {
+      const locationData = {
         name,
-        lat: parseFloat(lat),
-        lng: parseFloat(lng),
-      });
+        coordinates: {
+          type: "Point",
+          coordinates: [parseFloat(lng), parseFloat(lat)] // Longitude first, then Latitude
+        }
+      };
+  
+      const response = await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/createloc`, locationData);
+      
       alert(`Location added: ${response.data.name}`);
       setName("");
       setLat("");
@@ -400,23 +400,17 @@ const notifications = [
     ) : error ? (
       <p>{error}</p>
     ) : (
-      <MapContainer center={userLocation} zoom={13} className="h-full w-full">
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
-        {locations.map((location) => (
-          <Marker
-            key={location._id}
-            position={[
-              location.coordinates.coordinates[1], // latitude
-              location.coordinates.coordinates[0], // longitude
-            ]}
-          >
-            <Popup>{location.name}</Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+      <MapContainer center={userLocation} zoom={13} style={{ height: "500px", width: "100%" }}>
+      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      {locations.map((loc, index) => (
+        <Marker key={index} position={[loc.coordinates.coordinates[1], loc.coordinates.coordinates[0]]}>
+          <Popup>{loc.name}</Popup>
+        </Marker>
+      ))}
+    </MapContainer>
+    
+
+    
     )}
   </div>
 </div>
@@ -436,8 +430,8 @@ const notifications = [
       onClick={() => {
         const fetchMaintenanceTasks = async () => {
           try {
-            const response = await axios.get('http://localhost:5000/api/getallTask'); 
-            const data = await response.json();
+            const { data } = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getallTask`);
+
             if (data && data.length) {
               setMaintenanceTasks(data);
               setFilteredMaintenance(data);
@@ -456,36 +450,39 @@ const notifications = [
     </button>
   </div>
 
-  <ul>
-    {filteredMaintenance.map((task, index) => (
-      <motion.li
-        key={index}
-        className="flex justify-between items-center p-4 border border-gray-200 rounded-lg mb-4 bg-white shadow-lg hover:shadow-xl transition duration-300 ease-in-out"
-        whileHover={{ scale: 1.05 }}
-      >
-        <div className="flex flex-col">
-          <h2 className="font-semibold text-lg">{task.task}</h2>
-          <p className="text-gray-500 text-sm">Date: {task.date}</p>
-          <p className="text-gray-700 text-sm">{task.description}</p>
-        </div>
+  <ul> 
+  {filteredMaintenance.map((task, index) => (
+    <motion.li
+      key={task._id} // Use `_id` instead of `index` for uniqueness
+      className="flex justify-between items-center p-4 border border-gray-200 rounded-lg mb-4 bg-white shadow-lg hover:shadow-xl transition duration-300 ease-in-out"
+      whileHover={{ scale: 1.05 }}
+    >
+      <div className="flex flex-col">
+        <h2 className="font-semibold text-lg">{task.task}</h2>
+        <p className="text-gray-500 text-sm">
+          Date: {new Date(task.date).toLocaleDateString()} {/* Format date */}
+        </p>
+        <p className="text-gray-700 text-sm">{task.description}</p>
+      </div>
 
-        <div className="text-right">
-          <div>
-            <span className="font-medium text-blue-500">{task.status}</span>
-          </div>
-          <div>
-            <span
-              className={`text-sm ml-2 ${
-                task.priority === 3 ? 'text-red-500' : task.priority === 2 ? 'text-yellow-500' : 'text-green-500'
-              }`}
-            >
-              {task.priority === 3 ? 'High' : task.priority === 2 ? 'Medium' : 'Low'}
-            </span>
-          </div>
+      <div className="text-right">
+        <div>
+          <span className="font-medium text-blue-500">{task.status}</span>
         </div>
-      </motion.li>
-    ))}
-  </ul>
+        <div>
+          <span
+            className={`text-sm ml-2 ${
+              task.priority === 3 ? 'text-red-500' : task.priority === 2 ? 'text-yellow-500' : 'text-green-500'
+            }`}
+          >
+            {task.priority === 3 ? 'High' : task.priority === 2 ? 'Medium' : 'Low'}
+          </span>
+        </div>
+      </div>
+    </motion.li>
+  ))}
+</ul>
+
 </div>
 
 {/* Button to Open Modal */}

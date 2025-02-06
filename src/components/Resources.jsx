@@ -11,12 +11,11 @@ import {
   AiOutlineUndo,
   AiOutlineBulb,
 } from 'react-icons/ai';
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#FF6384', '#36A2EB'];
+import axios from 'axios';
+const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
 const getRandomColor = (index) => COLORS[index % COLORS.length];
 
-// Individual Resource Component
 const Resource = ({ id, name, used, available, onDelete, onEdit, color }) => {
   const data = [
     { name: 'Used', value: used },
@@ -25,19 +24,18 @@ const Resource = ({ id, name, used, available, onDelete, onEdit, color }) => {
 
   return (
     <motion.div
-      className="border p-4 mb-4 rounded-lg shadow hover:shadow-2xl transition-shadow duration-300 flex justify-between items-center"
-      style={{ backgroundColor: `${color}10` }}
+      className="border p-4 mb-4 rounded-lg shadow-lg hover:shadow-xl transition duration-300 flex justify-between items-center bg-opacity-90"
+      style={{ backgroundColor: `${color}20` }}
       whileHover={{ scale: 1.05 }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
     >
       <div>
-        <h3 className="font-bold text-lg">{name}</h3>
-        <p className="text-sm">Used: {used}%</p>
-        <p className="text-sm">Available: {available}%</p>
-
-        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+        <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100">{name}</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-300">Used: {used}%</p>
+        <p className="text-sm text-gray-600 dark:text-gray-300">Available: {available}%</p>
+        <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2.5 mt-2">
           <div
             className="h-2.5 rounded-full"
             style={{ width: `${used}%`, backgroundColor: color }}
@@ -46,14 +44,7 @@ const Resource = ({ id, name, used, available, onDelete, onEdit, color }) => {
       </div>
 
       <PieChart width={80} height={80}>
-        <Pie
-          data={data}
-          dataKey="value"
-          cx="50%"
-          cy="50%"
-          outerRadius={35}
-          fill="#8884d8"
-        >
+        <Pie data={data} dataKey="value" cx="50%" cy="50%" outerRadius={35}>
           {data.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={index === 0 ? color : '#d3d3d3'} />
           ))}
@@ -61,19 +52,11 @@ const Resource = ({ id, name, used, available, onDelete, onEdit, color }) => {
       </PieChart>
 
       <div className="flex gap-2">
-        <button
-          onClick={() => onEdit(id)}
-          className="text-blue-500 hover:text-blue-700 transition-colors tooltip"
-        >
+        <button onClick={() => onEdit(id)} className="text-blue-500 hover:text-blue-700 transition">
           <AiOutlineEdit size={20} />
-          <span className="tooltip-text">Edit</span>
         </button>
-        <button
-          onClick={() => onDelete(id)}
-          className="text-red-500 hover:text-red-700 transition-colors tooltip"
-        >
+        <button onClick={() => onDelete(id)} className="text-red-500 hover:text-red-700 transition">
           <AiOutlineDelete size={20} />
-          <span className="tooltip-text">Delete</span>
         </button>
       </div>
     </motion.div>
@@ -91,14 +74,20 @@ const Resources = () => {
   const [deletedResource, setDeletedResource] = useState(null);
 
   useEffect(() => {
-    const initialResources = [
-      { id: 1, name: 'Coal', used: 60, available: 40 },
-      { id: 2, name: 'Electricity', used: 30, available: 70 },
-      { id: 3, name: 'Labor', used: 80, available: 20 },
-      { id: 4, name: 'Water', used: 50, available: 50 },
-    ];
-    setResources(initialResources);
+    axios.get(`${import.meta.env.VITE_BACKEND}/api/resources/getRes`)
+      .then((response) => {
+        if (response.headers['content-type'].includes('application/json')) {
+          setResources(response.data);
+        } else {
+          console.error('Unexpected response format:', response);
+        }
+      })
+      .catch((error) => {
+        console.error('Error fetching resources:', error);
+      });
   }, []);
+  
+  
 
   const handleAddResource = () => {
     const { name, used, available } = newResource;
@@ -107,21 +96,27 @@ const Resources = () => {
       return;
     }
 
-    const id = editingId || resources.length + 1;
-    const newRes = {
-      id,
+    const resourceData = {
       name,
       used: parseInt(used),
       available: parseInt(available),
     };
 
     if (editingId) {
-      setResources(
-        resources.map((resource) => (resource.id === editingId ? newRes : resource))
-      );
-      setEditingId(null);
+      axios.put(`${import.meta.env.VITE_BACKEND}/api/resources/${editingId}`, resourceData)
+        .then((response) => {
+          setResources(resources.map((resource) =>
+            resource.id === editingId ? response.data : resource
+          ));
+          setEditingId(null);
+        })
+        .catch((error) => console.error('Error updating resource:', error));
     } else {
-      setResources([...resources, newRes]);
+      axios.post(`${import.meta.env.VITE_BACKEND}/api/resources/addRes`, resourceData)
+        .then((response) => {
+          setResources([...resources, response.data]);
+        })
+        .catch((error) => console.error('Error adding resource:', error));
     }
 
     setNewResource({ name: '', used: '', available: '' });
@@ -130,13 +125,21 @@ const Resources = () => {
   const handleDeleteResource = (id) => {
     const resourceToDelete = resources.find((resource) => resource.id === id);
     setDeletedResource(resourceToDelete);
-    setResources(resources.filter((resource) => resource.id !== id));
+    axios.delete(`${import.meta.env.VITE_BACKEND}/api/resources/${id}`)
+      .then(() => {
+        setResources(resources.filter((resource) => resource.id !== id));
+      })
+      .catch((error) => console.error('Error deleting resource:', error));
   };
 
   const handleUndoDelete = () => {
     if (deletedResource) {
-      setResources([...resources, deletedResource]);
-      setDeletedResource(null);
+      axios.post(`${import.meta.env.VITE_BACKEND}/api/resources`, deletedResource)
+        .then(() => {
+          setResources([...resources, deletedResource]);
+          setDeletedResource(null);
+        })
+        .catch((error) => console.error('Error undoing delete:', error));
     }
   };
 
@@ -167,9 +170,10 @@ const Resources = () => {
     setResources(items);
   };
 
+
   return (
     <div
-      className={` min-h-screen ${darkMode ? 'bg-gray-800 text-white' : 'bg-gray-100'}`}
+      className={` min-h-screen ${darkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-white'}`}
     >
       <motion.div
         className="w-full min-h-screen bg-gray-950  p-6 rounded-lg shadow-lg"
@@ -231,7 +235,7 @@ const Resources = () => {
           />
           <button
             onClick={handleAddResource}
-            className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
+            className="bg-blue-500 text-gray-100 px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
           >
             {editingId ? 'Update' : 'Add'} <AiOutlinePlus className="inline" />
           </button>
