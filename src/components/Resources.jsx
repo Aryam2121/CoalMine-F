@@ -74,7 +74,7 @@ const Resources = () => {
   const [deletedResource, setDeletedResource] = useState(null);
 
   useEffect(() => {
-    axios.get(`${import.meta.env.VITE_BACKEND}/api/resources/getRes`)
+    axios.get(`https://${import.meta.env.VITE_BACKEND}/api/resources/getRes`)
       .then((response) => {
         if (response.headers['content-type'].includes('application/json')) {
           setResources(response.data);
@@ -103,7 +103,7 @@ const Resources = () => {
     };
 
     if (editingId) {
-      axios.put(`${import.meta.env.VITE_BACKEND}/api/resources/${editingId}`, resourceData)
+      axios.put(`https://${import.meta.env.VITE_BACKEND}/api/resources/${editingId}`, resourceData)
         .then((response) => {
           setResources(resources.map((resource) =>
             resource.id === editingId ? response.data : resource
@@ -112,7 +112,7 @@ const Resources = () => {
         })
         .catch((error) => console.error('Error updating resource:', error));
     } else {
-      axios.post(`${import.meta.env.VITE_BACKEND}/api/resources/addRes`, resourceData)
+      axios.post(`https://${import.meta.env.VITE_BACKEND}/api/resources/addRes`, resourceData)
         .then((response) => {
           setResources([...resources, response.data]);
         })
@@ -125,7 +125,7 @@ const Resources = () => {
   const handleDeleteResource = (id) => {
     const resourceToDelete = resources.find((resource) => resource.id === id);
     setDeletedResource(resourceToDelete);
-    axios.delete(`${import.meta.env.VITE_BACKEND}/api/resources/${id}`)
+    axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/resources/${id}`)
       .then(() => {
         setResources(resources.filter((resource) => resource.id !== id));
       })
@@ -134,7 +134,7 @@ const Resources = () => {
 
   const handleUndoDelete = () => {
     if (deletedResource) {
-      axios.post(`${import.meta.env.VITE_BACKEND}/api/resources`, deletedResource)
+      axios.post(`https://${import.meta.env.VITE_BACKEND}/api/resources`, deletedResource)
         .then(() => {
           setResources([...resources, deletedResource]);
           setDeletedResource(null);
@@ -173,7 +173,7 @@ const Resources = () => {
 
   return (
     <div
-      className={` min-h-screen ${darkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-white'}`}
+      className={` min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-white'}`}
     >
       <motion.div
         className="w-full min-h-screen bg-gray-950  p-6 rounded-lg shadow-lg"

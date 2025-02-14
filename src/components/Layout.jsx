@@ -65,7 +65,7 @@ const Layout = ({ children }) => {
         )}
 
         {/* Page Content */}
-        <div className={`flex-1 pt-4 bg-white ${isAuthenticated && !hideLayout ? 'mt-16 rounded-br-3xl shadow-md' : ''}`}>
+        <div className={`flex-1 pt-4 bg-white ${isAuthenticated && !hideLayout ? 'mt-5 shadow-md' : ''}`}>
           {children}
         </div>
       </div>

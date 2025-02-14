@@ -402,7 +402,7 @@ const ShiftHandoverLog = () => {
   };
 
   return (
-    <div className="p-8 bg-[#101114] rounded-lg shadow-lg w-full min-h-screen">
+    <div className="p-8 bg-gray-900 rounded-lg shadow-lg w-full min-h-screen">
       <h2 className="text-4xl font-bold text-center mb-6 text-white">Shift Handover Log</h2>
       <form onSubmit={submitLog} className="space-y-6">
         {/* Shift Details */}

@@ -328,16 +328,16 @@
 // };
 
 // export default AttendancePage;
-import React, { useState, useEffect } from "react"; 
+import React, { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import { Chart as ChartJS, LineElement, PointElement, LinearScale, Title, Tooltip, Legend, CategoryScale } from "chart.js";
+import { Chart as ChartJS, LineElement, PointElement, LinearScale, Title, Tooltip, Legend, CategoryScale ,Filler} from "chart.js";
 import { Line } from "react-chartjs-2";
 import { motion } from "framer-motion";
-
+import axios from "axios";
 
 // Register Chart.js components
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend,Filler);
 
 const AttendancePage = () => {
   const [workers, setWorkers] = useState([]);
@@ -346,95 +346,81 @@ const AttendancePage = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [attendanceStats, setAttendanceStats] = useState({ present: 0, absent: 0 });
   const [isModalOpen, setIsModalOpen] = useState(false);
-const [selectedWorker, setSelectedWorker] = useState(null);
-  const [attendanceChartData, setAttendanceChartData] = useState({
-    labels: ["01 Jan", "02 Jan", "03 Jan", "04 Jan", "05 Jan"],
-    datasets: [
-      {
-        label: "Attendance Percentage",
-        data: [90, 85, 88, 92, 95],
-        borderColor: "#4CAF50",
-        backgroundColor: "rgba(76, 175, 80, 0.3)",
-        fill: true,
-      },
-    ],
-  });
-  const openModal = (worker) => {
-    setSelectedWorker(worker);
-    setIsModalOpen(true);
-  };
-  
-  const closeModal = () => setIsModalOpen(false);
+  const [selectedWorker, setSelectedWorker] = useState(null);
+  const [attendanceChartData, setAttendanceChartData] = useState(null); 
+  const [loading, setLoading] = useState(true);
+
+  // Fetch workers from backend
   useEffect(() => {
-    const mockWorkers = Array.from({ length: 50 }, (_, i) => ({
-      id: i + 1,
-      name: `Worker ${i + 1}`,
-      department: i % 2 === 0 ? "Mining" : "Maintenance",
-      status: i % 5 === 0 ? "Absent" : "Present",
-    }));
-    setWorkers(mockWorkers);
-    setFilteredWorkers(mockWorkers);
-    updateStats(mockWorkers);
+    fetchWorkers();
   }, []);
 
-  useEffect(() => {
-    setFilteredWorkers(
-      workers.filter(
-        (worker) =>
-          worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          worker.id.toString().includes(searchTerm)
-      )
-    );
-  }, [searchTerm, workers]);
+  const fetchWorkers = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getworkers`);
+      console.log("Fetched workers:", res.data);
+      setWorkers(res.data);
+      setFilteredWorkers(res.data);
+      updateStats(res.data);
+    } catch (err) {
+      console.error("Error fetching workers:", err.response?.data || err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
 
+  // Update statistics
   const updateStats = (workers) => {
-    const present = workers.filter((worker) => worker.status === "Present").length;
-    const absent = workers.filter((worker) => worker.status === "Absent").length;
-    setAttendanceStats({ present, absent });
-  };
-
-  const handleAttendanceChange = (id, status) => {
-    const updatedWorkers = workers.map((worker) =>
-      worker.id === id ? { ...worker, status } : worker
-    );
-    setWorkers(updatedWorkers);
-    updateStats(updatedWorkers);
-  };
-
-  // Simulate Realistic Attendance Trends
-  const generateDynamicAttendanceData = () => {
-    const randomData = Array.from({ length: 5 }, (_, i) => {
-      const fluctuation = Math.sin(i) * 20 + 75; // Adds sine wave fluctuation to simulate trends
-      return Math.max(0, Math.min(100, fluctuation + Math.random() * 10)); // Ensure the percentage stays within 0-100
-    });
-
-    const present = randomData.filter((value) => value >= 50).length;
-    const absent = 5 - present;
+    const present = workers.filter((w) => w.status === "Present").length;
+    const absent = workers.length - present;
     setAttendanceStats({ present, absent });
 
-    const chartData = {
-      labels: ["01 Jan", "02 Jan", "03 Jan", "04 Jan", "05 Jan"],
+    const attendanceData = workers.map((_, index) => ({
+      label: `Day ${index + 1}`,
+      value: Math.random() * (100 - 70) + 70, // Random attendance % between 70-100
+    }));
+
+    setAttendanceChartData({
+      labels: attendanceData.map((d) => d.label),
       datasets: [
         {
           label: "Attendance Percentage",
-          data: randomData,
+          data: attendanceData.map((d) => d.value),
           borderColor: "#4CAF50",
           backgroundColor: "rgba(76, 175, 80, 0.3)",
           fill: true,
         },
       ],
-    };
-    setAttendanceChartData(chartData);
+    });
   };
 
-  useEffect(() => {
-    generateDynamicAttendanceData();
-  }, [selectedDate]);
+  // Update worker attendance
+  const handleAttendanceChange = async (id, status) => {
+    try {
+      await axios.patch(`https://${import.meta.env.VITE_BACKEND}/api/workers/${id}`, { status });
+      fetchWorkers(); // Fetch fresh data after update
+    } catch (err) {
+      console.error("Error updating attendance:", err);
+    }
+  };
 
+  // Delete worker
+  const deleteWorker = async (id) => {
+    try {
+      await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/workers/${id}`);
+      fetchWorkers(); // Fetch fresh data after deletion
+    } catch (err) {
+      console.error("Error deleting worker:", err);
+    }
+  };
+
+  // Export attendance data to CSV
   const exportToCSV = () => {
     const csvData = [
       ["ID", "Name", "Department", "Status"],
-      ...workers.map((worker) => [worker.id, worker.name, worker.department, worker.status]),
+      ...workers.map((worker) => [worker._id, worker.name, worker.department, worker.status]),
     ];
     const csvContent = "data:text/csv;charset=utf-8," + csvData.map((e) => e.join(",")).join("\n");
     const link = document.createElement("a");
@@ -445,135 +431,84 @@ const [selectedWorker, setSelectedWorker] = useState(null);
     document.body.removeChild(link);
   };
 
+  // Open and close modal
+  const openModal = (worker) => {
+    setSelectedWorker(worker);
+    setIsModalOpen(true);
+  };
+  const closeModal = () => setIsModalOpen(false);
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <motion.div
-        className=" w-full min-h-screen bg-white shadow-lg rounded-lg p-6"
+        className="w-full min-h-screen bg-white shadow-lg rounded-lg p-6"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-2xl font-bold mb-6 text-center">Attendance Dashboard</h1>
 
-        {/* Stats Cards with Hover Animation */}
-        <div className="grid grid-cols-4 gap-6 mb-6">
-          <motion.div
-            className="bg-blue-100 text-blue-800 p-4 rounded-lg shadow-md"
-            whileHover={{ scale: 1.05 }}
-            transition={{ duration: 0.3 }}
-          >
-            <h2 className="text-lg font-bold">Total Workers</h2>
-            <p className="text-2xl">{workers.length}</p>
-          </motion.div>
-          <motion.div
-            className="bg-green-100 text-green-800 p-4 rounded-lg shadow-md"
-            whileHover={{ scale: 1.05 }}
-            transition={{ duration: 0.3 }}
-          >
-            <h2 className="text-lg font-bold">Present</h2>
-            <p className="text-2xl">{attendanceStats.present}</p>
-          </motion.div>
-          <motion.div
-            className="bg-red-100 text-red-800 p-4 rounded-lg shadow-md"
-            whileHover={{ scale: 1.05 }}
-            transition={{ duration: 0.3 }}
-          >
-            <h2 className="text-lg font-bold">Absent</h2>
-            <p className="text-2xl">{attendanceStats.absent}</p>
-          </motion.div>
-        </div>
+        {loading ? (
+          <p className="text-center text-lg">Loading...</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-4 gap-6 mb-6">
+              <motion.div className="bg-blue-100 text-blue-800 p-4 rounded-lg shadow-md">
+                <h2 className="text-lg font-bold">Total Workers</h2>
+                <p className="text-2xl">{workers.length}</p>
+              </motion.div>
+              <motion.div className="bg-green-100 text-green-800 p-4 rounded-lg shadow-md">
+                <h2 className="text-lg font-bold">Present</h2>
+                <p className="text-2xl">{attendanceStats.present}</p>
+              </motion.div>
+              <motion.div className="bg-red-100 text-red-800 p-4 rounded-lg shadow-md">
+                <h2 className="text-lg font-bold">Absent</h2>
+                <p className="text-2xl">{attendanceStats.absent}</p>
+              </motion.div>
+            </div>
 
-        {/* Attendance Chart and Calendar with Hover Effects */}
-        <div className="grid grid-cols-3 gap-6 mb-6">
-          <motion.div className="col-span-2" whileHover={{ scale: 1.02 }} transition={{ duration: 0.3 }}>
-            <Line 
-              data={attendanceChartData} 
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  tooltip: {
-                    callbacks: {
-                      label: (tooltipItem) => `${tooltipItem.raw.toFixed(2)}%`
-                    }
-                  }
-                }
-              }}
-            />
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.3 }}>
-            <Calendar value={selectedDate} onChange={(date) => setSelectedDate(date)} />
-          </motion.div>
-        </div>
+            <div className="grid grid-cols-3 gap-6 mb-6">
+              <motion.div className="col-span-2">
+                <Line data={attendanceChartData} />
+              </motion.div>
+              <motion.div>
+                <Calendar value={selectedDate} onChange={(date) => setSelectedDate(date)} />
+              </motion.div>
+            </div>
 
-        {/* Worker Cards with Dynamic Status Changes */}
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <motion.input
-              type="text"
-              placeholder="Search by name or ID"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="border border-gray-300 rounded-lg p-2 w-1/3"
-              whileFocus={{ scale: 1.02 }}
-              transition={{ duration: 0.3 }}
-            />
-            <div>
-              <button
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg mr-4"
-                onClick={exportToCSV}
-              >
+            <div className="flex justify-between items-center mb-4">
+              <input
+                type="text"
+                placeholder="Search by name or ID"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="border border-gray-300 rounded-lg p-2 w-1/3"
+              />
+              <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg" onClick={exportToCSV}>
                 Export to CSV
               </button>
             </div>
-          </div>
 
-          {/* Worker Cards with Animation */}
-          <div className="grid grid-cols-2 gap-6">
-            {filteredWorkers.map((worker) => (
-              <motion.div
-                key={worker.id}
-                className="p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.3 }}
-              >
-                <h3 className="text-xl font-semibold">{worker.name}</h3>
-                <p>{worker.department}</p>
-                <div className="mt-2 flex justify-between items-center">
-                 <button
-  aria-label={`Mark ${worker.status === "Present" ? "Absent" : "Present"}`}
-  onClick={() => handleAttendanceChange(worker.id, worker.status === "Present" ? "Absent" : "Present")}
-  className={`px-4 py-2 rounded-lg text-white ${worker.status === "Present" ? "bg-green-600" : "bg-red-600"}`}
->
-  {worker.status === "Present" ? "Mark Absent" : "Mark Present"}
-</button>
-
-                  <div className="text-sm">
-                    Status: {worker.status}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-          {isModalOpen && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-        <motion.div
-          className="bg-white p-6 rounded-lg shadow-md w-1/3"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          <h2 className="text-xl font-semibold">Edit Worker Details</h2>
-          <p>Name: {selectedWorker.name}</p>
-          <p>Department: {selectedWorker.department}</p>
-          <div>Status: {selectedWorker.status}</div>
-          <button onClick={closeModal} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg">
-            Close
-          </button>
-        </motion.div>
-      </div>
-    )}
-        </div>
+            <div className="grid grid-cols-2 gap-6">
+              {filteredWorkers.map((worker) => (
+                <motion.div
+                  key={worker._id}
+                  className="p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <h3 className="text-xl font-semibold">{worker.name}</h3>
+                  <p>{worker.department}</p>
+                  <button
+                    onClick={() => handleAttendanceChange(worker._id, worker.status === "Present" ? "Absent" : "Present")}
+                    className={`px-4 py-2 rounded-lg text-white ${worker.status === "Present" ? "bg-green-600" : "bg-red-600"}`}
+                  >
+                    {worker.status === "Present" ? "Mark Absent" : "Mark Present"}
+                  </button>
+                </motion.div>
+              ))}
+            </div>
+          </>
+        )}
       </motion.div>
     </div>
   );

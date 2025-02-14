@@ -114,7 +114,19 @@ const notifications = [
     { message: 'Gas leakage detected in Mine 2', type: 'critical' },
   ];
 
-  const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
+  useEffect(() => {
+    const darkModeSetting = localStorage.getItem('darkMode') === 'true';
+    setIsDarkMode(darkModeSetting);
+  }, []);
+  
+  const toggleDarkMode = () => {
+    setIsDarkMode(prevMode => {
+      const newMode = !prevMode;
+      localStorage.setItem('darkMode', newMode);
+      return newMode;
+    });
+  };
+  
 
   const generateToast = () => {
     const alert = notifications[Math.floor(Math.random() * notifications.length)];
@@ -242,13 +254,8 @@ const notifications = [
   };
 
   return (
-    <div
-    className={`min-h-screen ${
-      isDarkMode
-        ? 'bg-gradient-to-b from-gray-800 via-gray-900 to-black text-gray-100'
-        : 'bg-gradient-to-b from-white via-gray-100 to-gray-300 text-gray-900'
-    } transition-all`}
-  >
+    <div className={`${isDarkMode ? "dark" : "light"} min-h-screen transition-all`}>
+  
     <ToastContainer />
     <div className="p-8 space-y-8">
       {/* Header */}

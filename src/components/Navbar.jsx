@@ -154,7 +154,7 @@
 // export default Navbar;
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext'; // Import AuthContext
-
+import boy from "../assets/boy.png"
 const Navbar = ({ activePage }) => {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const { logout } = useContext(AuthContext); // Get logout function from AuthContext
@@ -181,9 +181,9 @@ const Navbar = ({ activePage }) => {
   };
 
   return (
-    <div className={`flex items-center p-4 ${isDarkMode ? 'bg-[#0F1E33]' : 'bg-white'} shadow-lg rounded-b-3xl`}>
+    <div className={`flex items-center p-4 ${isDarkMode ? 'bg-[#0F1E33]' : 'bg-white'} shadow-lg `}>
       {/* Search Bar */}
-      <div className={`flex items-center ${isDarkMode ? 'bg-[#1E2A43]' : 'bg-[#F4F6FA]'} rounded-full shadow-lg px-4 py-2 w-1/2 sm:w-1/3`}>
+      <div className={`flex items-center ${isDarkMode ? 'bg-[#1E2A43]' : 'bg-[#F4F6FA]'} rounded-full shadow-lg px-4 py-3 w-1/2 sm:w-1/3`}>
         <input
           type="text"
           placeholder={getSearchPlaceholder()}
@@ -201,7 +201,7 @@ const Navbar = ({ activePage }) => {
         {/* Profile Section */}
         <div className="flex items-center space-x-3">
           <img
-            src="https://via.placeholder.com/40"
+            src={boy}
             alt="Profile"
             className="w-10 h-10 rounded-full border-2 border-[#3A4C76] shadow-lg"
           />
