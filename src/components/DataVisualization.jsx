@@ -27,7 +27,7 @@ const [data, setData] = useState([]);
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:5000/api/prod/getData`, {
+      const response = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/prod/getData`, {
         params: {
           startDate: startDate.format('YYYY-MM-DD'),
           endDate: endDate.format('YYYY-MM-DD'),
@@ -59,8 +59,8 @@ const [data, setData] = useState([]);
   // Fetch data initially and on dependency change
   useEffect(() => {
     fetchData();
-  }, [startDate, endDate]);
-
+  }, [startDate, endDate]); 
+  
   // Handle form changes
   const handleFormChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -72,10 +72,10 @@ const [data, setData] = useState([]);
       const { id, date, value, description } = formData;
 
       if (isEdit) {
-        await axios.put(`http://localhost:5000/api/prod/${id}`, { date, value, description });
+        await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/prod/${id}`, { date, value, description });
         setSnackbarMessage('Record updated successfully');
       } else {
-        await axios.post(`http://localhost:5000/api/prod/createData`, { date, value, description });
+        await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/prod/createData`, { date, value, description });
         setSnackbarMessage('Record added successfully');
       }
 
@@ -146,25 +146,26 @@ const [data, setData] = useState([]);
             </Card>
           </Grid>
           {/* Data Display */}
-      <Grid container spacing={3}>
-        {data.map((item) => (
-          <Grid item xs={12} sm={6} key={item.id}>
-            <Card className="p-4">
-              <CardContent>
-                <h3>{item.date}</h3>
-                <p>{item.value}</p>
-                <p>{item.description}</p>
-                <Button variant="contained" color="primary" onClick={() => openDialog(item)}>
-                  Edit
-                </Button>
-                <Button variant="outlined" color="secondary" onClick={() => handleDeleteRecord(item.id)} className="ml-2">
-                  Delete
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
+          <div className="h-96 overflow-y-scroll">
+  <Grid container spacing={3}>
+    {data.map((item) => (
+      <Grid item xs={12} sm={6} key={item.id}>
+        <Card className="p-4">
+          <CardContent>
+            <h3>{item.date}</h3>
+            <p>{item.value}</p>
+            <p>{item.description}</p>
+            <Button variant="contained" color="primary" onClick={() => openDialog(item)}>Edit</Button>
+            <Button variant="outlined" color="secondary" onClick={() => handleDeleteRecord(item.id)} className="ml-2">
+              Delete
+            </Button>
+          </CardContent>
+        </Card>
       </Grid>
+    ))}
+  </Grid>
+</div>
+
 
           <Grid item xs={12} sm={6}>
             <Card className="p-4">
@@ -172,12 +173,15 @@ const [data, setData] = useState([]);
                 <InputLabel className="font-medium">Date Range</InputLabel>
                 <Grid container spacing={2}>
                   <Grid item xs={6}>
-                    <DatePicker
-                      label="Start Date"
-                      value={startDate}
-                      onChange={(date) => setStartDate(date)}
-                      renderInput={(props) => <TextField {...props} fullWidth />}
-                    />
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+  <DatePicker
+    label="Start Date"
+    value={startDate}
+    onChange={(newValue) => setStartDate(newValue)}
+    renderInput={(params) => <TextField {...params} fullWidth />}
+  />
+</LocalizationProvider>
+
                   </Grid>
                   <Grid item xs={6}>
                     <DatePicker

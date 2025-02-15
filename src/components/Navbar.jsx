@@ -152,78 +152,122 @@
 // };
 
 // export default Navbar;
-import React, { useState, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext'; // Import AuthContext
-import boy from "../assets/boy.png"
+import React, { useState, useContext, useRef, useEffect } from 'react';
+import { AuthContext } from '../context/AuthContext';
+import boy from "../assets/boy.png";
+import { motion } from "framer-motion";
+import { Link } from 'react-router-dom';
+
 const Navbar = ({ activePage }) => {
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const { logout } = useContext(AuthContext); // Get logout function from AuthContext
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const { user, logout } = useContext(AuthContext);
+  const profileRef = useRef(null);
 
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-  };
+  const toggleTheme = () => setIsDarkMode(!isDarkMode);
+  const toggleProfileMenu = () => setIsProfileOpen(!isProfileOpen);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const getSearchPlaceholder = () => {
-    switch (activePage) {
-      case 'Inventory': return 'Search Inventory';
-      case 'Resources': return 'Search Resources';
-      case 'Shift Logs': return 'Search Shift Logs';
-      case 'Safety Plan': return 'Search Safety Plan';
-      case 'User Management': return 'Search Users';
-      case 'Weather': return 'Search Weather';
-      case 'Data Visualization': return 'Search Visualizations';
-      case 'Report Generation': return 'Search Reports';
-      case 'Audit Logs': return 'Search Audit Logs';
-      case 'Notifications': return 'Search Notifications';
-      case 'Alerts': return 'Search Alerts';
-      case 'Dashboard': default: return 'Search Dashboard';
-    }
+    const placeholders = {
+      'Inventory': 'Search Inventory',
+      'Resources': 'Search Resources',
+      'Shift Logs': 'Search Shift Logs',
+      'Safety Plan': 'Search Safety Plan',
+      'User Management': 'Search Users',
+      'Weather': 'Search Weather',
+      'Data Visualization': 'Search Visualizations',
+      'Report Generation': 'Search Reports',
+      'Audit Logs': 'Search Audit Logs',
+      'Notifications': 'Search Notifications',
+      'Alerts': 'Search Alerts',
+      'Dashboard': 'Search Dashboard',
+    };
+    return placeholders[activePage] || 'Search...';
   };
 
   return (
-    <div className={`flex items-center p-4 ${isDarkMode ? 'bg-[#0F1E33]' : 'bg-white'} shadow-lg `}>
-      {/* Search Bar */}
-      <div className={`flex items-center ${isDarkMode ? 'bg-[#1E2A43]' : 'bg-[#F4F6FA]'} rounded-full shadow-lg px-4 py-3 w-1/2 sm:w-1/3`}>
-        <input
-          type="text"
-          placeholder={getSearchPlaceholder()}
-          className={`flex-grow bg-transparent focus:outline-none text-sm ${isDarkMode ? 'text-white' : 'text-black'} placeholder-gray-400 pl-3`}
-        />
-      </div>
-
-      {/* Right Section */}
-      <div className="flex items-center ml-8 space-x-6">
-        {/* Notification Icon */}
-        <button className="p-2 rounded-full bg-[#1E2A43] hover:bg-[#2F3B5C] transition transform hover:scale-110">
-          🔔
-        </button>
-
-        {/* Profile Section */}
-        <div className="flex items-center space-x-3">
-          <img
-            src={boy}
-            alt="Profile"
-            className="w-10 h-10 rounded-full border-2 border-[#3A4C76] shadow-lg"
-          />
-          <div className="text-right">
-            <p className="text-sm font-semibold">Totok Michael</p>
-            <p className="text-xs text-[#A7B2C1]">tmichael20@mail.com</p>
-          </div>
+    <div className={`flex items-center justify-between px-6 py-3 ${isDarkMode ? 'bg-[#0F1E33]' : 'bg-white'} shadow-lg relative z-50`}>
+      
+      {/* Left Section - App Name */}
+      <div className="bg-white text-blue-700 rounded-full p-4 shadow-lg transform hover:scale-110 transition-all">
+          <span className="font-bold text-xl">Mine Manager</span>
         </div>
 
-        {/* Dark Mode Toggle */}
-        <button onClick={toggleTheme} className="p-2 rounded-full bg-[#1E2A43] hover:bg-[#2F3B5C] transition transform hover:scale-110">
-          {isDarkMode ? "🌙" : "☀️"}
-        </button>
+      {/* Right Section */}
+      <div className="flex items-center space-x-6">
+  {/* Search Bar (Moved to Right) */}
+  <div className={`hidden sm:flex items-center ${isDarkMode ? 'bg-[#1E2A43]' : 'bg-[#F4F6FA]'} rounded-full shadow-lg px-4 py-2 w-full sm:w-[28rem]`}>
+    <input
+      type="text"
+      placeholder={getSearchPlaceholder()}
+      className={`flex-grow bg-transparent focus:outline-none text-sm ${isDarkMode ? 'text-white' : 'text-black'} placeholder-gray-400 pl-2`}
+    />
+  </div>
 
-        {/* 🚀 Logout Button */}
-        <button 
-          onClick={logout} 
-          className="bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-600 transition"
-        >
-          Logout
-        </button>
-      </div>
+  {/* Notification Icon */}
+  <button className="p-2 rounded-full bg-[#1E2A43] hover:bg-[#2F3B5C] transition transform hover:scale-110 text-white">
+    🔔
+  </button>
+
+  {/* Profile Section */}
+  <div className="relative" ref={profileRef}>
+    <button className="flex items-center space-x-3" onClick={toggleProfileMenu}>
+      <img
+        src={boy}
+        alt="Profile"
+        className="w-10 h-10 rounded-full border-2 border-[#3A4C76] shadow-lg cursor-pointer"
+      />
+    </button>
+
+    {/* Profile Dropdown */}
+    {isProfileOpen && (
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        exit={{ opacity: 0, y: -10 }}
+        className="absolute right-0 mt-3 w-48 bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200 z-50"
+      >
+        <div className="p-3 border-b bg-gray-100">
+          <p className="text-sm font-semibold text-gray-800">{user?.name || 'Guest User'}</p>
+          <p className="text-xs text-gray-500">{user?.email || 'guest@example.com'}</p>
+        </div>
+        <ul className="text-sm">
+          <li>
+            <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100 text-gray-700">
+              View Profile
+            </Link>
+          </li>
+          <li>
+            <Link to="/settings" className="block px-4 py-2 hover:bg-gray-100 text-gray-700">
+              Settings
+            </Link>
+          </li>
+          <li>
+            <button onClick={logout} className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">
+              Logout
+            </button>
+          </li>
+        </ul>
+      </motion.div>
+    )}
+  </div>
+
+  {/* Dark Mode Toggle */}
+  <button onClick={toggleTheme} className="p-2 rounded-full bg-[#1E2A43] hover:bg-[#2F3B5C] transition transform hover:scale-110 text-white">
+    {isDarkMode ? "🌙" : "☀️"}
+  </button>
+</div>
     </div>
   );
 };
