@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 
 // Custom components
-import ProgressBar from "./ProgressBar";  // A reusable ProgressBar component
+import ProgressBar from "./ProgressBar"; // A reusable ProgressBar component
 
 const achievementsList = [
   {
@@ -52,10 +52,12 @@ const Achievements = () => {
   const [activeFilter, setActiveFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeModalTab, setActiveModalTab] = useState("Details");
+  const [achievements, setAchievements] = useState(achievementsList);
+
   useEffect(() => {
     const savedAchievements = JSON.parse(localStorage.getItem("achievements")) || [];
     setCompletedAchievements(savedAchievements);
-    
+
     const savedProgress = JSON.parse(localStorage.getItem("userProgress")) || userProgress;
     setUserProgress(savedProgress);
 
@@ -65,7 +67,15 @@ const Achievements = () => {
     const savedLeaderboard = JSON.parse(localStorage.getItem("leaderboard")) || [];
     setLeaderboard(savedLeaderboard);
   }, []);
-  const filteredAchievements = achievementsList.filter((achievement) => {
+
+  useEffect(() => {
+    localStorage.setItem("achievements", JSON.stringify(completedAchievements));
+    localStorage.setItem("userProgress", JSON.stringify(userProgress));
+    localStorage.setItem("dailyStreak", dailyStreak);
+    localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+  }, [completedAchievements, userProgress, dailyStreak, leaderboard]);
+
+  const filteredAchievements = achievements.filter((achievement) => {
     if (activeFilter === "Completed") {
       return userProgress[achievement.progressKey] >= achievement.target;
     }
@@ -76,202 +86,104 @@ const Achievements = () => {
   });
 
   useEffect(() => {
-    localStorage.setItem("achievements", JSON.stringify(completedAchievements));
-    localStorage.setItem("userProgress", JSON.stringify(userProgress));
-    localStorage.setItem("dailyStreak", dailyStreak);
-    localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
-  }, [completedAchievements, userProgress, dailyStreak, leaderboard]);
+    const fetchAchievements = async () => {
+      try {
+        const response = await fetch(`https://${import.meta.env.VITE_BACKEND}/api/getAchieve`);
+        const data = await response.json();
+        if (data.success) setAchievements(data.data);
+      } catch (error) {
+        toast.error("Failed to load achievements");
+      }
+    };
 
-  const handleAchievementCompletion = (achievementId, progressKey, milestone) => {
-    if (!completedAchievements.includes(achievementId)) {
-      const newAchievements = [...completedAchievements, achievementId];
-      setCompletedAchievements(newAchievements);
-      toast.success("Achievement Unlocked!");
+    fetchAchievements();
+  }, []);
+
+  const handleAchievementCompletion = async (achievementId, progressKey, target) => {
+    if (userProgress[progressKey] >= target) return;
+  
+    try {
+      const response = await fetch(`https://${import.meta.env.VITE_BACKEND}/api/${achievementId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [progressKey]: userProgress[progressKey] + 1 }),
+      });
+  
+      if (response.ok) {
+        const updatedProgress = { ...userProgress, [progressKey]: userProgress[progressKey] + 1 };
+        setUserProgress(updatedProgress);
+  
+        if (updatedProgress[progressKey] === target) {
+          setCompletedAchievements([...completedAchievements, achievementId]);
+          toast.success(`Achievement unlocked: ${achievements.find(a => a._id === achievementId)?.name}`);
+        }
+  
+        if (progressKey === "weatherCheckStreak") {
+          setDailyStreak(dailyStreak + 1);
+        }
+  
+        setLeaderboard([...leaderboard, { username: "User", achievements: completedAchievements.length + 1 }]);
+      }
+    } catch (error) {
+      toast.error("Failed to update achievement");
     }
-
-    const newProgress = { ...userProgress, [progressKey]: userProgress[progressKey] + 1 };
-    setUserProgress(newProgress);
-
-    if (milestone && newProgress[progressKey] === 7) {
-      toast.info(`Milestone Unlocked: ${milestone}!`);
-    }
-
-    if (progressKey === "weatherCheckStreak") {
-      const newStreak = dailyStreak + 1;
-      setDailyStreak(newStreak);
-    }
-
-    const updatedLeaderboard = [...leaderboard, { username: "User", achievements: newAchievements }];
-    setLeaderboard(updatedLeaderboard);
   };
+  
+  const deleteAchievement = async (achievementId) => {
+    try {
+      const response = await fetch(`https://${import.meta.env.VITE_BACKEND}/api/${achievementId}`, {
+        method: "DELETE",
+      });
 
-  const renderProgressBar = (progress, target) => {
-    return <ProgressBar progress={progress} target={target} />;
-  };
-
-  const toggleModal = (content) => {
-    setModalContent(content);
-    setShowModal(!showModal);
+      if (response.ok) {
+        setAchievements(achievements.filter((ach) => ach.id !== achievementId));
+        toast.success("Achievement deleted!");
+      }
+    } catch (error) {
+      toast.error("Failed to delete achievement");
+    }
   };
 
   return (
     <div className="achievements bg-gradient-to-b from-gray-900 to-black w-full min-h-screen text-gray-200 px-6 py-10">
-      {/* Title */}
-      <h2 className="text-5xl font-extrabold mb-10 text-center text-white">
-        Achievements
-      </h2>
-  
-      {/* Filters */}
+      <h2 className="text-5xl font-extrabold mb-10 text-center text-white">Achievements</h2>
+
       <div className="filters flex justify-center mb-8 space-x-4">
         {["All", "Completed", "In-Progress"].map((filter) => (
           <button
             key={filter}
             onClick={() => setActiveFilter(filter)}
             className={`px-4 py-2 rounded-full transition font-medium ${
-              activeFilter === filter
-                ? "bg-blue-600 text-white"
-                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+              activeFilter === filter ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"
             }`}
           >
             {filter}
           </button>
         ))}
       </div>
-  
-      {/* Search Bar */}
-      <div className="search mb-10 flex justify-center">
-        <input
-          type="text"
-          placeholder="Search Achievements..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full max-w-lg px-4 py-2 text-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-  
-      {/* Achievements List */}
+
       <div className="achievement-list grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredAchievements.map((achievement) => (
-          <div
-            key={achievement.id}
-            className={`p-6 rounded-xl shadow-lg transform transition-all hover:scale-105 ${
-              completedAchievements.includes(achievement.id)
-                ? "bg-gradient-to-r from-green-400 to-green-600 text-white"
-                : "bg-gradient-to-r from-gray-700 to-gray-800 text-gray-200"
-            }`}
-          >
+          <div key={achievement.id} className="p-6 rounded-xl shadow-lg bg-gray-800 text-gray-200">
             <h3 className="text-2xl font-semibold mb-2">{achievement.name}</h3>
             <p className="text-sm mb-4">{achievement.description}</p>
-  
-            {/* Animated Progress Bar */}
-            {renderProgressBar(userProgress[achievement.progressKey], achievement.target)}
-  
+
+            <ProgressBar progress={userProgress[achievement.progressKey]} target={achievement.target} />
             <button
-              onClick={() =>
-                handleAchievementCompletion(achievement.id, achievement.progressKey, achievement.milestone)
-              }
-              className={`mt-4 w-full px-6 py-2 rounded-lg text-center transition ease-in-out ${
-                completedAchievements.includes(achievement.id)
-                  ? "bg-green-600 hover:bg-green-700"
-                  : "bg-blue-500 hover:bg-blue-600"
-              }`}
-              title={`${
-                completedAchievements.includes(achievement.id)
-                  ? "This achievement is completed."
-                  : "Complete this achievement."
-              }`}
-            >
-              {completedAchievements.includes(achievement.id) ? "Achieved" : "Complete"}
-            </button>
-  
-            <div className="mt-2 text-sm">
-              <span
-                onClick={() => toggleModal(achievement.description)}
-                className="cursor-pointer text-blue-400 hover:text-blue-600 hover:underline"
-              >
-                More Info
-              </span>
-            </div>
+  onClick={() => handleAchievementCompletion(achievement._id, achievement.progressKey, achievement.target)}
+  className="mt-4 w-full px-6 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 transition"
+>
+  {completedAchievements.includes(achievement._id) ? "Achieved" : "Complete"}
+</button>
+
+
+<button onClick={() => deleteAchievement(achievement._id)} className="mt-2 w-full px-6 py-2 rounded-lg bg-red-500 hover:bg-red-600 transition">
+  Delete
+</button>
+
           </div>
         ))}
       </div>
-  
-      {/* Leaderboard Section */}
-      <div className="mt-12">
-        <h3 className="text-4xl font-semibold text-center text-white">Leaderboard</h3>
-        <div className="leaderboard mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {leaderboard.map((entry, index) => (
-            <div
-              key={index}
-              className={`leaderboard-entry p-6 rounded-xl shadow-lg bg-gradient-to-r from-purple-600 to-purple-800 text-gray-200 hover:scale-105 transition-transform relative`}
-            >
-              <p className="text-lg font-semibold">{entry.username}</p>
-              <p className="text-sm text-gray-300">Achievements: {entry.achievements.length}</p>
-  
-              {/* Ranking Badge */}
-              {index < 3 && (
-                <span
-                  className={`absolute top-4 right-4 px-3 py-1 text-sm font-bold rounded-full ${
-                    index === 0
-                      ? "bg-yellow-400 text-black"
-                      : index === 1
-                      ? "bg-gray-400 text-black"
-                      : "bg-orange-400 text-black"
-                  }`}
-                >
-                  {["Gold", "Silver", "Bronze"][index]}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-  
-      {/* Daily Streak */}
-      <div className="mt-12 text-center">
-        <h3 className="text-4xl font-semibold text-white">Daily Streak</h3>
-        <p className="text-lg text-gray-400 mt-2">Current Streak: {dailyStreak} days</p>
-      </div>
-  
-      {/* Enhanced Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
-          <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-xl shadow-2xl max-w-md w-full text-gray-200">
-            <h4 className="text-2xl font-bold mb-4">Achievement Details</h4>
-  
-            {/* Tabs for Modal */}
-            <div className="tabs mb-4 flex space-x-4 border-b border-gray-600 pb-2">
-              {["Details", "Progress Insights"].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveModalTab(tab)}
-                  className={`px-4 py-2 font-medium ${
-                    activeModalTab === tab
-                      ? "text-blue-500 border-b-2 border-blue-500"
-                      : "text-gray-400"
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-  
-            {activeModalTab === "Details" && <p>{modalContent}</p>}
-            {activeModalTab === "Progress Insights" && (
-              <div>
-                <p>Progress Chart Coming Soon...</p>
-              </div>
-            )}
-  
-            <button
-              onClick={() => setShowModal(false)}
-              className="mt-6 w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

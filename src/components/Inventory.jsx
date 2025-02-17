@@ -1,14 +1,14 @@
-import React, { useState, useRef } from 'react';
-import { useResources } from '../context/ResourceContext';
-import html2canvas from 'html2canvas';
+import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';  // Import axios
 import { Button, TextField, Tooltip, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Pagination, InputAdornment, Modal, Box, Typography } from '@mui/material';
 import SortIcon from '@mui/icons-material/Sort';
 import DownloadIcon from '@mui/icons-material/Download';
 import { CSVLink } from "react-csv";
 import { motion } from 'framer-motion';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const Inventory = () => {
-  const { resources } = useResources();
+  const [resources, setResources] = useState([]);  // Store resources data
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState('asc');
   const [currentPage, setCurrentPage] = useState(1);
@@ -17,7 +17,23 @@ const Inventory = () => {
   const [selectedResource, setSelectedResource] = useState(null);
   const inventoryRef = useRef(null); // Reference to the inventory table
 
-  const filteredResources = resources.filter(resource =>
+  // Fetch resources data from the backend
+  useEffect(() => {
+    axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getRes`)
+      .then((response) => {
+        // Make sure response.data is an array
+        if (Array.isArray(response.data)) {
+          setResources(response.data);
+        } else {
+          console.error('Expected an array but got:', response.data);
+        }
+      })
+      .catch((error) => {
+        console.error('Error fetching resources:', error);
+      });
+  }, []);
+  
+  const filteredResources = resources?.filter((resource) =>
     resource.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -60,6 +76,17 @@ const Inventory = () => {
   const handleCloseModal = () => {
     setOpenModal(false);
     setSelectedResource(null);
+  };
+
+  // Handle deleting a resource
+  const handleDeleteResource = (id) => {
+    axios.delete(`/api/${id}`)
+      .then(() => {
+        setResources(resources.filter(resource => resource.id !== id));  // Update local state
+      })
+      .catch(error => {
+        console.error('Error deleting resource:', error);
+      });
   };
 
   return (
@@ -134,25 +161,24 @@ const Inventory = () => {
               <TableRow>
                 <TableCell>Resource</TableCell>
                 <TableCell align="right">Available Quantity</TableCell>
+                <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {displayedResources.map((item) => (
-                <motion.TableRow
-                  key={item.id}
-                  hover
-                  className={`${item.available < 10 ? 'bg-red-100' : ''}`}
-                  onClick={() => handleOpenModal(item)}
-                  whileHover={{ scale: 1.05 }}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  <TableCell>{item.name}</TableCell>
-                  <TableCell align="right">{item.available}</TableCell>
-                </motion.TableRow>
-              ))}
-            </TableBody>
+  {displayedResources.map((item) => (
+    <TableRow key={item.id || item.name}> {/* Ensure unique key */}
+      <TableCell>{item.name}</TableCell>
+      <TableCell align="right">{item.available}</TableCell>
+      <TableCell align="right">
+        <IconButton onClick={() => handleDeleteResource(item.id)}>
+          <DeleteIcon />
+        </IconButton>
+      </TableCell>
+    </TableRow>
+  ))}
+</TableBody>
+
+
           </Table>
         </TableContainer>
       </div>

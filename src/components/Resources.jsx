@@ -18,9 +18,10 @@ const getRandomColor = (index) => COLORS[index % COLORS.length];
 
 const Resource = ({ id, name, used, available, onDelete, onEdit, color }) => {
   const data = [
-    { name: 'Used', value: used },
-    { name: 'Available', value: available },
+    { name: 'Used', value: isNaN(used) ? 0 : used },
+    { name: 'Available', value: isNaN(available) ? 0 : available },
   ];
+  
 
   return (
     <motion.div
@@ -38,7 +39,7 @@ const Resource = ({ id, name, used, available, onDelete, onEdit, color }) => {
         <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2.5 mt-2">
           <div
             className="h-2.5 rounded-full"
-            style={{ width: `${used}%`, backgroundColor: color }}
+            style={{ width: `${used}%`, backgroundColor: color }} 
           ></div>
         </div>
       </div>
@@ -46,7 +47,7 @@ const Resource = ({ id, name, used, available, onDelete, onEdit, color }) => {
       <PieChart width={80} height={80}>
         <Pie data={data} dataKey="value" cx="50%" cy="50%" outerRadius={35}>
           {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={index === 0 ? color : '#d3d3d3'} />
+           <Cell key={`cell-${index}`} fill={index === 0 ? color : '#d3d3d3'} />
           ))}
         </Pie>
       </PieChart>
@@ -74,9 +75,10 @@ const Resources = () => {
   const [deletedResource, setDeletedResource] = useState(null);
 
   useEffect(() => {
-    axios.get(`https://${import.meta.env.VITE_BACKEND}/api/resources/getRes`)
+    axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getRes`)
       .then((response) => {
-        if (response.headers['content-type'].includes('application/json')) {
+        console.log('Fetched resources:', response.data);
+        if (response.headers && response.headers['content-type']?.includes('application/json')) {
           setResources(response.data);
         } else {
           console.error('Unexpected response format:', response);
@@ -88,12 +90,15 @@ const Resources = () => {
   }, []);
   
   
-
+  
   const handleAddResource = () => {
     const { name, used, available } = newResource;
-    if (!name || used < 0 || available < 0 || used + available !== 100) {
-      alert('Invalid input. Ensure Used + Available = 100.');
-      return;
+    const usedValue = parseFloat(used);
+    const availableValue = parseFloat(available);
+
+    if (!name || isNaN(usedValue) || isNaN(availableValue) || usedValue < 0 || availableValue < 0 || usedValue + availableValue !== 100) {
+        alert('Invalid input. Ensure Used + Available = 100.');
+        return;
     }
 
     const resourceData = {
@@ -103,7 +108,7 @@ const Resources = () => {
     };
 
     if (editingId) {
-      axios.put(`https://${import.meta.env.VITE_BACKEND}/api/resources/${editingId}`, resourceData)
+      axios.put(`https://${import.meta.env.VITE_BACKEND}/api/${editingId}`, resourceData)
         .then((response) => {
           setResources(resources.map((resource) =>
             resource.id === editingId ? response.data : resource
@@ -112,7 +117,7 @@ const Resources = () => {
         })
         .catch((error) => console.error('Error updating resource:', error));
     } else {
-      axios.post(`https://${import.meta.env.VITE_BACKEND}/api/resources/addRes`, resourceData)
+      axios.post(`https://${import.meta.env.VITE_BACKEND}/api/addRes`, resourceData)
         .then((response) => {
           setResources([...resources, response.data]);
         })
@@ -125,7 +130,7 @@ const Resources = () => {
   const handleDeleteResource = (id) => {
     const resourceToDelete = resources.find((resource) => resource.id === id);
     setDeletedResource(resourceToDelete);
-    axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/resources/${id}`)
+    axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/${id}`)
       .then(() => {
         setResources(resources.filter((resource) => resource.id !== id));
       })
@@ -134,7 +139,7 @@ const Resources = () => {
 
   const handleUndoDelete = () => {
     if (deletedResource) {
-      axios.post(`https://${import.meta.env.VITE_BACKEND}/api/resources`, deletedResource)
+      axios.post(`https://${import.meta.env.VITE_BACKEND}/api/addRes`, deletedResource)
         .then(() => {
           setResources([...resources, deletedResource]);
           setDeletedResource(null);
@@ -172,9 +177,10 @@ const Resources = () => {
 
 
   return (
-    <div
-      className={` min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-white'}`}
-    >
+    <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-black'}`}>
+
+
+    
       <motion.div
         className="w-full min-h-screen bg-gray-950  p-6 rounded-lg shadow-lg"
         initial={{ opacity: 0 }}
@@ -263,30 +269,31 @@ const Resources = () => {
             {(provided) => (
               <div {...provided.droppableProps} ref={provided.innerRef}>
                 {filteredResources.map((resource, index) => (
-                  <Draggable
-                    key={resource.id}
-                    draggableId={resource.id.toString()}
-                    index={index}
-                  >
-                    {(provided) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                      >
-                        <Resource
-                          id={resource.id}
-                          name={resource.name}
-                          used={resource.used}
-                          available={resource.available}
-                          onDelete={handleDeleteResource}
-                          onEdit={handleEditResource}
-                          color={getRandomColor(index)}
-                        />
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
+  resource && resource.id ? (
+    <Draggable key={resource.id} draggableId={resource.id?.toString() || index.toString()} index={index}>
+
+      {(provided) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+        >
+          <Resource
+            id={resource.id}
+            name={resource.name}
+            used={resource.used}
+            available={resource.available}
+            onDelete={handleDeleteResource}
+            onEdit={handleEditResource}
+            color={getRandomColor(index)}
+          />
+        </div>
+      )}
+    </Draggable>
+  ) : null
+))}
+
+
                 {provided.placeholder}
               </div>
             )}
