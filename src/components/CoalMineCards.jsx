@@ -170,218 +170,280 @@
 
 // export default CreateCoalMines;
 import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import axios from "axios";
+import { XCircle, PlusCircle } from "lucide-react";
 
 const CoalMineCards = () => {
   const [mines, setMines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [newMine, setNewMine] = useState({
-    name: "",
-    location: { latitude: 0, longitude: 0 }, // Initialize location as an object
-    workers: [],
-  });
-
-  // Fetch existing coal mines
+  const [editMode, setEditMode] = useState(false);
+  const [showWorkerModal, setShowWorkerModal] = useState(false);
+  const [selectedMine, setSelectedMine] = useState(null);
+  const [mineForm, setMineForm] = useState({ name: "", location: { latitude: "", longitude: "" }, workers: [] });
+  const [workerForm, setWorkerForm] = useState({ name: "", role: "", contact: "" });
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getallMines`);
-        console.log(response.data); // Inspect the structure of the data
-        setMines(response.data.data); // Accessing the 'data' property which contains the array of mines
-        setLoading(false);
-      } catch (err) {
-        setError(err.message);
-        setLoading(false);
+    if (showWorkerModal && !selectedMine) {
+      const storedMine = localStorage.getItem("selectedMine");
+      if (storedMine) {
+        setSelectedMine(JSON.parse(storedMine));
       }
-    };
+    }
+  }, [showWorkerModal]);
   
-    fetchData();
+  
+  useEffect(() => {
+    fetchMines();
   }, []);
 
-  const handleCreateMine = async (coalMine) => {
+  const fetchMines = async () => {
     try {
-      await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/createMines`, coalMine);
-      alert('Coal Mine Created Successfully');
-      setShowModal(false); // Close the modal after successful submission
-    } catch (error) {
-      console.error('Error creating coal mine', error);
-      alert('Error creating coal mine');
+      const response = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getallMines`);
+      setMines(response.data.data);
+      setLoading(false);
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setNewMine((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editMode) {
+        await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/updateMine/${selectedMine._id}`, mineForm);
+        alert("Coal Mine Updated Successfully");
+      } else {
+        await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/createMines`, mineForm);
+        alert("Coal Mine Created Successfully");
+      }
+      setShowModal(false);
+      fetchMines(); // Latest mines list fetch karo
+    } catch (error) {
+      alert("Error processing request");
+    }
+  };
+  
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this mine?")) {
+      try {
+        await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/deleteMine/${id}`);
+        alert("Coal Mine Deleted Successfully");
+        fetchMines();
+      } catch (error) {
+        alert("Error deleting coal mine");
+      }
+    }
   };
 
-  const handleLocationChange = (e) => {
-    const { name, value } = e.target;
-    setNewMine((prevState) => ({
-      ...prevState,
-      location: {
-        ...prevState.location,
-        [name]: value,
-      },
-    }));
+  const handleEdit = (mine) => {
+    setMineForm(mine);
+    setSelectedMine(mine);
+    setEditMode(true);
+    setShowModal(true);
   };
 
-  const handleWorkerChange = (index, e) => {
-    const { name, value } = e.target;
-    const newWorkers = [...newMine.workers];
-    newWorkers[index] = { ...newWorkers[index], [name]: value };
-    setNewMine((prev) => ({ ...prev, workers: newWorkers }));
+  const handleWorkerChange = (field, value) => {
+    setWorkerForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const addWorker = () => {
-    setNewMine((prev) => ({
-      ...prev,
-      workers: [...prev.workers, { name: '', role: 'miner', contact: '' }],
-    }));
+  const handleAddWorker = async () => {
+    let mineToUpdate = selectedMine;
+  
+    if (!mineToUpdate) {
+      const storedMine = localStorage.getItem("selectedMine");
+      if (storedMine) {
+        mineToUpdate = JSON.parse(storedMine);
+        setSelectedMine(mineToUpdate);  // Ensure React state is updated
+      }
+    }
+  
+    console.log("🔍 Selected Mine before adding worker:", mineToUpdate);
+  
+    if (!mineToUpdate || !mineToUpdate._id) {
+      alert("⚠️ No mine selected for adding a worker.");
+      return;
+    }
+  
+    try {
+      const updatedMine = { 
+        ...mineToUpdate, 
+        workers: [...(mineToUpdate.workers || []), workerForm] 
+      };
+  
+      console.log("🚀 Updated Mine Data before API call:", updatedMine);
+  
+      await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/updateMine/${mineToUpdate._id}`, updatedMine);
+  
+      alert("✅ Worker added successfully!");
+      setShowWorkerModal(false);
+      setWorkerForm({ name: "", role: "", contact: "" });
+  
+      fetchMines();
+    } catch (error) {
+      alert("❌ Error adding worker: " + error.message);
+      console.error(error);
+    }
   };
+  
+  
 
   return (
     <div className="min-h-screen bg-gray-900 text-white py-8 px-4">
       <div className="flex justify-between items-center mb-6">
         <button
-          className="px-4 py-2 bg-green-600 text-white rounded-lg"
-          onClick={() => setShowModal(true)}
+          className="px-4 py-2 bg-green-600 text-white rounded-lg flex items-center gap-2 hover:bg-green-700 transition"
+          onClick={() => {
+            setShowModal(true);
+            setEditMode(false);
+            setMineForm({ name: "", location: { latitude: "", longitude: "" }, workers: [] });
+          }}
         >
-          Create New Mine
+          <PlusCircle size={18} /> Create New Mine
         </button>
-        <input
-          type="text"
-          placeholder="Search mine..."
-          className="p-2 bg-gray-800 text-white rounded-lg"
-        />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {Array.isArray(mines) && mines.map((mine) => (
-          <div key={mine._id} className="bg-gray-800 rounded-lg shadow-lg p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">{mine.name}</h2>
-              <span className="px-2 py-1 text-sm bg-green-500 rounded-full">
-                {mine.deleted ? "Inactive" : "Active"}
-              </span>
-            </div>
-            <p className="mb-2 text-sm">
-              <span className="font-semibold">Location:</span> Latitude: {mine.location.latitude}, Longitude: {mine.location.longitude}
-            </p>
-            <p className="mb-2 text-sm">
-              <span className="font-semibold">Created At:</span> {new Date(mine.createdAt).toLocaleDateString()}
-            </p>
-            <p className="mb-2 text-sm">
-              <span className="font-semibold">Updated At:</span> {new Date(mine.updatedAt).toLocaleDateString()}
-            </p>
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-gray-300">Workers:</h3>
-              {mine.workers.map((worker, index) => (
-                <div key={index} className="mb-2">
-                  <p><span className="font-semibold">Name:</span> {worker.name}</p>
-                  <p><span className="font-semibold">Role:</span> {worker.role}</p>
-                  <p><span className="font-semibold">Contact:</span> {worker.contact}</p>
-                </div>
-              ))}
-            </div>
-            <button className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg">
-              View Details
-            </button>
-          </div>
-        ))}
       </div>
 
-      {/* Modal for creating a new mine */}
-      {showModal && (
-        <div className="opacity-100 fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center">
-          <div className="bg-gray-800 text-gray-200 p-6 rounded-lg shadow-lg w-96">
-            <button
-              onClick={() => setShowModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-100"
+      {loading ? (
+        <p className="text-center text-gray-400">Loading...</p>
+      ) : error ? (
+        <p className="text-center text-red-500">{error}</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {mines.map((mine) => (
+            <motion.div
+              key={mine._id}
+              className="bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
             >
-              &times;
-            </button>
-            <h2 className="text-2xl font-bold mb-4">Create a New Coal Mine</h2>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              handleCreateMine(newMine);
-            }}>
-              <div className="mb-4">
-                <label className="block text-gray-300">Coal Mine Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={newMine.name}
-                  onChange={handleChange}
-                  className="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-gray-300">Latitude</label>
-                <input
-                  type="number"
-                  name="latitude"
-                  value={newMine.location.latitude}
-                  onChange={handleLocationChange}
-                  className="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg"
-                  required
-                />
-                <label className="block text-gray-300 mt-2">Longitude</label>
-                <input
-                  type="number"
-                  name="longitude"
-                  value={newMine.location.longitude}
-                  onChange={handleLocationChange}
-                  className="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-300">Workers</h3>
-                {newMine.workers.map((worker, index) => (
-                  <div key={index} className="mb-4">
-                    <input
-                      type="text"
-                      name="name"
-                      value={worker.name}
-                      onChange={(e) => handleWorkerChange(index, e)}
-                      placeholder="Worker Name"
-                      className="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg"
-                    />
-                    <select
-                      name="role"
-                      value={worker.role}
-                      onChange={(e) => handleWorkerChange(index, e)}
-                      className="w-full p-2 mt-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg"
-                    >
-                      <option value="miner">Miner</option>
-                      <option value="supervisor">Supervisor</option>
-                      <option value="engineer">Engineer</option>
-                    </select>
-                    <input
-                      type="text"
-                      name="contact"
-                      value={worker.contact}
-                      onChange={(e) => handleWorkerChange(index, e)}
-                      placeholder="Contact (Phone/Email)"
-                      className="w-full p-2 mt-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg"
-                      required
-                    />
+              <h2 className="text-xl font-bold mb-2">{mine.name}</h2>
+              <p className="text-sm mb-2">
+                Location: {mine.location.latitude}, {mine.location.longitude}
+              </p>
+              <h3 className="text-lg font-semibold text-gray-300">Workers:</h3>
+              {mine.workers.length > 0 ? (
+                mine.workers.map((worker, index) => (
+                  <div key={index} className="mb-2 border-b border-gray-700 pb-2">
+                    <p>Name: {worker.name}</p>
+                    <p>Role: {worker.role}</p>
+                    <p>Contact: {worker.contact}</p>
                   </div>
-                ))}
-                <button type="button" onClick={addWorker} className="mt-2 text-blue-600 hover:text-blue-400">
-                  Add Another Worker
+                ))
+              ) : (
+                <p className="text-gray-400">No workers assigned.</p>
+              )}
+            <button 
+  className="mt-2 px-3 py-1 bg-blue-500 text-white rounded-lg" 
+  onClick={() => {
+    setSelectedMine(mine);  
+    localStorage.setItem("selectedMine", JSON.stringify(mine));
+
+    setTimeout(() => {  // Delay opening modal to ensure state updates
+      setShowWorkerModal(true);
+    }, 50);
+  }}
+>
+  + Add Worker
+</button>
+
+
+              <div className="flex gap-2 mt-4">
+                <button className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg" onClick={() => handleEdit(mine)}>
+                  Edit
+                </button>
+                <button className="w-full py-2 px-4 bg-red-600 text-white rounded-lg" onClick={() => handleDelete(mine._id)}>
+                  Delete
                 </button>
               </div>
-              <button type="submit" className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-500">
-                Create Coal Mine
+            </motion.div>
+          ))}
+        </div>
+      )}
+{/* Modal for Adding Worker */}
+{showWorkerModal && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+    <motion.div
+      className="bg-gray-800 p-6 rounded-lg w-96 relative"
+      initial={{ opacity: 0, y: -50 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <button className="absolute top-2 right-2 text-gray-400 hover:text-white" onClick={() => setShowWorkerModal(false)}>
+        <XCircle size={20} />
+      </button>
+      <h2 className="text-xl font-bold mb-4">Add Worker</h2>
+      <input
+        type="text"
+        placeholder="Worker Name"
+        className="w-full p-2 mb-2 bg-gray-700 text-white rounded"
+        value={workerForm.name}
+        onChange={(e) => handleWorkerChange("name", e.target.value)}
+      />
+      <input
+        type="text"
+        placeholder="Role"
+        className="w-full p-2 mb-2 bg-gray-700 text-white rounded"
+        value={workerForm.role}
+        onChange={(e) => handleWorkerChange("role", e.target.value)}
+      />
+      <input
+        type="text"
+        placeholder="Contact"
+        className="w-full p-2 mb-4 bg-gray-700 text-white rounded"
+        value={workerForm.contact}
+        onChange={(e) => handleWorkerChange("contact", e.target.value)}
+      />
+      <button className="w-full py-2 bg-green-600 text-white rounded-lg" onClick={handleAddWorker}>
+        Add Worker
+      </button>
+    </motion.div>
+  </div>
+)}
+
+      {/* Modal for Creating/Editing Mine */}
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <motion.div
+            className="bg-gray-800 p-6 rounded-lg w-96 relative"
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <button className="absolute top-2 right-2 text-gray-400 hover:text-white" onClick={() => setShowModal(false)}>
+              <XCircle size={20} />
+            </button>
+            <h2 className="text-xl font-bold mb-4">{editMode ? "Edit Mine" : "Create Mine"}</h2>
+            <form onSubmit={handleSubmit}>
+              <input
+                type="text"
+                placeholder="Mine Name"
+                className="w-full p-2 mb-2 bg-gray-700 text-white rounded"
+                value={mineForm.name}
+                onChange={(e) => setMineForm({ ...mineForm, name: e.target.value })}
+              />
+              <input
+                type="text"
+                placeholder="Latitude"
+                className="w-full p-2 mb-2 bg-gray-700 text-white rounded"
+                value={mineForm.location.latitude}
+                onChange={(e) => setMineForm({ ...mineForm, location: { ...mineForm.location, latitude: e.target.value } })}
+              />
+              <input
+                type="text"
+                placeholder="Longitude"
+                className="w-full p-2 mb-2 bg-gray-700 text-white rounded"
+                value={mineForm.location.longitude}
+                onChange={(e) => setMineForm({ ...mineForm, location: { ...mineForm.location, longitude: e.target.value } })}
+              />
+              <button type="submit" className="w-full py-2 mt-2 bg-green-600 text-white rounded-lg">
+                Save
               </button>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
     </div>
