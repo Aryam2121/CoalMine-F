@@ -187,7 +187,7 @@ const CoalMineCards = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/getallMines");
+        const response = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getallMines`);
         console.log(response.data); // Inspect the structure of the data
         setMines(response.data.data); // Accessing the 'data' property which contains the array of mines
         setLoading(false);
@@ -202,7 +202,7 @@ const CoalMineCards = () => {
 
   const handleCreateMine = async (coalMine) => {
     try {
-      await axios.post('http://localhost:5000/api/createMines', coalMine);
+      await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/createMines`, coalMine);
       alert('Coal Mine Created Successfully');
       setShowModal(false); // Close the modal after successful submission
     } catch (error) {
