@@ -147,7 +147,7 @@ const Attendance = lazy(() => import('./components/Attendance'));
 const Chatbot = lazy(() => import('./components/chatbot'));
 const VoiceDictation = lazy(() => import('./components/voiceDictation'));
 const Achievements = lazy(() => import('./components/Achievements'));
-
+const ComplianceReports = lazy(() => import('./components/CompilanceReports'));
 // Protected Route Component
 const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
 
@@ -331,6 +331,14 @@ function App() {
                       element={
                         <ProtectedRoute>
                           <Alerts />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/compliance-reports"
+                      element={
+                        <ProtectedRoute>
+                          <ComplianceReports />
                         </ProtectedRoute>
                       }
                     />
