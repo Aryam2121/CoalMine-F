@@ -13,44 +13,48 @@ const Signup = () => {
     otp: "",
   });
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
   const [message, setMessage] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [userExists, setUserExists] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
   const navigate = useNavigate();
-
+  const validateForm = () => {
+    let newErrors = {};
+    if (!formData.name.trim()) newErrors.name = "Name is required.";
+    if (!formData.email.match(/^\S+@\S+\.\S+$/)) newErrors.email = "Invalid email format.";
+    if (formData.password.length < 8) newErrors.password = "Password must be at least 8 characters.";
+    if (!/[A-Z]/.test(formData.password)) newErrors.password = "Must include an uppercase letter.";
+    if (!/[!@#$%^&*]/.test(formData.password)) newErrors.password = "Must include a special character.";
+    if (!formData.role) newErrors.role = "Please select a role.";
+    if (!formData.agreed) newErrors.agreed = "You must agree to the terms.";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === "checkbox" ? checked : value,
-    });
+    setFormData({ ...formData, [name]: type === "checkbox" ? checked : value });
+    if (errors[name]) setErrors({ ...errors, [name]: "" });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.agreed) {
-      alert("Please agree to the Terms and Conditions.");
-      return;
-    }
+    if (!validateForm()) return;
 
+    setLoading(true);
     try {
       const response = await fetch(`https://${import.meta.env.VITE_BACKEND}/api/auth/signup`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          role: formData.role, // Send the role as part of the signup
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
 
       const data = await response.json();
       if (response.ok) {
-        setMessage("User registered successfully! OTP sent to email.");
+        setMessage("User registered successfully! OTP sent.");
         setOtpSent(true);
       } else if (data.message === "Email already exists") {
         setUserExists(true);
@@ -58,22 +62,24 @@ const Signup = () => {
       } else {
         setMessage(data.message || "An error occurred");
       }
-    } catch (error) {
+    } catch {
       setMessage("Server error. Please try again later.");
     }
+    setLoading(false);
   };
 
   const handleOtpVerification = async () => {
+    if (!formData.otp.trim()) {
+      setErrors({ ...errors, otp: "OTP is required." });
+      return;
+    }
+
+    setOtpLoading(true);
     try {
       const response = await fetch(`https://${import.meta.env.VITE_BACKEND}/api/auth/verify-otp`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          otp: formData.otp,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email, otp: formData.otp }),
       });
 
       const data = await response.json();
@@ -81,42 +87,47 @@ const Signup = () => {
         setIsVerified(true);
         setMessage("OTP verified successfully!");
       } else {
-        setMessage(data.error || "Invalid OTP");
+        setMessage(data.error || "Invalid OTP. Try again.");
       }
-    } catch (error) {
+    } catch {
       setMessage("Server error. Please try again later.");
     }
+    setOtpLoading(false);
   };
 
   const handleGoogleSignup = async (response) => {
+    if (!response?.credential) {
+      setMessage("Google login failed. Please try again.");
+      return;
+    }
+
+    if (!formData.role) {
+      setMessage("Please select a role before signing up with Google.");
+      return;
+    }
+
+    setLoading(true);
     try {
-      if (!response?.credential) {
-        setMessage("Google login failed. No token received.");
-        return;
-      }
-      
       const res = await fetch(`https://${import.meta.env.VITE_BACKEND}/api/auth/google`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          token: response.credential,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: response.credential, role: formData.role }),
       });
-  
+
       const data = await res.json();
       if (res.ok) {
         setMessage("User registered successfully with Google!");
-        localStorage.setItem("authToken", data.token);  // Save token in localStorage
-        navigate("/");  // Redirect after login
+        localStorage.setItem("authToken", data.token);
+        navigate("/");
       } else {
-        setMessage(data.message || "An error occurred");
+        setMessage(data.message || "Google signup failed.");
       }
-    } catch (error) {
-      setMessage("Server error. Please try again later.");
+    } catch {
+      setMessage("Server error. Try again later.");
     }
+    setLoading(false);
   };
+  
   
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
@@ -176,15 +187,11 @@ const Signup = () => {
 
               <label className="block mb-6">
                 <span className="text-gray-700 text-sm">Password *</span>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Enter your password"
-                  className="mt-1 block w-full p-3 border-gray-300 rounded-md shadow-sm focus:border-teal-500 focus:ring focus:ring-teal-500 focus:ring-opacity-50 transition duration-300 hover:shadow-lg"
-                  required
-                />
+                <div className="relative">
+                  <input type={showPassword ? "text" : "password"} name="password" value={formData.password} onChange={handleChange} placeholder="Enter password" className="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm" required />
+                  <button type="button" className="absolute right-3 top-3 text-gray-600" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "Hide" : "Show"}</button>
+                </div>
+                {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
               </label>
 
               <label className="block mb-6">
@@ -196,12 +203,13 @@ const Signup = () => {
                   className="mt-1 block w-full p-3 border-gray-300 rounded-md shadow-sm focus:border-teal-500 focus:ring focus:ring-teal-500 focus:ring-opacity-50 transition duration-300 hover:shadow-lg"
                   required
                 >
-                  <option value="super admin">Super admin</option>
-                  <option value="Mine admin">Mine admin</option>
-                  <option value="Safety Manager">Safety Manager</option>
-                  <option value="Shift Incharge">Shift Incharge</option>
-                  <option value="worker">Worker</option>
-                  <option value="Inspector">Inspector</option>
+                  <option value="">Select Role</option>
+                 <option value="worker">Worker</option>
+                 <option value="Inspector">Inspector</option>
+                 <option value="Super admin">Super Admin</option>
+                <option value="Mine admin">Mine Admin</option>
+               <option value="Safety Manager">Safety Manager</option>
+                <option value="Shift Incharge">Shift Incharge</option>
                   
                 </select>
               </label>
@@ -225,12 +233,7 @@ const Signup = () => {
                 </label>
               </div>
 
-              <button
-                type="submit"
-                className="w-full bg-teal-500 text-white py-3 rounded-md hover:bg-teal-600 hover:shadow-lg transition duration-300"
-              >
-                Next Step
-              </button>
+              <button type="submit" disabled={loading} className="w-full bg-teal-500 text-white py-3 rounded-md hover:bg-teal-600">{loading ? "Processing..." : "Next Step"}</button>
             </form>
 
             {userExists && (
