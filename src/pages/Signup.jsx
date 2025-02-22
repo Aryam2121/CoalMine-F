@@ -196,9 +196,13 @@ const Signup = () => {
                   className="mt-1 block w-full p-3 border-gray-300 rounded-md shadow-sm focus:border-teal-500 focus:ring focus:ring-teal-500 focus:ring-opacity-50 transition duration-300 hover:shadow-lg"
                   required
                 >
+                  <option value="super admin">Super admin</option>
+                  <option value="Mine admin">Mine admin</option>
+                  <option value="Safety Manager">Safety Manager</option>
+                  <option value="Shift Incharge">Shift Incharge</option>
                   <option value="worker">Worker</option>
-                  <option value="supervisor">Supervisor</option>
-                  <option value="admin">Admin</option>
+                  <option value="Inspector">Inspector</option>
+                  
                 </select>
               </label>
 
