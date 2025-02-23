@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell } from 'recharts';
 import { motion } from 'framer-motion';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+
 import {
   AiOutlineDelete,
   AiOutlineEdit,
@@ -268,10 +269,9 @@ const Resources = () => {
           <Droppable droppableId="resources">
             {(provided) => (
               <div {...provided.droppableProps} ref={provided.innerRef}>
-                {filteredResources.map((resource, index) => (
-  resource && resource.id ? (
-    <Draggable key={resource.id} draggableId={resource.id?.toString() || index.toString()} index={index}>
-
+               {filteredResources.map((resource, index) =>
+  resource && resource._id ? (
+    <Draggable key={resource._id} draggableId={resource._id.toString()} index={index}>
       {(provided) => (
         <div
           ref={provided.innerRef}
@@ -279,7 +279,7 @@ const Resources = () => {
           {...provided.dragHandleProps}
         >
           <Resource
-            id={resource.id}
+            id={resource._id}
             name={resource.name}
             used={resource.used}
             available={resource.available}
@@ -291,7 +291,8 @@ const Resources = () => {
       )}
     </Draggable>
   ) : null
-))}
+)}
+
 
 
                 {provided.placeholder}

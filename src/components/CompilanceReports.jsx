@@ -120,7 +120,7 @@ export default function ComplianceReports() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6  bg-gray-900 text-white">
       {/* Page Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-200">📋 Compliance Reports</h1>
@@ -164,7 +164,7 @@ export default function ComplianceReports() {
       </div>
 
       {/* Add Report Form */}
-      <div className="bg-white dark:bg-gray-900 shadow-xl rounded-lg p-6 mb-6">
+      <div className="bg-gray-800 shadow-xl rounded-lg p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">Add New Report</h2>
         <div className="mb-4">
           <input
@@ -172,7 +172,7 @@ export default function ComplianceReports() {
             placeholder="Report Name"
             value={newReport.name}
             onChange={(e) => setNewReport({ ...newReport, name: e.target.value })}
-            className="p-3 border rounded-lg w-full"
+            className="p-3 border rounded-lg w-full bg-gray-700 text-white"
           />
         </div>
         <div className="mb-4">
@@ -180,14 +180,14 @@ export default function ComplianceReports() {
             type="date"
             value={newReport.date}
             onChange={(e) => setNewReport({ ...newReport, date: e.target.value })}
-            className="p-3 border rounded-lg w-full"
+            className="p-3 border rounded-lg w-full bg-gray-700 text-white"
           />
         </div>
         <div className="mb-4">
           <select
             value={newReport.status}
             onChange={(e) => setNewReport({ ...newReport, status: e.target.value })}
-            className="p-3 border rounded-lg w-full"
+            className="p-3 border rounded-lg w-full bg-gray-700 text-white"
           >
             <option value="Approved">Approved</option>
             <option value="Pending">Pending</option>
@@ -199,7 +199,7 @@ export default function ComplianceReports() {
             placeholder="Details"
             value={newReport.details}
             onChange={(e) => setNewReport({ ...newReport, details: e.target.value })}
-            className="p-3 border rounded-lg w-full"
+            className="p-3 border rounded-lg w-full bg-gray-700 text-white"
           />
         </div>
         <button
@@ -211,7 +211,7 @@ export default function ComplianceReports() {
       </div>
 
       {/* Reports Table */}
-      <div className="bg-white dark:bg-gray-900 shadow-xl rounded-lg overflow-hidden backdrop-blur-md bg-opacity-80 border border-gray-300 dark:border-gray-700">
+      <div className="bg-gray-800 shadow-xl rounded-lg overflow-hidden backdrop-blur-md bg-opacity-80 border border-gray-300 dark:border-gray-700">
         {loading ? (
           <div className="p-6 text-center text-gray-500 dark:text-gray-400">Loading...</div>
         ) : (
@@ -281,14 +281,14 @@ export default function ComplianceReports() {
       {/* Update Report Modal */}
       {showModal && selectedReport && (
         <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-1/3">
-            <h2 className="text-xl font-semibold mb-4">Update Report</h2>
+          <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-1/3">
+            <h2 className="text-xl font-semibold text-white mb-4">Update Report</h2>
             <div className="mb-4">
               <input
                 type="text"
                 value={selectedReport.name}
                 onChange={(e) => setSelectedReport({ ...selectedReport, name: e.target.value })}
-                className="p-3 border rounded-lg w-full"
+                className="p-3 border rounded-lg w-full bg-gray-700 text-white"
               />
             </div>
             <div className="mb-4">
@@ -296,14 +296,14 @@ export default function ComplianceReports() {
                 type="date"
                 value={selectedReport.date}
                 onChange={(e) => setSelectedReport({ ...selectedReport, date: e.target.value })}
-                className="p-3 border rounded-lg w-full"
+                className="p-3 border rounded-lg w-full bg-gray-700 text-white"
               />
             </div>
             <div className="mb-4">
               <select
                 value={selectedReport.status}
                 onChange={(e) => setSelectedReport({ ...selectedReport, status: e.target.value })}
-                className="p-3 border rounded-lg w-full"
+                className="p-3 border rounded-lg w-full bg-gray-700 text-white"
               >
                 <option value="Approved">Approved</option>
                 <option value="Pending">Pending</option>
@@ -314,7 +314,7 @@ export default function ComplianceReports() {
               <textarea
                 value={selectedReport.details}
                 onChange={(e) => setSelectedReport({ ...selectedReport, details: e.target.value })}
-                className="p-3 border rounded-lg w-full"
+                className="p-3 border rounded-lg w-full bg-gray-700 text-white"
               />
             </div>
             <div className="flex justify-between">
