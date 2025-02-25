@@ -82,7 +82,9 @@ export default function ComplianceReports() {
 
   const handleUpdateReport = async (updatedReport) => {
     try {
-      const { data } = await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/${updatedReport.id}`, updatedReport);
+      const { data } = await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/updatereport/${updatedReport.id}`, updatedReport);
+
+
       setReports((prevReports) =>
         prevReports.map((report) =>
           report.id === updatedReport.id ? data.report : report
@@ -98,7 +100,7 @@ export default function ComplianceReports() {
 
   const handleDeleteReport = async (reportId) => {
     try {
-      await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/${reportId}`);
+      await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/deletereport/${reportId}`);
       setReports(reports.filter((report) => report.id !== reportId));
       alert("Report deleted successfully!");
     } catch (error) {
