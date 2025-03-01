@@ -209,50 +209,97 @@ const notifications = [
  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const response = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getAllloc`);
+        const response = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getallloc`);
         console.log("Fetched Locations:", response.data);
         setLocations(response.data);
       } catch (error) {
-        setError('Error fetching locations');
+        setError("Error fetching locations");
         console.error("Error fetching locations:", error);
+      } finally {
+        setLoading(false);
       }
     };
-
+  
     fetchLocations();
-
+  
     navigator.geolocation.getCurrentPosition(
-      (position) => console.log(position.coords),
-      (error) => console.error("Error fetching location:", error)
+      (position) => {
+        console.log("User Location:", position.coords);
+        setUserLocation([position.coords.latitude, position.coords.longitude]); // ✅ Update state
+      },
+      (error) => console.error("Error fetching user location:", error),
+      { enableHighAccuracy: true } // ✅ Improve accuracy
     );
-    
-    
   }, []);
+  
+  const fetchLocations = async () => {
+    try {
+      const response = await  axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getallloc`);
+
+      console.log("Fetched Locations:", response.data);
+      setLocations(response.data);
+    } catch (error) {
+      setError("Error fetching locations");
+      console.error("Error fetching locations:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmitloc = async (e) => {
     e.preventDefault();
+    
+    // Ensure values are valid
+    if (!name || !lat || !lng) {
+      alert("Please fill all fields!");
+      return;
+    }
+  
+    // Convert input to correct format
+    const formattedLat = parseFloat(lat);
+    const formattedLng = parseFloat(lng);
+  
+    if (isNaN(formattedLat) || isNaN(formattedLng)) {
+      alert("Invalid latitude or longitude values.");
+      return;
+    }
+  
     try {
       const locationData = {
         name,
         coordinates: {
           type: "Point",
-          coordinates: [parseFloat(lng), parseFloat(lat)] // Longitude first, then Latitude
-        }
+          coordinates: [formattedLng, formattedLat], // Longitude first, then Latitude
+        },
       };
   
-      const response = await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/createloc`, locationData);
-      
+      console.log("Sending locationData:", locationData);
+  
+      const response = await axios.post(
+        `https://${import.meta.env.VITE_BACKEND}/api/createloc`,
+        locationData
+      );
+  
       alert(`Location added: ${response.data.name}`);
+  
+      // Clear input fields
       setName("");
       setLat("");
       setLng("");
+  
+      // Refresh location list
+      fetchLocations();
+  
     } catch (error) {
-      console.error("Error adding location:", error);
+      console.error("Error adding location:", error.response?.data || error.message);
       alert("Failed to add location.");
     }
   };
+  
 
   return (
     <div className={`${isDarkMode ? "dark" : "light"} min-h-screen transition-all`}>
@@ -378,20 +425,27 @@ const notifications = [
 
       {/* Map Section */}
       <div className="h-[400px] lg:h-96 rounded-lg overflow-hidden border border-gray-600">
-        {loading ? (
-          <p className="text-center text-white">Loading...</p>
-        ) : error ? (
-          <p className="text-red-400">{error}</p>
-        ) : (
-          <MapContainer center={userLocation} zoom={13} className="h-full w-full">
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            {locations.map((loc, index) => (
-              <Marker key={index} position={[loc.coordinates.coordinates[1], loc.coordinates.coordinates[0]]}>
-                <Popup className="text-gray-800 font-semibold">{loc.name}</Popup>
-              </Marker>
-            ))}
-          </MapContainer>
-        )}
+      {loading ? (
+        <p className="text-center text-white">Loading...</p>
+      ) : error ? (
+        <p className="text-red-400">{error}</p>
+      ) : (
+        <MapContainer center={userLocation} zoom={10} key={userLocation.toString()} className="h-full w-full">
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+          {/* User Location Marker */}
+          <Marker position={userLocation}>
+            <Popup>Your Location</Popup>
+          </Marker>
+
+          {/* Database Locations */}
+          {locations.map((loc, index) => (
+            <Marker key={index} position={[loc.coordinates.coordinates[1], loc.coordinates.coordinates[0]]}>
+              <Popup className="text-gray-800 font-semibold">{loc.name}</Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      )}
       </div>
 
       {/* Modal for Adding Location */}
