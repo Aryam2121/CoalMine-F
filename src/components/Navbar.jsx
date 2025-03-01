@@ -157,12 +157,14 @@ import { AuthContext } from '../context/AuthContext';
 import boy from "../assets/boy.png";
 import { motion } from "framer-motion";
 import { Link } from 'react-router-dom';
-
+import Profile from './Profile';
+import { useNavigate } from 'react-router-dom';
 const Navbar = ({ activePage }) => {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { user, logout } = useContext(AuthContext);
   const profileRef = useRef(null);
+  const navigate = useNavigate();
 
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
   const toggleProfileMenu = () => setIsProfileOpen(!isProfileOpen);
@@ -243,11 +245,14 @@ const Navbar = ({ activePage }) => {
           <p className="text-xs text-gray-500">{user?.email || 'guest@example.com'}</p>
         </div>
         <ul className="text-sm">
-          <li>
-            <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100 text-gray-700">
-              View Profile
-            </Link>
-          </li>
+        <li>
+      <button 
+        onClick={() => navigate("/profile")} 
+        className="block px-4 py-2 hover:bg-gray-100 text-gray-700 w-full text-left"
+      >
+        View Profile
+      </button>
+    </li>
           <li>
             <Link to="/settings" className="block px-4 py-2 hover:bg-gray-100 text-gray-700">
               Settings
