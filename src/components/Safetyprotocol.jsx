@@ -74,7 +74,7 @@ const SafetyProtocol = () => {
         signature,
       };
 
-      axios.post('http://localhost:5000/api/safety-check', formData)
+      axios.post(`https://${import.meta.env.VITE_BACKEND}/api/safety-check`, formData)
         .then(() => setIsModalOpen(true))
         .catch((error) => console.error("Error submitting safety check", error));
     }

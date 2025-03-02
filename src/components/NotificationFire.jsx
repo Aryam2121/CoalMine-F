@@ -31,7 +31,7 @@ const NotificationsFire = () => {
     };
 
     try {
-      await axios.post("http://localhost:5000/api/notifications/send-notification", notificationData);
+      await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/notifications/send-notification`, notificationData);
       alert("Notification Sent!");
     } catch (error) {
       console.error("Error sending notification", error);

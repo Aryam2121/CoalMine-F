@@ -279,12 +279,22 @@ const ShiftHandoverLog = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const { transcript, resetTranscript } = useSpeechRecognition();
-  
+  const [formData, setFormData] = useState({
+    shiftDetails: "",
+    shiftDate: "",
+    shiftStartTime: "",
+    shiftEndTime: "",
+    workerId: "",
+    status: "",
+    notes: "",
+    file: null,
+  });
+
   // Fetch previous shift logs on load
   useEffect(() => {
     const fetchShiftLogs = async () => {
       try {
-        const response = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getallLogs`);
+        const response = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getAllLogs`);
         setPreviousLogs(response.data);
       } catch (error) {
         console.error('Error fetching shift logs:', error);
@@ -322,6 +332,7 @@ const ShiftHandoverLog = () => {
     formData.append('safetyIssues', logData.safetyIssues);
     formData.append('nextShiftTasks', logData.nextShiftTasks);
     formData.append('additionalNotes', additionalNotes);
+    formData.append('workerId', logData.workerId);
     if (file) {
       formData.append('file', file);
     }

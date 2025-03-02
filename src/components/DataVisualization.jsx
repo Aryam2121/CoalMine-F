@@ -91,7 +91,7 @@ const [data, setData] = useState([]);
   // Delete Record
   const handleDeleteRecord = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/Productivity/${id}`);
+      await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/Productivity/${id}`);
       setSnackbarMessage('Record deleted successfully');
       setSnackbarOpen(true);
       fetchData();
