@@ -119,13 +119,13 @@ const Notifications = () => {
   }
 
   return (
-    <Container>
-      <Typography variant="h4" gutterBottom>
+    <Container className="py-4 bg-gray-900">
+      <Typography className='text-white' variant="h4" gutterBottom>
         Notifications
       </Typography>
 
       {/* Filter and Search */}
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between  items-center mb-4">
         <div className="space-x-2">
           <Button
             variant={filter === "all" ? "contained" : "outlined"}
