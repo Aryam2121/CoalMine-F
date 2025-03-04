@@ -7,7 +7,7 @@ const Profile = () => {
   const { user } = useContext(AuthContext); // User details from context
 
   if (!user) {
-    return <div className="text-center text-xl mt-10">Loading...</div>;
+    return <div className="text-center text-xl mt-10">Loading....</div>;
   }
 
   return (
