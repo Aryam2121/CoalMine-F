@@ -12,18 +12,19 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarEleme
 const DataVisualization = () => {
   const [chartData, setChartData] = useState({ labels: [], datasets: [] });
   const [chartType, setChartType] = useState('line');
-  const [theme, setTheme] = useState('light');
+  const [theme, setTheme] = useState('dark'); // Default to dark mode
   const [startDate, setStartDate] = useState(dayjs().subtract(1, 'month'));
   const [endDate, setEndDate] = useState(dayjs());
   const [loading, setLoading] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [closeDialog, openDialog] = useState(false);
   const [formData, setFormData] = useState({ id: '', date: dayjs(), value: '', description: '' });
   const [isEdit, setIsEdit] = useState(false);
-const [data, setData] = useState([]);
-  // Fetch data from API
+  const [data, setData] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -31,11 +32,16 @@ const [data, setData] = useState([]);
         params: {
           startDate: startDate.format('YYYY-MM-DD'),
           endDate: endDate.format('YYYY-MM-DD'),
+          page,
+          limit: 10,
+          sortBy: 'date',
+          order: 'asc',
         },
       });
 
-      const { data } = response.data;
-
+      const { data, metadata } = response.data;
+      setData(data);
+      setTotalPages(metadata.totalPages);
       setChartData({
         labels: data.map((item) => item.date),
         datasets: [
@@ -56,29 +62,31 @@ const [data, setData] = useState([]);
     }
   };
 
-  // Fetch data initially and on dependency change
   useEffect(() => {
     fetchData();
-  }, [startDate, endDate]); 
-  
-  // Handle form changes
+  }, [startDate, endDate, page]);
+
   const handleFormChange = (field, value) => {
+    if (field === "value") {
+      value = value.split(",").map(num => parseFloat(num.trim())); // Convert string to array of numbers
+    }
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
-
-  // Add or Update Record
+  
   const handleSaveRecord = async () => {
     try {
       const { id, date, value, description } = formData;
-
+      
+      // Ensure value is an array of numbers
+      const formattedValue = Array.isArray(value) ? value : value.split(",").map(num => parseFloat(num.trim()));
+  
       if (isEdit) {
-        await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/prod/${id}`, { date, value, description });
+        await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/prod/${id}`, { date, value: formattedValue, description });
         setSnackbarMessage('Record updated successfully');
       } else {
-        await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/prod/createData`, { date, value, description });
+        await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/prod/createData`, { date, value: formattedValue, description });
         setSnackbarMessage('Record added successfully');
       }
-
       setSnackbarOpen(true);
       setDialogOpen(false);
       fetchData();
@@ -87,11 +95,10 @@ const [data, setData] = useState([]);
       setSnackbarOpen(true);
     }
   };
-
-  // Delete Record
+  
   const handleDeleteRecord = async (id) => {
     try {
-      await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/Productivity/${id}`);
+      await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/prod/${id}`);
       setSnackbarMessage('Record deleted successfully');
       setSnackbarOpen(true);
       fetchData();
@@ -101,12 +108,6 @@ const [data, setData] = useState([]);
     }
   };
 
-  // Fetch data initially and periodically
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 5000); // Fetch data every 5 seconds
-    return () => clearInterval(interval);
-  }, [startDate, endDate]);
 
   const handleChartTypeChange = (event) => {
     setChartType(event.target.value);
@@ -116,143 +117,159 @@ const [data, setData] = useState([]);
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <div className={`p-6 rounded-xl shadow-lg ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-white text-black'} transition-all duration-300`}>
-        <h2 className="text-3xl font-semibold mb-6">Real-Time Productivity Data</h2>
-            {/* Button to Add New Record */}
-            <Button
-    variant="contained"
-    color="primary"
-    onClick={() => setDialogOpen(true)}
-    className="absolute top-4 right-4" // Position the button at the top-right corner
-  >
-    Add New Record
-  </Button>
-        <FormControlLabel
-          control={<Switch checked={theme === 'dark'} onChange={() => setTheme(theme === 'dark' ? 'light' : 'dark')} />}
-          label="Dark Mode"
-        />
-
+      <div className="p-6 rounded-xl shadow-lg bg-gray-900 text-white transition-all duration-300 min-h-screen">
+        <h2 className="text-4xl font-bold mb-6 text-center tracking-wide">📊 Real-Time Productivity Data</h2>
+  
+        <div className="flex justify-between items-center mb-8">
+          <FormControlLabel
+            control={
+              <Switch
+                checked={theme === 'dark'}
+                onChange={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="scale-110"
+              />
+            }
+            label="Dark Mode"
+            className="text-lg"
+          />
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => setDialogOpen(true)}
+            className="px-6 py-2 rounded-lg shadow-md hover:bg-blue-600 transition-all"
+          >
+            ➕ Add New Record
+          </Button>
+        </div>
+  
         <Grid container spacing={3} className="mb-6">
           <Grid item xs={12} sm={6}>
-            <Card className="p-4">
+            <Card className="p-4 bg-gray-800/70 backdrop-blur-md rounded-xl shadow-md">
               <CardContent>
-                <InputLabel className="font-medium">Chart Type</InputLabel>
-                <Select value={chartType} onChange={handleChartTypeChange} fullWidth className="mb-2">
-                  <MenuItem value="line">Line Chart</MenuItem>
-                  <MenuItem value="bar">Bar Chart</MenuItem>
-                  <MenuItem value="pie">Pie Chart</MenuItem>
+                <InputLabel className="font-medium text-lg mb-2">📉 Chart Type</InputLabel>
+                <Select
+                  value={chartType}
+                  onChange={handleChartTypeChange}
+                  fullWidth
+                  className="bg-gray-700 text-white p-2 rounded-md"
+                >
+                  <MenuItem value="line">📈 Line Chart</MenuItem>
+                  <MenuItem value="bar">📊 Bar Chart</MenuItem>
+                  <MenuItem value="pie">🥧 Pie Chart</MenuItem>
                 </Select>
               </CardContent>
             </Card>
           </Grid>
-          {/* Data Display */}
-          <div className="h-96 overflow-y-scroll">
-  <Grid container spacing={3}>
-    {data.map((item) => (
-      <Grid item xs={12} sm={6} key={item.id}>
-        <Card className="p-4">
-          <CardContent>
-            <h3>{item.date}</h3>
-            <p>{item.value}</p>
-            <p>{item.description}</p>
-            <Button variant="contained" color="primary" onClick={() => openDialog(item)}>Edit</Button>
-            <Button variant="outlined" color="secondary" onClick={() => handleDeleteRecord(item.id)} className="ml-2">
-              Delete
-            </Button>
-          </CardContent>
-        </Card>
-      </Grid>
-    ))}
-  </Grid>
-</div>
-
-
+  
           <Grid item xs={12} sm={6}>
-            <Card className="p-4">
+            <Card className="p-4 bg-gray-800/70 backdrop-blur-md rounded-xl shadow-md">
               <CardContent>
-                <InputLabel className="font-medium">Date Range</InputLabel>
+                <InputLabel className="font-medium text-lg mb-2">📆 Date Range</InputLabel>
                 <Grid container spacing={2}>
                   <Grid item xs={6}>
-                  <LocalizationProvider dateAdapter={AdapterDayjs}>
-  <DatePicker
-    label="Start Date"
-    value={startDate}
-    onChange={(newValue) => setStartDate(newValue)}
-    renderInput={(params) => <TextField {...params} fullWidth />}
-  />
-</LocalizationProvider>
-
+                    <DatePicker label="Start Date" value={startDate} onChange={(newValue) => setStartDate(newValue)} />
                   </Grid>
                   <Grid item xs={6}>
-                    <DatePicker
-                      label="End Date"
-                      value={endDate}
-                      onChange={(date) => setEndDate(date)}
-                      renderInput={(props) => <TextField {...props} fullWidth />}
-                    />
+                    <DatePicker label="End Date" value={endDate} onChange={(date) => setEndDate(date)} />
                   </Grid>
                 </Grid>
               </CardContent>
             </Card>
           </Grid>
         </Grid>
-
-        <div className="chart-container mb-6" style={{ width: '100%', height: '400px' }}>
+  
+        <Card className="p-6 bg-gray-800/70 backdrop-blur-md rounded-xl shadow-lg">
+          <CardContent>
+            <h3 className="text-2xl font-semibold mb-4">📋 Data Records</h3>
+            {data.length === 0 ? (
+              <p className="text-gray-400 text-center text-lg">🚫 No records available</p>
+            ) : (
+              <table className="w-full text-left border-collapse rounded-lg overflow-hidden">
+                <thead>
+                  <tr className="bg-gray-700 text-white text-lg">
+                    <th className="p-3 border">📅 Date</th>
+                    <th className="p-3 border">📊 Value</th>
+                    <th className="p-3 border">📝 Description</th>
+                    <th className="p-3 border text-center">⚙️ Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.map((record) => (
+                    <tr
+                      key={record.id}
+                      className="bg-gray-900 border-b border-gray-700 hover:bg-gray-800 transition-all"
+                    >
+                      <td className="p-3 border">{record.date}</td>
+                      <td className="p-3 border">{record.value}</td>
+                      <td className="p-3 border">{record.description}</td>
+                      <td className="p-3 border flex gap-3 justify-center">
+                        <Button
+                          variant="contained"
+                          color="secondary"
+                          size="small"
+                          onClick={() => handleDeleteRecord(record.id)}
+                          className="px-4 py-1 rounded-md shadow-md hover:bg-red-600 transition-all"
+                        >
+                          🗑 Delete
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </CardContent>
+        </Card>
+  
+        <div className="chart-container mb-8 h-[400px] flex justify-center items-center">
           {loading ? (
-            <div className="flex justify-center items-center h-full">
-              <CircularProgress size={50} />
-            </div>
+            <CircularProgress size={50} />
           ) : chartData.labels.length > 0 && chartData.datasets.length > 0 ? (
             <ChartComponent data={chartData} options={{ maintainAspectRatio: false }} />
           ) : (
-            <p className="text-center text-gray-500">No data available for the selected chart type.</p>
+            <p className="text-center text-gray-400 text-lg">🚀 No data available for the selected chart type.</p>
           )}
         </div>
-
   
-
-
-        {/* Dialog for Adding/Editing Record */}
         <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
-  <DialogTitle>{isEdit ? 'Edit Record' : 'Add New Record'}</DialogTitle>
-  <DialogContent>
-    <TextField
-      label="Date"
-      type="date"
-      value={formData.date}
-      onChange={(e) => handleFormChange('date', e.target.value)}
-      fullWidth
-      margin="normal"
-      InputLabelProps={{
-        shrink: true,
-      }}
-    />
-    <TextField
-      label="Value"
-      value={formData.value}
-      onChange={(e) => handleFormChange('value', e.target.value)}
-      fullWidth
-      margin="normal"
-    />
-    <TextField
-      label="Description"
-      value={formData.description}
-      onChange={(e) => handleFormChange('description', e.target.value)}
-      fullWidth
-      margin="normal"
-    />
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={() => setDialogOpen(false)} color="secondary"> {/* Close dialog */}
-      Cancel
-    </Button>
-    <Button onClick={handleSaveRecord} color="primary">
-      {isEdit ? 'Update Record' : 'Add Record'}
-    </Button>
-  </DialogActions>
-</Dialog>
-
-
+          <DialogTitle className="text-2xl font-bold">
+            {isEdit ? '✏️ Edit Record' : '➕ Add New Record'}
+          </DialogTitle>
+          <DialogContent>
+            <TextField
+              label="📅 Date"
+              type="date"
+              value={formData.date}
+              onChange={(e) => handleFormChange('date', e.target.value)}
+              fullWidth
+              margin="normal"
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="📊 Value"
+              value={formData.value}
+              onChange={(e) => handleFormChange('value', e.target.value)}
+              fullWidth
+              margin="normal"
+            />
+            <TextField
+              label="📝 Description"
+              value={formData.description}
+              onChange={(e) => handleFormChange('description', e.target.value)}
+              fullWidth
+              margin="normal"
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDialogOpen(false)} color="secondary">
+              ❌ Cancel
+            </Button>
+            <Button onClick={handleSaveRecord} color="primary">
+              {isEdit ? '💾 Update Record' : '✅ Add Record'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+  
         <Snackbar
           open={snackbarOpen}
           autoHideDuration={6000}
@@ -262,6 +279,7 @@ const [data, setData] = useState([]);
       </div>
     </LocalizationProvider>
   );
+  
 };
 
 export default DataVisualization;
