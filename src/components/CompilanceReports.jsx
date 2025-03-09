@@ -53,6 +53,7 @@ export default function ComplianceReports() {
             limit: 10,
           },
         });
+        console.log("Fetched reports:", data);
         setReports(data.reports || []);
         setTotalReports(data.total || 0);
       } catch (error) {
