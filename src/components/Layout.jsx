@@ -51,7 +51,7 @@ const Layout = ({ children }) => {
       {/* Navbar (Full Width, Fixed at Top) */}
       {isAuthenticated && !hideLayout && (
         <div className=" bg-white fixed w-full top-0 left-0 z-50">
-          <Navbar activePage={activePage} />
+          <Navbar activePage={activePage}/>
         </div>
       )}
 
@@ -64,7 +64,7 @@ const Layout = ({ children }) => {
         )}
 
         {/* Main Content */}
-        <div className={`flex-1 py-8 px-4 flex flex-col ${isAuthenticated && !hideLayout ? 'ml-64 mt-16' : ''}`}>
+        <div className={`flex-1 py-8 px-4  flex flex-col ${isAuthenticated && !hideLayout ? 'ml-64 mt-16' : ''}`}>
           <div className="flex-1  bg-white shadow-md rounded-lg">
             {children}
           </div>
