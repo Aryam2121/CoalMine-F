@@ -51,7 +51,7 @@ const Layout = ({ children }) => {
       {/* Navbar (Full Width, Fixed at Top) */}
       {isAuthenticated && !hideLayout && (
         <div className=" bg-white fixed w-full top-0 left-0 z-50">
-          <Navbar activePage={activePage}/>
+          <Navbar activePage={activePage} />
         </div>
       )}
 
