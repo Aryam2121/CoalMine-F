@@ -94,8 +94,9 @@ const Resources = () => {
   
   const handleAddResource = () => {
     const { name, used, available } = newResource;
-    const usedValue = parseFloat(used);
-    const availableValue = parseFloat(available);
+    const usedValue = newResource.used ? parseFloat(newResource.used) : 0;
+    const availableValue = newResource.available ? parseFloat(newResource.available) : 0;
+    
 
     if (!name || isNaN(usedValue) || isNaN(availableValue) || usedValue < 0 || availableValue < 0 || usedValue + availableValue !== 100) {
         alert('Invalid input. Ensure Used + Available = 100.');
@@ -112,7 +113,7 @@ const Resources = () => {
       axios.put(`https://${import.meta.env.VITE_BACKEND}/api/${editingId}`, resourceData)
         .then((response) => {
           setResources(resources.map((resource) =>
-            resource.id === editingId ? response.data : resource
+            resource._id === editingId ? response.data : resource
           ));
           setEditingId(null);
         })
@@ -272,6 +273,7 @@ const Resources = () => {
                {filteredResources.map((resource, index) =>
   resource && resource._id ? (
     <Draggable key={resource._id} draggableId={resource._id.toString()} index={index}>
+
       {(provided) => (
         <div
           ref={provided.innerRef}
