@@ -97,7 +97,7 @@ const Inventory = () => {
 
   const handleDeleteResource = (id) => {
     axios
-      .delete(`/api/${id}`)
+      .delete(`https://${import.meta.env.VITE_BACKEND}/api/${id}`)
       .then(() => {
         setResources(resources.filter((resource) => resource.id !== id));
       })
@@ -150,38 +150,49 @@ const Inventory = () => {
         </div>
 
         {/* Inventory Table */}
-        <div ref={inventoryRef}>
-          <TableContainer component={Paper} className="mb-4 bg-gray-800 dark:bg-gray-800">
-            <Table>
-              <TableHead>
-                <TableRow className="bg-gray-700 dark:bg-gray-700">
-                  <TableCell className="text-white">Resource</TableCell>
-                  <TableCell className="text-white" align="right">
-                    Available Quantity
-                  </TableCell>
-                  <TableCell className="text-white" align="right">
-                    Actions
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {sortedResources.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((item) => (
-                  <TableRow key={item.id || item.name} className="hover:bg-gray-700">
-                    <TableCell className="text-white">{item.name}</TableCell>
-                    <TableCell className="text-white" align="right">
-                      {item.available}
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton onClick={() => handleDeleteResource(item.id)}>
-                        <DeleteIcon className="text-red-500" />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </div>
+<div ref={inventoryRef}>
+  <TableContainer
+    component={Paper}
+    className="mb-4 bg-gray-900 shadow-xl rounded-lg"
+  >
+    <Table>
+      <TableHead>
+        <TableRow className="bg-blue-800">
+          <TableCell className="text-white font-semibold">Resource</TableCell>
+          <TableCell className="text-white font-semibold" align="right">
+            Available Quantity
+          </TableCell>
+          <TableCell className="text-white font-semibold" align="right">
+            Actions
+          </TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {sortedResources
+          .slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
+          .map((item, index) => (
+            <TableRow
+              key={item.id || item.name}
+              className={`${
+                index % 2 === 0 ? "bg-gray-800" : "bg-gray-700"
+              } hover:bg-gray-600 transition-colors`}
+            >
+              <TableCell className="text-gray-100">{item.name}</TableCell>
+              <TableCell className="text-gray-100" align="right">
+                {item.available}
+              </TableCell>
+              <TableCell align="right">
+                <IconButton onClick={() => handleDeleteResource(item.id)}>
+                  <DeleteIcon className="text-red-400" />
+                </IconButton>
+              </TableCell>
+            </TableRow>
+          ))}
+      </TableBody>
+    </Table>
+  </TableContainer>
+</div>
+
 
         {/* Pagination */}
         <div className="flex justify-between items-center mt-4">
