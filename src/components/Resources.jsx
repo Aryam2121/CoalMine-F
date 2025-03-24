@@ -76,10 +76,10 @@ const Resources = () => {
   const [deletedResource, setDeletedResource] = useState(null);
 
   useEffect(() => {
-    axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getRes`)
+    axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getAllRes`)
       .then((response) => {
-        console.log('Fetched resources:', response.data);
-        if (response.headers && response.headers['content-type']?.includes('application/json')) {
+        console.log('Fetched resources:', response.data); // Debugging
+        if (Array.isArray(response.data)) {
           setResources(response.data);
         } else {
           console.error('Unexpected response format:', response);
@@ -98,7 +98,8 @@ const Resources = () => {
     const availableValue = newResource.available ? parseFloat(newResource.available) : 0;
     
 
-    if (!name || isNaN(usedValue) || isNaN(availableValue) || usedValue < 0 || availableValue < 0 || usedValue + availableValue !== 100) {
+    if (!name || isNaN(usedValue) || isNaN(availableValue) || usedValue < 0 || availableValue < 0 || Math.round(usedValue + availableValue) !== 100) {
+
         alert('Invalid input. Ensure Used + Available = 100.');
         return;
     }
@@ -130,14 +131,15 @@ const Resources = () => {
   };
 
   const handleDeleteResource = (id) => {
-    const resourceToDelete = resources.find((resource) => resource.id === id);
+    const resourceToDelete = resources.find((resource) => resource._id === id);
     setDeletedResource(resourceToDelete);
     axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/${id}`)
       .then(() => {
-        setResources(resources.filter((resource) => resource.id !== id));
+        setResources(resources.filter((resource) => resource._id !== id));
       })
       .catch((error) => console.error('Error deleting resource:', error));
   };
+  
 
   const handleUndoDelete = () => {
     if (deletedResource) {
@@ -151,7 +153,8 @@ const Resources = () => {
   };
 
   const handleEditResource = (id) => {
-    const resourceToEdit = resources.find((resource) => resource.id === id);
+    const resourceToEdit = resources.find((resource) => resource._id === id);
+
     setNewResource(resourceToEdit);
     setEditingId(id);
   };
@@ -270,16 +273,11 @@ const Resources = () => {
           <Droppable droppableId="resources">
             {(provided) => (
               <div {...provided.droppableProps} ref={provided.innerRef}>
-               {filteredResources.map((resource, index) =>
+          {filteredResources.map((resource, index) =>
   resource && resource._id ? (
     <Draggable key={resource._id} draggableId={resource._id.toString()} index={index}>
-
       {(provided) => (
-        <div
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          {...provided.dragHandleProps}
-        >
+        <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
           <Resource
             id={resource._id}
             name={resource.name}
@@ -292,8 +290,9 @@ const Resources = () => {
         </div>
       )}
     </Draggable>
-  ) : null
+  ) : console.error("Invalid resource:", resource) // Debugging
 )}
+
 
 
 

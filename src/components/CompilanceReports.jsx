@@ -33,40 +33,39 @@ export default function ComplianceReports() {
   });
   const [selectedReport, setSelectedReport] = useState(null); // Selected report for update
   const [showModal, setShowModal] = useState(false); // Modal visibility
+  const filteredReports = Array.isArray(reports) ? reports.filter(
+    (report) => report?.name?.toLowerCase()?.includes(search.toLowerCase()) &&
+        (statusFilter === "" || report?.status === statusFilter) &&
+        (dateFilter === "" || report?.date >= dateFilter)
+) : [];
 
-  const filteredReports = (reports || []).filter(
-    (report) =>
-      report.name.toLowerCase().includes(search.toLowerCase()) &&
-      (statusFilter === "" || report.status === statusFilter) &&
-      (dateFilter === "" || report.date >= dateFilter)
-  );
 
+  
   useEffect(() => {
     const fetchReports = async () => {
       setLoading(true);
       try {
-        const { data } = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getreports`, {
-          params: {
-            search,
-            status: statusFilter,
-            page,
-            limit: 10,
-          },
+        const { data } = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getReports`, {
+          params: { search, status: statusFilter, page, limit: 10 },
         });
+  
         console.log("Fetched reports:", data);
-        setReports(data.reports || []);
+        setReports(data.reports || []); // Ensure default empty array
         setTotalReports(data.total || 0);
       } catch (error) {
         console.error("Error fetching reports:", error);
+        setReports([]); // Set an empty array on failure to prevent crashes
       }
       setLoading(false);
     };
+  
     fetchReports();
   }, [search, statusFilter, dateFilter, page]);
+  
 
   const handleAddReport = async () => {
     try {
-      const { data } = await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/addreports`, newReport);
+      const { data } = await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/addReports`, newReport);
       setReports([data.report, ...reports]);
       alert("Report added successfully!");
       setNewReport({
@@ -83,7 +82,7 @@ export default function ComplianceReports() {
 
   const handleUpdateReport = async (updatedReport) => {
     try {
-      const { data } = await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/updatereport/${updatedReport.id}`, updatedReport);
+      const { data } = await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/updateReport/${updatedReport.id}`, updatedReport);
 
 
       setReports((prevReports) =>
@@ -101,7 +100,7 @@ export default function ComplianceReports() {
 
   const handleDeleteReport = async (reportId) => {
     try {
-      await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/deletereport/${reportId}`);
+      await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/deleteReport/${reportId}`);
       setReports(reports.filter((report) => report.id !== reportId));
       alert("Report deleted successfully!");
     } catch (error) {

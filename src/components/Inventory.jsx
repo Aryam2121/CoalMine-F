@@ -49,7 +49,7 @@ const Inventory = () => {
 
   useEffect(() => {
     axios
-      .get(`https://${import.meta.env.VITE_BACKEND}/api/getRes`)
+      .get(`https://${import.meta.env.VITE_BACKEND}/api/getAllRes`)
       .then((response) => {
         if (Array.isArray(response.data)) {
           setResources(response.data);
