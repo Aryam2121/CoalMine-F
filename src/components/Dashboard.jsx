@@ -352,37 +352,66 @@ const notifications = [
         />
       </div>
 
-       {/* Cards */}
-       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[
-          {
-            title: 'Weekly Productivity',
-            bg: 'from-teal-500 to-teal-600',
-            chart: <Line data={lineChartData} />,
-          },
-          {
-            title: 'Safety Compliance',
-            bg: 'from-green-400 to-green-600',
-            chart: <Pie data={pieChartData} />,
-          },
-          {
-            title: 'Department Performance',
-            bg: 'from-blue-500 to-blue-600',
-            chart: <Bar data={barChartData} />,
-          },
-        ].map(({ title, bg, chart }, index) => (
-          <motion.div
-            key={index}
-            className={`bg-gradient-to-r ${bg} p-6 rounded-xl shadow-xl hover:shadow-lg transition-all transform hover:scale-105`}
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.2 }}
-          >
-            <h3 className="text-lg font-semibold text-gray-100 mb-3">{title}</h3>
-            <div className="h-48">{chart}</div>
-          </motion.div>
-        ))}
-      </div>
+    {/* Ultra Enhanced Cards */}
+<div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 py-10">
+  {[
+    {
+      title: '📊 Weekly Productivity',
+      bg: 'from-teal-500 to-teal-800',
+      glow: 'shadow-teal-500/60',
+      chart: <Line data={lineChartData} />,
+    },
+    {
+      title: '🛡️ Safety Compliance',
+      bg: 'from-green-400 to-green-800',
+      glow: 'shadow-green-500/60',
+      chart: <Pie data={pieChartData} />,
+    },
+    {
+      title: '🏆 Department Performance',
+      bg: 'from-blue-500 to-blue-800',
+      glow: 'shadow-blue-500/60',
+      chart: <Bar data={barChartData} />,
+    },
+  ].map(({ title, bg, glow, chart }, index) => (
+    <motion.div
+      key={index}
+      className={`relative bg-gradient-to-br ${bg} p-8 rounded-3xl shadow-xl 
+      transition-all transform hover:scale-105 hover:-translate-y-3 
+      hover:${glow} backdrop-blur-xl bg-opacity-30 border border-white/20 
+      before:absolute before:-inset-1 before:bg-white/10 before:rounded-3xl before:blur-lg`}
+      initial={{ opacity: 0, y: 50 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: index * 0.2 }}
+    >
+      {/* Pulsating Border Glow */}
+      <div className="absolute inset-0 w-full h-full border-2 rounded-3xl border-transparent animate-pulse 
+        before:absolute before:w-full before:h-full before:rounded-3xl 
+        before:border before:border-opacity-40 before:animate-flicker 
+        before:border-white before:transition-opacity before:duration-700 before:ease-in-out"></div>
+
+      {/* Soft Glass Reflection */}
+      <div className="absolute inset-0 bg-white/10 rounded-3xl blur-lg opacity-20"></div>
+
+      {/* Floating Particles Background */}
+      {/* <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-5 left-10 w-2 h-2 bg-white rounded-full animate-blink"></div>
+        <div className="absolute bottom-5 right-10 w-3 h-3 bg-white rounded-full animate-blink delay-500"></div>
+        <div className="absolute top-10 right-16 w-1.5 h-1.5 bg-white rounded-full animate-blink delay-700"></div>
+      </div> */}
+
+      {/* Title */}
+      <h3 className="text-2xl font-bold text-white mb-4 drop-shadow-lg tracking-wider">
+        {title}
+      </h3>
+
+      {/* Chart */}
+      <div className="h-48">{chart}</div>
+    </motion.div>
+  ))}
+</div>
+
+
 
 
         {/* Alerts Section */}
@@ -424,13 +453,13 @@ const notifications = [
       </div>
 
       {/* Map Section */}
-      <div className="h-[400px] lg:h-96 rounded-lg overflow-hidden border border-gray-600">
+      <div className="h-[400px] lg:h-96 rounded-lg overflow-hidden border border-gray-600 z-10">
       {loading ? (
         <p className="text-center text-white">Loading...</p>
       ) : error ? (
         <p className="text-red-400">{error}</p>
       ) : (
-        <MapContainer center={userLocation} zoom={10} key={userLocation.toString()} className="h-full w-full">
+        <MapContainer center={[20.5937, 78.9629]} zoom={5} key={userLocation.toString()} className="h-full w-full">
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
           {/* User Location Marker */}
@@ -600,25 +629,78 @@ const notifications = [
   </div>
 )}
 
-  {/* Task List */}
-  <ul>
-          {filteredMaintenance.map((task) => (
-            <motion.li
-              key={task._id}
-              className="flex justify-between items-center p-4 border border-gray-200 rounded-lg mb-4  shadow-lg hover:shadow-xl"
-              whileHover={{ scale: 1.05 }}
-            >
-              <div className="flex flex-col">
-                <h2 className="font-semibold text-lg">{task.task}</h2>
-                <p className="text-gray-500 text-sm">Date: {new Date(task.date).toLocaleDateString()}</p>
-                <p className="text-gray-700 text-sm">{task.description}</p>
-              </div>
-              <span className={`text-sm font-medium ${task.priority === 3 ? 'text-red-500' : task.priority === 2 ? 'text-yellow-500' : 'text-green-500'}`}>
-                {task.priority === 3 ? 'High' : task.priority === 2 ? 'Medium' : 'Low'}
-              </span>
-            </motion.li>
-          ))}
+ {/* Task List */}
+ <ul className="space-y-5">
+  {filteredMaintenance.map((task) => (
+    <motion.li
+      key={task._id}
+      className="relative flex items-center justify-between p-6 rounded-xl border border-gray-500/20 
+      backdrop-blur-2xl bg-gray-900/50 shadow-lg hover:shadow-2xl transition-all 
+      transform hover:-translate-y-1 hover:scale-105 group overflow-hidden ring-1 ring-gray-700/50"
+      whileHover={{ scale: 1.05 }}
+    >
+      {/* Left Section - Task Details with Icon */}
+      <div className="flex items-center gap-4">
+        {/* Task Icon */}
+        <div
+          className={`w-12 h-12 flex items-center justify-center rounded-lg text-lg font-bold shadow-md 
+          ${
+            task.priority === 3
+              ? 'bg-red-500/20 text-red-400 border border-red-500/50'
+              : task.priority === 2
+              ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
+              : 'bg-green-500/20 text-green-400 border border-green-500/50'
+          }`}
+        >
+          {task.priority === 3 ? '🚨' : task.priority === 2 ? '⚠️' : '✅'}
+        </div>
+
+        <div className="flex flex-col">
+          <h2 className="text-xl font-semibold text-white tracking-wide">{task.task}</h2>
+          <p className="text-gray-400 text-sm">📅 {new Date(task.date).toLocaleDateString()}</p>
+          <p className="text-gray-500 text-sm">{task.description}</p>
+
+          {/* Task Progress Bar */}
+          <div className="w-full bg-gray-700/50 h-2 mt-2 rounded-full overflow-hidden">
+            <div
+              className={`h-full transition-all duration-300 ${
+                task.priority === 3
+                  ? 'bg-red-500 w-5/6'
+                  : task.priority === 2
+                  ? 'bg-yellow-400 w-2/3'
+                  : 'bg-green-400 w-1/3'
+              }`}
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Priority Badge */}
+      <span
+        className={`px-3 py-1 text-xs font-semibold rounded-lg bg-opacity-25 backdrop-blur-md 
+        ${
+          task.priority === 3
+            ? 'bg-red-500/20 text-red-400 border border-red-500/50'
+            : task.priority === 2
+            ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
+            : 'bg-green-500/20 text-green-400 border border-green-500/50'
+        }`}
+      >
+        {task.priority === 3 ? '🔥 High' : task.priority === 2 ? '⚠️ Medium' : '✅ Low'}
+      </span>
+
+      {/* Animated Glow Border */}
+      <div className="absolute inset-0 w-full h-full border-2 border-transparent rounded-xl 
+        group-hover:border-white/20 transition-all duration-300"></div>
+      
+      {/* Subtle Floating Neon Particles */}
+      <div className="absolute -top-2 -left-2 w-2 h-2 bg-white/40 rounded-full animate-blink"></div>
+      <div className="absolute bottom-2 right-2 w-3 h-3 bg-white/40 rounded-full animate-blink delay-500"></div>
+    </motion.li>
+  ))}
 </ul>
+
+
 
 </div>
 
