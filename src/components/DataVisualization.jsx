@@ -117,7 +117,7 @@ const DataVisualization = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <div className="p-6 rounded-xl shadow-lg bg-gray-900 text-white transition-all duration-300 min-h-screen">
+      <div className="p-10 rounded-xl shadow-lg bg-gray-900 text-white transition-all duration-300 min-h-screen">
         <h2 className="text-4xl font-bold mb-6 text-center tracking-wide">📊 Real-Time Productivity Data</h2>
   
         <div className="flex justify-between items-center mb-8">

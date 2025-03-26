@@ -302,7 +302,7 @@ const notifications = [
   
 
   return (
-    <div className={`${isDarkMode ? "dark" : "light"} min-h-screen transition-all`}>
+    <div className={`${isDarkMode ? "dark" : "light"} min-h-screen p-5 transition-all`}>
   
     <ToastContainer />
     <div className="p-8 space-y-8">

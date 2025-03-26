@@ -146,7 +146,7 @@ const SafetyManagementPlan = () => {
   };
 
   return (
-    <div className="p-8 bg-gray-900 rounded-lg shadow-lg w-full min-h-screen">
+    <div className="p-12 bg-gray-900 rounded-lg shadow-lg w-full min-h-screen">
       <h2 className="text-4xl font-bold text-center mb-6 text-blue-600">Safety Management Plan</h2>
 
       {successMessage && <div className="bg-green-100 text-green-800 p-4 rounded mb-4">{successMessage}</div>}

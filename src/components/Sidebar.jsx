@@ -19,7 +19,7 @@ const Sidebar = ({ setActivePage, activePage }) => {
     { to: '/', label: 'Dashboard', icon: <FaTachometerAlt /> },
     { to: '/shift-logs', label: 'Shift Logs', icon: <FaTasks /> },
     { to: '/safety-plan', label: 'Safety Plan', icon: <FaCalendarAlt /> },
-    { to: '/user-management', label: 'User Management', icon: <FaUsers /> },
+    // { to: '/user-management', label: 'User Management', icon: <FaUsers /> },
     { to: '/resources', label: 'Resources', icon: <FaRegBuilding /> },
     { to: '/inventory', label: 'Inventory', icon: <FaTools /> },
     { to: '/weather', label: 'Weather', icon: <FaCloud /> },
@@ -32,7 +32,7 @@ const Sidebar = ({ setActivePage, activePage }) => {
   ], []);
 
   return (
-    <div className="min-h-screen w-72 bg-[#0F1E33] shadow-lg flex flex-col justify-between rounded-r-3xl border-r border-gray-700">
+<div className="h-screen mt-7 w-72 bg-[#0F1E33] shadow-lg flex flex-col rounded-r-3xl border-r border-gray-700 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
       
       {/* Scrollable Menu Section */}
       <div className="flex-grow px-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">

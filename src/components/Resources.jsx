@@ -182,18 +182,18 @@ const Resources = () => {
 
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-black'}`}>
+    <div className={`min-h-screen text-white`}>
 
 
     
       <motion.div
-        className="w-full min-h-screen bg-gray-950  p-6 rounded-lg shadow-lg"
+        className="w-full min-h-screen bg-gray-950  p-12 rounded-lg shadow-lg"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">{darkMode ? '🌙' : '☀️'} Manage Resources</h2>
+          <h2 className="text-2xl font-bold">Manage Resources</h2>
           <button
             onClick={() => setDarkMode(!darkMode)}
             className="bg-gray-300 dark:bg-gray-700 p-2 rounded-md hover:bg-gray-400 dark:hover:bg-gray-600 transition"

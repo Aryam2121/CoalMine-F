@@ -291,7 +291,7 @@ const AuditLog = () => {
   };
 
   return (
-    <div className=" p-6 bg-gray-900 text-white rounded-lg shadow-md">
+    <div className=" p-10 bg-gray-900 text-white rounded-lg shadow-md">
       <h2 className="text-3xl font-bold text-center mb-4">Audit Log</h2>
 
       {/* Search Bar */}

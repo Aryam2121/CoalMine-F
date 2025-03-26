@@ -58,17 +58,18 @@ const Layout = ({ children }) => {
       <div className="flex w-full">
         {/* Sidebar (Shifted Down Below Navbar) */}
         {isAuthenticated && !hideLayout && (
-          <div className="w-64 shadow-lg bg-[#0F1E33] fixed h-full top-24 left-0 z-40">
-            <Sidebar setActivePage={setActivePage} />
+          <div className="w-64 shadow-lg bg-[#0F1E33] h-screen  fixed flex flex-col mt-16">
+          <Sidebar setActivePage={setActivePage} />
           </div>
         )}
 
         {/* Main Content */}
-        <div className={`flex-1 py-8 px-4  flex flex-col ${isAuthenticated && !hideLayout ? 'ml-64 mt-16' : ''}`}>
-          <div className="flex-1  bg-white shadow-md rounded-lg">
-            {children}
-          </div>
-        </div>
+<div className={`flex-1 py-8 flex ${isAuthenticated && !hideLayout ? ' ml-64 mt-16' : ''}`}>
+  <div className="flex-1 bg-white shadow-md rounded-lg dark:bg-gray-900">
+    {children}
+  </div>
+</div>
+
       </div>
     </div>
   );
