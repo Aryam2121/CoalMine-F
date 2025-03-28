@@ -39,6 +39,7 @@
     "jspdf": "^2.5.2",
     "leaflet": "^1.9.4",
     "leaflet.heat": "^0.2.0",
+    "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.475.0",
     "nodemailer": "^6.10.0",
     "papaparse": "^5.4.1",

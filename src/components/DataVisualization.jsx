@@ -178,48 +178,53 @@ const DataVisualization = () => {
           </Grid>
         </Grid>
   
-        <Card className="p-6 bg-gray-800/70 backdrop-blur-md rounded-xl shadow-lg">
-          <CardContent>
-            <h3 className="text-2xl font-semibold mb-4">📋 Data Records</h3>
-            {data.length === 0 ? (
-              <p className="text-gray-400 text-center text-lg">🚫 No records available</p>
-            ) : (
-              <table className="w-full text-left border-collapse rounded-lg overflow-hidden">
-                <thead>
-                  <tr className="bg-gray-700 text-white text-lg">
-                    <th className="p-3 border">📅 Date</th>
-                    <th className="p-3 border">📊 Value</th>
-                    <th className="p-3 border">📝 Description</th>
-                    <th className="p-3 border text-center">⚙️ Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.map((record) => (
-                    <tr
-                      key={record.id}
-                      className="bg-gray-900 border-b border-gray-700 hover:bg-gray-800 transition-all"
-                    >
-                      <td className="p-3 border">{record.date}</td>
-                      <td className="p-3 border">{record.value}</td>
-                      <td className="p-3 border">{record.description}</td>
-                      <td className="p-3 border flex gap-3 justify-center">
-                        <Button
-                          variant="contained"
-                          color="secondary"
-                          size="small"
-                          onClick={() => handleDeleteRecord(record.id)}
-                          className="px-4 py-1 rounded-md shadow-md hover:bg-red-600 transition-all"
-                        >
-                          🗑 Delete
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </CardContent>
-        </Card>
+        <Card className="p-6 bg-gray-800/50 backdrop-blur-lg rounded-2xl shadow-xl border border-gray-700">
+  <CardContent>
+    <h3 className="text-2xl font-semibold mb-4 text-white flex items-center gap-2">
+      📋 Data Records
+    </h3>
+
+    {data.length === 0 ? (
+      <p className="text-gray-400 text-center text-lg py-6">
+        🚫 No records available
+      </p>
+    ) : (
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse rounded-lg overflow-hidden shadow-md">
+          <thead>
+            <tr className="bg-gray-800/90 text-white text-lg">
+              <th className="p-4 border-b border-gray-600">📅 Date</th>
+              <th className="p-4 border-b border-gray-600">📊 Value</th>
+              <th className="p-4 border-b border-gray-600">📝 Description</th>
+              <th className="p-4 border-b border-gray-600 text-center">⚙️ Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((record) => (
+              <tr
+                key={record.id}
+                className="border-b border-gray-700 bg-gray-900 hover:bg-gray-800/90 transition-all duration-300"
+              >
+                <td className="p-4 text-white">{record.date}</td>
+                <td className="p-4 text-white">{record.value}</td>
+                <td className="p-4 text-white">{record.description}</td>
+                <td className="p-4 flex gap-3 justify-center">
+                  <button
+                    onClick={() => handleDeleteRecord(record.id)}
+                    className="px-4 py-2 bg-red-600/80 text-white rounded-md shadow-md hover:bg-red-700 transition-all duration-300 transform hover:scale-105 active:scale-95"
+                  >
+                    🗑 Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </CardContent>
+</Card>
+
   
         <div className="chart-container mb-8 h-[400px] flex justify-center items-center">
           {loading ? (

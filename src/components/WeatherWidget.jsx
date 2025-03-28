@@ -4,7 +4,7 @@ import { FaSun, FaCloud, FaCloudRain, FaTemperatureHigh, FaTemperatureLow, FaWin
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { MoonLoader } from "react-spinners"; // For loading spinner
-
+import debounce from "lodash.debounce";
 const WeatherAlerts = () => {
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,7 +21,7 @@ const WeatherAlerts = () => {
   const fetchCitySuggestions = async (query) => {
     if (query.length < 3) return; // Fetch only after at least 3 characters
     try {
-      const res = await axios.get(`https://api.openweathermap.org/data/2.5/find?appid=${API_KEY}&q=${query}&type=like`);
+      const res = await axios.get(`https://api.geoapify.com/v1/geocode/search?text=38%20Upper%20Montagu%20Street%2C%20Westminster%20W1H%201LJ%2C%20United%20Kingdom&apiKey=d4e5096717834628a5a85bfd293bf5da`);
       setCitySuggestions(res.data.list || []);
     } catch (err) {
       console.error("Error fetching city suggestions", err);
@@ -116,9 +116,8 @@ const WeatherAlerts = () => {
 
   const handleCityChange = (e) => {
     setCity(e.target.value);
-    fetchCitySuggestions(e.target.value);  // Fetch city suggestions on input change
+    debounce(fetchCitySuggestions(e.target.value), 500); // Wait 500ms before API call
   };
-
   const handleUnitChange = (e) => {
     const selectedUnit = e.target.value;
     setUnit(selectedUnit);
