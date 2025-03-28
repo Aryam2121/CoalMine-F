@@ -284,7 +284,6 @@ const ShiftHandoverLog = () => {
     shiftDate: "",
     shiftStartTime: "",
     shiftEndTime: "",
-    workerId: "",
     status: "",
     notes: "",
     file: null,
@@ -326,22 +325,32 @@ const ShiftHandoverLog = () => {
   };
 
   const submitLog = async (e) => {
-    e.preventDefault(); // Prevent default form submission behavior
+    e.preventDefault();
+    setErrorMessage('');
+  
+    if (!logData.shiftDetails || !logData.shiftDate || !logData.shiftStartTime || !logData.shiftEndTime) {
+      setErrorMessage('Please fill in all required fields.');
+      return;
+    }
+  
+  
     const formData = new FormData();
     formData.append('shiftDetails', logData.shiftDetails);
-    formData.append('safetyIssues', logData.safetyIssues);
-    formData.append('nextShiftTasks', logData.nextShiftTasks);
-    formData.append('additionalNotes', additionalNotes);
-    formData.append('workerId', logData.workerId);
+    formData.append('shiftDate', logData.shiftDate);
+
+    formData.append('shiftStartTime', logData.shiftStartTime);
+    formData.append('shiftEndTime', logData.shiftEndTime);
+    formData.append('status', logData.status || 'pending');
+    formData.append('notes', additionalNotes);
+    
     if (file) {
       formData.append('file', file);
     }
-
+  
     try {
       setLoading(true);
       const response = await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/createLogs`, formData);
-      const newLog = response.data;
-      setPreviousLogs([...previousLogs, newLog]);
+      setPreviousLogs([...previousLogs, response.data]);
       resetForm();
       alert('Log submitted successfully!');
     } catch (error) {
@@ -351,6 +360,7 @@ const ShiftHandoverLog = () => {
       setLoading(false);
     }
   };
+  
 
   const resetForm = () => {
     setLogData({ shiftDetails: '', safetyIssues: '', nextShiftTasks: '' });
@@ -370,6 +380,7 @@ const ShiftHandoverLog = () => {
       setErrorMessage('Failed to delete log. Please try again.');
     }
   };
+  
 
   const editLog = (id) => {
     const logToEdit = previousLogs.find((log) => log._id === id);
@@ -383,14 +394,18 @@ const ShiftHandoverLog = () => {
 
   const updateLog = async () => {
     try {
-      const updatedLog = { ...logData, id: editLogId };
+      const updatedLog = {
+        shiftDetails: logData.shiftDetails,
+        shiftDate: new Date(logData.shiftDate).toISOString(),
+        shiftStartTime: logData.shiftStartTime,
+        shiftEndTime: logData.shiftEndTime,
+        status: logData.status,
+        notes: additionalNotes,
+      };
+  
       const response = await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/updateLog/${editLogId}`, updatedLog);
-
-      setPreviousLogs(
-        previousLogs.map((log) =>
-          log._id === editLogId ? { ...log, ...response.data } : log
-        )
-      );
+  
+      setPreviousLogs(previousLogs.map((log) => (log._id === editLogId ? response.data : log)));
       resetForm();
       setEditLogId(null);
       alert('Log updated successfully!');
@@ -399,6 +414,7 @@ const ShiftHandoverLog = () => {
       setErrorMessage('Failed to update log. Please try again.');
     }
   };
+  
 
   const startVoiceRecognition = () => {
     SpeechRecognition.startListening({ continuous: true });
@@ -443,6 +459,55 @@ const ShiftHandoverLog = () => {
             placeholder="Enter safety issues..."
           ></textarea>
         </div>
+        <div>
+  <label htmlFor="status" className="text-lg font-medium text-white">Status</label>
+  <select
+    id="status"
+    name="status"
+    value={logData.status}
+    onChange={handleInputChange}
+    className="block w-full p-3 mt-2 bg-gray-800 text-white border border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
+  >
+    <option value="pending">Pending</option>
+    <option value="in-progress">In Progress</option>
+    <option value="completed">Completed</option>
+  </select>
+</div>
+        <div>
+  <label htmlFor="shiftDate" className="text-lg font-medium text-white">Shift Date</label>
+  <input
+    type="date"
+    id="shiftDate"
+    name="shiftDate"
+    value={logData.shiftDate}
+    onChange={handleInputChange}
+    className="block w-full p-2 mt-2 bg-gray-800 text-white border border-gray-700 rounded-lg"
+  />
+</div>
+
+<div>
+  <label htmlFor="shiftStartTime" className="text-lg font-medium text-white">Shift Start Time</label>
+  <input
+    type="time"
+    id="shiftStartTime"
+    name="shiftStartTime"
+    value={logData.shiftStartTime}
+    onChange={handleInputChange}
+    className="block w-full p-2 mt-2 bg-gray-800 text-white border border-gray-700 rounded-lg"
+  />
+</div>
+
+<div>
+  <label htmlFor="shiftEndTime" className="text-lg font-medium text-white">Shift End Time</label>
+  <input
+    type="time"
+    id="shiftEndTime"
+    name="shiftEndTime"
+    value={logData.shiftEndTime}
+    onChange={handleInputChange}
+    className="block w-full p-2 mt-2 bg-gray-800 text-white border border-gray-700 rounded-lg"
+  />
+</div>
     
         {/* Next Shift Tasks */}
         <div>
@@ -512,32 +577,52 @@ const ShiftHandoverLog = () => {
       <div className="mt-6 text-sm text-gray-400 text-center">{autoSaveStatus}</div>
     
       {/* Previous Logs Section */}
-      <h3 className="text-xl font-semibold text-white mt-8">Previous Shift Logs</h3>
-      {previousLogs.length > 0 ? (
-        <div className="space-y-4">
-          {previousLogs.map((log) => (
-            <div key={log._id} className="bg-gray-700 p-4 rounded-lg shadow-sm">
-              <p><strong>Shift Details:</strong> {log.shiftDetails}</p>
-              <p><strong>Safety Issues:</strong> {log.safetyIssues}</p>
-              <p><strong>Next Shift Tasks:</strong> {log.nextShiftTasks}</p>
-              <div className="mt-2 flex space-x-2">
-                <button onClick={editLogId ? updateLog : submitLog} className="bg-blue-500 text-white px-4 py-2 rounded-lg">
-                  {editLogId ? 'Update Log' : 'Submit Log'}
-                </button>
-                <button
-                  onClick={() => deleteLog(log._id)}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  Delete Log
-                </button>
-                <button onClick={() => editLog(log._id)} className="text-blue-600 hover:text-blue-800">Edit</button>
-              </div>
-            </div>
-          ))}
+      <h3 className="text-2xl font-bold text-blue-400 mt-8">📜 Previous Shift Logs</h3>
+{previousLogs.length > 0 ? (
+  <div className="space-y-6">
+    {previousLogs.map((log) => (
+      <div
+        key={log._id}
+        className="bg-gray-800 bg-opacity-60 p-5 rounded-xl shadow-lg border border-gray-700 transition-all hover:shadow-2xl hover:border-blue-500"
+      >
+        <p className="text-lg text-gray-300">
+          <strong className="text-blue-300">🛠 Shift Details:</strong> {log.shiftDetails}
+        </p>
+        <p className="text-lg text-gray-300">
+          <strong className="text-red-400">⚠ Safety Issues:</strong> {log.safetyIssues}
+        </p>
+        <p className="text-lg text-gray-300">
+          <strong className="text-green-400">📌 Next Shift Tasks:</strong> {log.nextShiftTasks}
+        </p>
+
+        {/* Action Buttons */}
+        <div className="mt-4 flex gap-3">
+          <button
+            onClick={editLogId ? updateLog : submitLog}
+            className="bg-blue-500 hover:bg-blue-400 text-white px-4 py-2 rounded-lg font-semibold transition-all shadow-md"
+          >
+            {editLogId ? "Update Log" : "Submit Log"}
+          </button>
+          <button
+            onClick={() => deleteLog(log._id)}
+            className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-semibold transition-all shadow-md"
+          >
+            Delete
+          </button>
+          <button
+            onClick={() => editLog(log._id)}
+            className="bg-yellow-500 hover:bg-yellow-400 text-gray-900 px-4 py-2 rounded-lg font-semibold transition-all shadow-md"
+          >
+            Edit
+          </button>
         </div>
-      ) : (
-        <p className="mt-4 text-center text-gray-400">No previous logs available.</p>
-      )}
+      </div>
+    ))}
+  </div>
+) : (
+  <p className="mt-6 text-center text-gray-400">🚫 No previous logs available.</p>
+)}
+
     </div>
   );
     

@@ -182,12 +182,12 @@ const Resources = () => {
 
 
   return (
-    <div className={`min-h-screen text-white`}>
+    <div className={`min-h-screen text-black`}>
 
 
     
       <motion.div
-        className="w-full min-h-screen bg-gray-950  p-12 rounded-lg shadow-lg"
+        className="w-full min-h-screen bg-gray-800  p-12 rounded-lg shadow-lg"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
