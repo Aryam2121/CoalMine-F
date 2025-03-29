@@ -124,6 +124,7 @@ import Layout from './components/Layout'; // Import the Layout component
 import WeatherTrivia from './components/weatherQuiz';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
+
 // Lazy-loaded components
 const Notifications = lazy(() => import('./components/Notificationweb'));
 const SafetyProtocol = lazy(() => import('./components/Safetyprotocol'));
@@ -150,6 +151,7 @@ const Achievements = lazy(() => import('./components/Achievements'));
 const ComplianceReports = lazy(() => import('./components/CompilanceReports'));
 const SafetyReportsPage = lazy(() => import('./components/SafetyReport'));
 const Profile = lazy(() => import('./components/Profile'));
+const Settings = lazy(() => import('./components/Settings'));
 // Protected Route Component
 const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
 
@@ -254,6 +256,14 @@ function App() {
                       element={
                         <ProtectedRoute>
                           <Profile/>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/settings"
+                      element={
+                        <ProtectedRoute>
+                          <Settings/>
                         </ProtectedRoute>
                       }
                     />

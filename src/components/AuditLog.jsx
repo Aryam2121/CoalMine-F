@@ -291,13 +291,13 @@ const AuditLog = () => {
   };
 
   return (
-    <div className=" p-10 bg-gray-900 text-white rounded-lg shadow-md">
-      <h2 className="text-3xl font-bold text-center mb-4">Audit Log</h2>
+    <div className="p-10 bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-lg shadow-xl min-h-screen">
+      <h2 className="text-4xl font-extrabold text-center mb-6 text-white">Audit Log</h2>
 
       {/* Search Bar */}
-      <div className="flex items-center gap-3 bg-gray-800 p-3 rounded-lg mb-4">
+      <div className="flex items-center gap-3 bg-gray-800 p-3 rounded-lg shadow-md mb-6">
         <TextField
-          label="Search User"
+          label="Search User "
           variant="outlined"
           size="small"
           fullWidth
@@ -322,17 +322,15 @@ const AuditLog = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="bg-gray-800 p-4 rounded-lg mb-4">
-          <Grid container spacing={2}>
+        <div className="bg-gray-800 p-5 rounded-lg shadow-lg mb-6">
+          <Grid container spacing={3}>
             <Grid item xs={12} sm={4}>
               <TextField
                 label="User"
                 variant="outlined"
                 fullWidth
                 value={newLog.user}
-                onChange={(e) =>
-                  setNewLog({ ...newLog, user: e.target.value })
-                }
+                onChange={(e) => setNewLog({ ...newLog, user: e.target.value })}
                 className="text-white"
               />
             </Grid>
@@ -342,9 +340,7 @@ const AuditLog = () => {
                 variant="outlined"
                 fullWidth
                 value={newLog.action}
-                onChange={(e) =>
-                  setNewLog({ ...newLog, action: e.target.value })
-                }
+                onChange={(e) => setNewLog({ ...newLog, action: e.target.value })}
                 className="text-white"
               />
             </Grid>
@@ -354,9 +350,7 @@ const AuditLog = () => {
                 variant="outlined"
                 fullWidth
                 value={newLog.details}
-                onChange={(e) =>
-                  setNewLog({ ...newLog, details: e.target.value })
-                }
+                onChange={(e) => setNewLog({ ...newLog, details: e.target.value })}
                 className="text-white"
               />
             </Grid>
@@ -365,6 +359,7 @@ const AuditLog = () => {
                 variant="contained"
                 color="primary"
                 onClick={handleCreateLog}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 transition-all font-semibold rounded-lg"
               >
                 Create Log
               </Button>
@@ -373,99 +368,81 @@ const AuditLog = () => {
         </div>
       </motion.div>
 
-      <TableContainer
-  component={Paper}
-  className="bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-2xl shadow-lg overflow-hidden"
->
-  <Table>
-    {/* Table Header */}
-    <TableHead>
-      <TableRow className="bg-gray-700 text-gray-300">
-        {["User", "Action", "Timestamp", "Details", "Expand"].map((header) => (
-          <TableCell key={header} className="text-lg font-semibold text-white px-6 py-4 text-center">
-            {header}
-          </TableCell>
-        ))}
-      </TableRow>
-    </TableHead>
-
-    {/* Table Body */}
-    <TableBody>
-      {filteredLogs
-        .slice((page - 1) * rowsPerPage, page * rowsPerPage)
-        .map((log) => (
-          <React.Fragment key={log._id}>
-            <motion.tr
-              layout
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-              className="cursor-pointer"
-            >
-              {/* TableRow ke andar hi saare TableCell hone chahiye */}
-              <TableRow className="even:bg-gray-800 odd:bg-gray-850 hover:bg-gray-700 transition-all">
-                <TableCell className="px-6 py-4 text-center font-medium">
-                  {log.user}
+      <TableContainer component={Paper} className="bg-gray-900 text-white rounded-2xl shadow-lg overflow-hidden">
+        <Table>
+          {/* Table Header */}
+          <TableHead>
+            <TableRow className="bg-gray-700 text-gray-300">
+              {["User", "Action", "Timestamp", "Details", "Expand"].map((header) => (
+                <TableCell key={header} className="text-lg font-semibold text-white px-6 py-4 text-center">
+                  {header}
                 </TableCell>
-                <TableCell className="px-6 py-4 text-center">
-                  <Chip
-                    label={log.action}
-                    className="bg-blue-600 text-white font-medium px-3 py-1 rounded-lg"
-                  />
-                </TableCell>
-                <TableCell className="px-6 py-4 text-center text-gray-300">
-                  {new Date(log.timestamp).toLocaleString("en-IN", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                    hour12: true,
-                    timeZone: "Asia/Kolkata",
-                  })}
-                </TableCell>
-                <TableCell className="px-6 py-4 text-center text-gray-300">
-                  {log.details}
-                </TableCell>
-                <TableCell className="px-6 py-4 text-center">
-                  <Tooltip title="Expand Details">
-                    <IconButton
-                      onClick={() => toggleRowExpand(log._id)}
-                      className="text-blue-400 hover:text-blue-500 transition"
-                    >
-                      {expandedRows.includes(log._id) ? (
-                        <ExpandLessIcon />
-                      ) : (
-                        <ExpandMoreIcon />
-                      )}
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            </motion.tr>
-
-            {/* Expanded Details Row */}
-            <TableRow>
-              <TableCell colSpan={5} className="px-6 py-4">
-                <Collapse in={expandedRows.includes(log._id)} timeout="auto" unmountOnExit>
-                  <Box p={3} className="bg-gray-750 text-gray-300 rounded-lg shadow-md border border-gray-600">
-                    <p className="font-medium text-gray-200">
-                      Additional Details: {log.details}
-                    </p>
-                  </Box>
-                </Collapse>
-              </TableCell>
+              ))}
             </TableRow>
-          </React.Fragment>
-        ))}
-    </TableBody>
-  </Table>
-</TableContainer>
+          </TableHead>
 
+          {/* Table Body */}
+          <TableBody>
+            {filteredLogs.slice((page - 1) * rowsPerPage, page * rowsPerPage).map((log) => (
+              <React.Fragment key={log._id}>
+                <motion.tr
+                  layout
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.2 }}
+                  className="cursor-pointer"
+                >
+                  <TableRow className="even:bg-gray-800 odd:bg-gray-850 hover:bg-gray-700 transition-all">
+                    <TableCell className="px-6 py-4 text-center font-medium">{log.user}</TableCell>
+                    <TableCell className="px-6 py-4 text-center">
+                      <Chip
+                        label={log.action}
+                        className="bg-blue-600 text-white font-medium px-3 py-1 rounded-lg"
+                      />
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-center text-gray-300">
+                      {new Date(log.timestamp).toLocaleString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                        hour12: true,
+                        timeZone: "Asia/Kolkata",
+                      })}
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-center text-gray-300">{log.details}</TableCell>
+                    <TableCell className="px-6 py-4 text-center">
+                      <Tooltip title="Expand Details">
+                        <IconButton
+                          onClick={() => toggleRowExpand(log._id)}
+                          className="text-blue-400 hover:text-blue-500 transition"
+                        >
+                          {expandedRows.includes(log._id) ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                </motion.tr>
 
+                {/* Expanded Details Row */}
+                <TableRow>
+                  <TableCell colSpan={5} className="px-6 py-4">
+                    <Collapse in={expandedRows.includes(log._id)} timeout="auto" unmountOnExit>
+                      <Box p={3} className="bg-gray-750 text-gray-300 rounded-lg shadow-md border border-gray-600">
+                        <p className="font-medium text-gray-200">Additional Details: {log.details}</p>
+                      </Box>
+                    </Collapse>
+                  </TableCell>
+                </TableRow>
+              </React.Fragment>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       {/* Pagination */}
-      <div className="flex justify-center mt-4">
+      <div className="flex justify-center mt-6">
         <Pagination
           count={Math.ceil(filteredLogs.length / rowsPerPage)}
           page={page}

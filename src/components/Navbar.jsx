@@ -234,38 +234,54 @@ const Navbar = ({ activePage }) => {
 
     {/* Profile Dropdown */}
     {isProfileOpen && (
-      <motion.div 
-        initial={{ opacity: 0, y: -10 }} 
-        animate={{ opacity: 1, y: 0 }} 
-        exit={{ opacity: 0, y: -10 }}
-        className="absolute right-0 mt-3 w-48 bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200 z-50"
-      >
-        <div className="p-3 border-b bg-gray-100">
-          <p className="text-sm font-semibold text-gray-800">{user?.name || 'Guest User'}</p>
-          <p className="text-xs text-gray-500">{user?.email || 'guest@example.com'}</p>
-        </div>
-        <ul className="text-sm">
-        <li>
-      <button 
-        onClick={() => navigate("/profile")} 
-        className="block px-4 py-2 hover:bg-gray-100 text-gray-700 w-full text-left"
-      >
-        View Profile
-      </button>
-    </li>
-          <li>
-            <Link to="/settings" className="block px-4 py-2 hover:bg-gray-100 text-gray-700">
-              Settings
-            </Link>
-          </li>
-          <li>
-            <button onClick={logout} className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">
-              Logout
-            </button>
-          </li>
-        </ul>
-      </motion.div>
-    )}
+  <motion.div 
+    initial={{ opacity: 0, y: -10 }} 
+    animate={{ opacity: 1, y: 0 }} 
+    exit={{ opacity: 0, y: -10 }}
+    className="absolute right-0 mt-3 w-56 bg-gray-900 bg-opacity-90 backdrop-blur-xl shadow-xl rounded-xl border border-gray-700 z-50"
+  >
+    {/* User Info */}
+    {/* <div className="p-4 border-b border-gray-700 flex items-center gap-3 bg-gradient-to-r from-gray-800 to-gray-900">
+      <div className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-600 text-white font-semibold text-lg shadow-md">
+        {user?.name?.charAt(0).toUpperCase()}
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-white">{user?.name}</p>
+        <p className="text-xs text-gray-400">{user?.email}</p>
+      </div>
+    </div> */}
+
+    {/* Dropdown Options */}
+    <ul className="text-sm text-gray-300">
+      <li>
+        <button 
+          onClick={() => navigate("/profile")} 
+          className="flex items-center gap-2 px-4 py-3 hover:bg-gray-800 text-white w-full text-left transition duration-200"
+        >
+          👤 View Profile
+        </button>
+      </li>
+      <li>
+        <Link 
+          to="/settings" 
+          className="flex items-center gap-2 px-4 py-3 hover:bg-gray-800 text-white transition duration-200"
+        >
+          ⚙️ Settings
+        </Link>
+      </li>
+      <li>
+        <button 
+          onClick={logout} 
+          className="flex items-center gap-2 px-4 py-3 text-red-500 hover:bg-gray-800 w-full text-left transition duration-200"
+        >
+          🚪 Logout
+        </button>
+      </li>
+    </ul>
+  </motion.div>
+)}
+
+
   </div>
 
   {/* Dark Mode Toggle */}

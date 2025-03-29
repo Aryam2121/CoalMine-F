@@ -309,8 +309,55 @@ const notifications = [
       alert("Failed to add location.");
     }
   };
-  
+  // Fetch a task by ID
+const getMaintenanceById = async (id) => {
+  try {
+    const response = await axios.get(`https://${import.meta.env.VITE_BACKEND}/getTask/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching task by ID:", error);
+    throw error;
+  }
+};
 
+// Delete a task by ID
+const handleDelete = async (taskId) => {
+  try {
+    const confirmDelete = window.confirm("Are you sure you want to delete this task?");
+    if (!confirmDelete) return;
+
+    await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/deleteTask/${taskId}`);
+    
+    // Remove deleted task from UI
+    setFilteredMaintenance((prevTasks) => prevTasks.filter((task) => task._id !== taskId));
+    setMaintenanceTasks((prevTasks) => prevTasks.filter((task) => task._id !== taskId));
+
+    console.log("Task deleted successfully");
+  } catch (error) {
+    console.error("Error deleting task:", error);
+  }
+};
+
+const updateMaintenanceTask = async (taskId, updatedData, setMaintenanceTasks) => {
+  try {
+    const { data } = await axios.put(
+      `https://${import.meta.env.VITE_BACKEND}/api/updateTask/${taskId}`,
+      updatedData
+    );
+
+    console.log("Task updated:", data);
+
+    // Update state to reflect changes
+    setMaintenanceTasks((prevTasks) =>
+      prevTasks.map((task) => (task._id === taskId ? data.updatedTask : task))
+    );
+    
+    alert("Task updated successfully!");
+  } catch (error) {
+    console.error("Error updating task:", error);
+    alert("Failed to update task. Please try again.");
+  }
+};
   return (
     <div className={`${isDarkMode ? "dark" : "light"} min-h-screen p-5 transition-all`}>
   
@@ -576,7 +623,7 @@ const notifications = [
 
 {/* Modal */}
 {isModalOpen && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center transition-opacity duration-300">
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center transition-opacity duration-300 ease-in-out z-50">
     <div className="bg-gray-800/90 backdrop-blur-lg p-6 rounded-2xl shadow-xl w-96 text-white">
       <h2 className="text-2xl font-bold mb-4">Create New Task</h2>
       
@@ -662,9 +709,20 @@ const notifications = [
               : 'bg-green-500/20 text-green-400 border border-green-500/50'
           }`}
         >
+          
           {task.priority === 3 ? '🚨' : task.priority === 2 ? '⚠️' : '✅'}
         </div>
-
+        
+{/* Delete Icon - Fixed Clickability */}
+<div className="absolute top-3 right-3 z-50 cursor-pointer pointer-events-auto">
+        <span
+          onClick={() => handleDelete(task._id)}
+          className="text-gray-400 hover:text-red-500 text-xl transition-transform transform hover:scale-110"
+          title="Delete Task"
+        >
+          🗑️
+        </span>
+      </div>
         <div className="flex flex-col">
           <h2 className="text-xl font-semibold text-white tracking-wide">{task.task}</h2>
           <p className="text-gray-400 text-sm">📅 {new Date(task.date).toLocaleDateString()}</p>
