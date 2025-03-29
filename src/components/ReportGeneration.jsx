@@ -4,6 +4,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { CircularProgress, Snackbar, Alert, TextField, Button, MenuItem, Select, FormControl, InputLabel, Grid, Paper } from '@mui/material';
 
+import { motion } from "framer-motion";
 const ReportGeneration = () => {
   const [reportType, setReportType] = useState('shiftLogs');
   const [startDate, setStartDate] = useState('');
@@ -71,11 +72,21 @@ const ReportGeneration = () => {
   };
 
   return (
-    <div className="p-12 bg-gray-900 text-white rounded-lg shadow-xl">
-      <h2 className="text-3xl font-extrabold mb-6 text-center text-blue-400">Report Generation</h2>
-      
-      <Paper elevation={8} className="p-6 bg-gray-800 rounded-lg">
-        <Grid container spacing={3}>
+    <motion.div
+      className="p-12 bg-gray-900 text-white rounded-xl shadow-2xl min-h-screen"
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+    >
+      <h2 className="text-4xl font-extrabold mb-6 text-center text-blue-400">Report Generation</h2>
+
+      <motion.div
+        className="p-6 bg-gray-800 rounded-xl shadow-lg"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Grid container spacing={4}>
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth>
               <InputLabel className="text-blue-300">Report Type</InputLabel>
@@ -115,49 +126,59 @@ const ReportGeneration = () => {
           </Grid>
         </Grid>
 
-        <Button
-          variant="contained"
-          color="primary"
+        <motion.button
           onClick={generatePDF}
-          fullWidth
           disabled={loading}
-          className="mt-6 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 rounded-lg shadow-md"
+          className="mt-6 w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-lg shadow-lg transition-all"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
         >
-          {loading ? <CircularProgress size={24} color="inherit" /> : 'Generate PDF'}
-        </Button>
-      </Paper>
+          {loading ? <CircularProgress size={24} color="inherit" /> : "Generate PDF"}
+        </motion.button>
+      </motion.div>
 
-      <div id="report-content" className="p-6 bg-gray-800 rounded-lg mt-6 shadow-lg">
+      <motion.div
+        className="p-6 bg-gray-800 rounded-xl mt-6 shadow-lg"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+      >
         <h3 className="text-xl font-semibold mb-3 text-blue-300">Report Preview</h3>
         {loading ? (
           <CircularProgress color="secondary" />
         ) : reportData.length > 0 ? (
-          <div>
+          <div className="space-y-4">
             {reportData.map((data, index) => (
-              <div key={index} className="mb-4 p-4 bg-gray-700 rounded-lg shadow-md border border-blue-400">
+              <motion.div
+                key={index}
+                className="p-4 bg-gray-700 rounded-lg shadow-md border border-blue-400"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.2 }}
+              >
                 <p><strong className="text-blue-300">Date:</strong> {data.date}</p>
                 <p><strong className="text-blue-300">Details:</strong> {data.details}</p>
                 <p><strong className="text-blue-300">Comments:</strong> {data.comments}</p>
-              </div>
+              </motion.div>
             ))}
           </div>
         ) : (
           <p className="text-gray-400">No data available for the selected date range.</p>
         )}
-      </div>
+      </motion.div>
 
-      <Snackbar open={Boolean(successMessage)} autoHideDuration={6000} onClose={handleSuccessClose}>
-        <Alert onClose={handleSuccessClose} severity="success">
+      <Snackbar open={Boolean(successMessage)} autoHideDuration={6000} onClose={() => setSuccessMessage("")}>
+        <Alert onClose={() => setSuccessMessage("")} severity="success">
           {successMessage}
         </Alert>
       </Snackbar>
 
-      <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-        <Alert onClose={handleCloseSnackbar} severity="error">
+      <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={() => setOpenSnackbar(false)}>
+        <Alert onClose={() => setOpenSnackbar(false)} severity="error">
           {error}
         </Alert>
       </Snackbar>
-    </div>
+    </motion.div>
   );
 };
 

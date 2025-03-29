@@ -90,7 +90,7 @@ const Alerts = () => {
     };
 
     return (
-        <div className="w-full min-h-screen px-6 py-8 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-gray-200">
+        <div className="w-full min-h-screen px-10 py-8 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-gray-200">
             {/* Toast Notification */}
             {toast && (
                 <div
@@ -101,9 +101,9 @@ const Alerts = () => {
                     {toast.message}
                 </div>
             )}
-    
+      <h2 className="text-4xl font-extrabold  text-left text-teal-400">Real-time Safety Alerts</h2>
             {/* Buttons in the upper-right corner */}
-            <div className="fixed top-5 right-5 flex space-x-4 z-50">
+            <div className="flex justify-end space-x-4 mt-4">
                 <button
                     onClick={() => setShowModal(true)}
                     className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-lg shadow-lg hover:scale-105 transform transition duration-200"
@@ -118,7 +118,7 @@ const Alerts = () => {
                 </button>
             </div>
     
-            <h2 className="text-4xl font-extrabold mb-8 text-center">Real-time Safety Alerts</h2>
+          
     
             {/* Add New Alert Modal */}
             {showModal && (
@@ -158,68 +158,76 @@ const Alerts = () => {
                 </div>
             )}
     
-            {/* Alert List */}
-            {loading ? (
-                <div className="flex justify-center items-center">
-                    <div className="w-12 h-12 border-4 border-t-4 border-blue-500 rounded-full animate-spin"></div>
+           {/* Alert List */}
+{loading ? (
+    <div className="flex justify-center items-center min-h-[300px]">
+        <div className="w-12 h-12 border-4 border-t-4 border-blue-500 rounded-full animate-spin"></div>
+    </div>
+) : (
+    <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {alerts.map((alert) => (
+            <li
+                key={alert._id}
+                className={`relative p-6 bg-gray-800 rounded-2xl shadow-xl overflow-hidden transform transition-transform duration-300 hover:scale-[1.07] hover:shadow-2xl ${
+                    alert.resolved ? "opacity-70" : "opacity-100"
+                }`}
+            >
+                <div className="absolute top-0 left-0 w-full h-1 rounded-t-xl ${
+                    alert.type === 'critical' ? 'bg-red-500' : 'bg-yellow-400'
+                }"></div>
+
+                <div className="flex items-start space-x-4 mb-6">
+                    <div
+                        className={`text-5xl flex-shrink-0 ${
+                            alert.type === "critical" ? "text-red-500" : "text-yellow-400"
+                        }`}
+                    >
+                        {alert.type === "critical" ? (
+                            <AiOutlineExclamationCircle />
+                        ) : (
+                            <AiOutlineWarning />
+                        )}
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-2xl font-bold tracking-wide">{alert.type.toUpperCase()}</p>
+                        <p className="mt-2 text-gray-300 text-lg">{alert.message}</p>
+                        <p className="text-sm text-gray-400 mt-3">
+                            {new Date(alert.timestamp).toLocaleTimeString()}
+                        </p>
+                        <p className="text-sm text-gray-400">Created By: <span className="text-gray-200 font-medium">{alert.createdBy}</span></p>
+                        {alert.resolved && (
+                            <p className="text-sm text-green-400 mt-2">
+                                Resolved at: {new Date(alert.resolvedAt).toLocaleTimeString()}
+                            </p>
+                        )}
+                    </div>
                 </div>
-            ) : (
-                <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {alerts.map((alert) => (
-                        <li
-                            key={alert._id}
-                            className={`p-6 bg-gray-800rounded-xl shadow-lg transform transition-transform duration-300 hover:scale-105 ${
-                                alert.resolved ? "opacity-70" : "opacity-100"
-                            }`}
+
+                <div className="flex justify-end space-x-4 mt-4">
+                    {!alert.resolved && (
+                        <button
+                            onClick={() => handleResolveAlert(alert._id)}
+                            className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-md hover:scale-110 transform transition duration-200 flex items-center space-x-2"
                         >
-                            <div className="flex items-start space-x-4 mb-6">
-                                <div
-                                    className={`text-4xl ${
-                                        alert.type === "critical" ? "text-red-500" : "text-yellow-400"
-                                    }`}
-                                >
-                                    {alert.type === "critical" ? (
-                                        <AiOutlineExclamationCircle />
-                                    ) : (
-                                        <AiOutlineWarning />
-                                    )}
-                                </div>
-                                <div>
-                                    <p className="text-xl font-bold">{alert.type.toUpperCase()}:</p>
-                                    <p className="mt-1">{alert.message}</p>
-                                    <p className="text-sm text-gray-400 mt-2">
-                                        {new Date(alert.timestamp).toLocaleTimeString()}
-                                    </p>
-                                    <p className="text-sm text-gray-400">Created By: {alert.createdBy}</p>
-                                    {alert.resolved && (
-                                        <p className="text-sm text-green-400 mt-2">
-                                            Resolved at: {new Date(alert.resolvedAt).toLocaleTimeString()}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="flex justify-end space-x-4">
-                                {!alert.resolved && (
-                                    <button
-                                        onClick={() => handleResolveAlert(alert._id)}
-                                        className="bg-green-500 text-white p-3 rounded-lg hover:scale-105 transform transition duration-200"
-                                    >
-                                        <FiCheckCircle />
-                                    </button>
-                                )}
-                                <button
-                                    onClick={() => handleDeleteAlert(alert._id)}
-                                    className="bg-red-500 text-white p-3 rounded-lg hover:scale-105 transform transition duration-200"
-                                >
-                                    <MdDeleteForever />
-                                </button>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-            )}
-        </div>
-    );
+                            <FiCheckCircle className="text-lg" />
+                            <span>Resolve</span>
+                        </button>
+                    )}
+                    <button
+                        onClick={() => handleDeleteAlert(alert._id)}
+                        className="bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:scale-110 transform transition duration-200 flex items-center space-x-2"
+                    >
+                        <MdDeleteForever className="text-lg" />
+                        <span>Delete</span>
+                    </button>
+                </div>
+            </li>
+        ))}
+    </ul>
+)}
+
+    </div>
+);
     
     
 };
