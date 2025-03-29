@@ -281,7 +281,6 @@ const ShiftHandoverLog = () => {
   const { transcript, resetTranscript } = useSpeechRecognition();
   const [formData, setFormData] = useState({
     shiftDetails: "",
-    shiftDate: "",
     shiftStartTime: "",
     shiftEndTime: "",
     status: "",
@@ -328,28 +327,34 @@ const ShiftHandoverLog = () => {
     e.preventDefault();
     setErrorMessage('');
   
-    if (!logData.shiftDetails || !logData.shiftDate || !logData.shiftStartTime || !logData.shiftEndTime) {
+    if (!logData.shiftDetails || !logData.shiftStartTime || !logData.shiftEndTime) {
       setErrorMessage('Please fill in all required fields.');
       return;
     }
   
-  
     const formData = new FormData();
     formData.append('shiftDetails', logData.shiftDetails);
-    formData.append('shiftDate', logData.shiftDate);
-
     formData.append('shiftStartTime', logData.shiftStartTime);
     formData.append('shiftEndTime', logData.shiftEndTime);
     formData.append('status', logData.status || 'pending');
     formData.append('notes', additionalNotes);
-    
+  
     if (file) {
       formData.append('file', file);
     }
   
     try {
       setLoading(true);
-      const response = await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/createLogs`, formData);
+      const response = await axios.post(
+        `https://${import.meta.env.VITE_BACKEND}/api/createLogs`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+  
       setPreviousLogs([...previousLogs, response.data]);
       resetForm();
       alert('Log submitted successfully!');
@@ -361,7 +366,6 @@ const ShiftHandoverLog = () => {
     }
   };
   
-
   const resetForm = () => {
     setLogData({ shiftDetails: '', safetyIssues: '', nextShiftTasks: '' });
     setFile(null);
@@ -396,7 +400,7 @@ const ShiftHandoverLog = () => {
     try {
       const updatedLog = {
         shiftDetails: logData.shiftDetails,
-        shiftDate: new Date(logData.shiftDate).toISOString(),
+       
         shiftStartTime: logData.shiftStartTime,
         shiftEndTime: logData.shiftEndTime,
         status: logData.status,
@@ -473,7 +477,7 @@ const ShiftHandoverLog = () => {
     <option value="completed">Completed</option>
   </select>
 </div>
-        <div>
+        {/* <div>
   <label htmlFor="shiftDate" className="text-lg font-medium text-white">Shift Date</label>
   <input
     type="date"
@@ -483,7 +487,7 @@ const ShiftHandoverLog = () => {
     onChange={handleInputChange}
     className="block w-full p-2 mt-2 bg-gray-800 text-white border border-gray-700 rounded-lg"
   />
-</div>
+</div> */}
 
 <div>
   <label htmlFor="shiftStartTime" className="text-lg font-medium text-white">Shift Start Time</label>
