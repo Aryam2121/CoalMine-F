@@ -27,6 +27,8 @@ import Chatbot from './chatbot';
 import axios from 'axios'; // Added import for axios
 import 'leaflet/dist/leaflet.css';
 
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
 ChartJS.register(Filler,Title, Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement, ArcElement);
 
  
@@ -48,6 +50,14 @@ const Dashboard = () => {
   const [filteredMaintenance, setFilteredMaintenance] = useState([]);
   const [maintenanceTasks, setMaintenanceTasks] = useState([]);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const customIcon = L.icon({
+    iconUrl: markerIcon,
+    shadowUrl: markerShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+  });
   const [newTask, setNewTask] = useState({
     task: '',
     date: '',
@@ -463,13 +473,13 @@ const notifications = [
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
           {/* User Location Marker */}
-          <Marker position={userLocation}>
+          <Marker position={userLocation} icon={customIcon}>
             <Popup>Your Location</Popup>
           </Marker>
 
           {/* Database Locations */}
           {locations.map((loc, index) => (
-            <Marker key={index} position={[loc.coordinates.coordinates[1], loc.coordinates.coordinates[0]]}>
+            <Marker key={index} position={[loc.coordinates.coordinates[1], loc.coordinates.coordinates[0]]} icon={customIcon}>
               <Popup className="text-gray-800 font-semibold">{loc.name}</Popup>
             </Marker>
           ))}
