@@ -246,7 +246,7 @@ export default function ComplianceReports() {
                       <td className="p-4 text-center">
                         {expandedRow === report.id ? <FiChevronUp /> : <FiChevronDown />}
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleDeleteReport(report.id); }}
+                          onClick={(e) => { e.stopPropagation(); handleDeleteReport(report._id); }}
                           className="text-red-600 hover:text-red-800"
                         >
                           Delete

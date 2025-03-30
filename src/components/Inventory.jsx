@@ -108,7 +108,7 @@ const Inventory = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <motion.div
-        className="p-6 bg-gray-800 bg-opacity-80 backdrop-blur-lg rounded-xl shadow-xl"
+        className="p-6 bg-opacity-80  rounded-xl shadow-xl"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
@@ -150,7 +150,7 @@ const Inventory = () => {
       ),
     }}
   />
-</Box>;
+</Box>
 
         {/* Actions */}
         <div className="flex justify-between mb-4">

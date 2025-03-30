@@ -39,6 +39,7 @@ const SafetyReportsPage = () => {
       formData.append("description", data.description);
       formData.append("riskLevel", data.riskLevel);
       formData.append("incidentDate", data.incidentDate);
+      formData.append("createdBy", data.createdBy); 
       formData.append("location", data.location);
   
       // Append file attachments correctly
@@ -108,93 +109,95 @@ const SafetyReportsPage = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6 text-blue-700">Safety Reports Management</h1>
-
+    <div className="p-10 bg-gray-900 text-white min-h-screen">
+      <h1 className="text-3xl font-bold mb-6 text-blue-400">Safety Reports Management</h1>
+  
       {/* Search Report by ID */}
-      <div className="p-4 bg-white shadow-md rounded mb-6 flex gap-2">
+      <div className="p-4 bg-gray-800 shadow-md rounded mb-6 flex gap-2">
         <input
           type="text"
           value={searchId}
           onChange={(e) => setSearchId(e.target.value)}
           placeholder="Enter Report ID"
-          className="p-2 border rounded w-full"
+          className="p-2 border border-gray-600 bg-gray-700 text-white rounded w-full"
         />
         <button onClick={handleSearch} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
           Search
         </button>
       </div>
-
+  
       {searchedReport && (
-        <div className="p-4 bg-white shadow-md rounded mb-6">
-          <h3 className="text-lg font-semibold">{searchedReport.reportTitle}</h3>
-          <p className="text-gray-700">{searchedReport.description}</p>
-          <p className={`text-sm font-medium ${searchedReport.riskLevel === "High" ? "text-red-600" : "text-gray-500"}`}>
+        <div className="p-4 bg-gray-800 shadow-md rounded mb-6">
+          <h3 className="text-lg font-semibold text-blue-300">{searchedReport.reportTitle}</h3>
+          <p className="text-gray-300">{searchedReport.description}</p>
+          <p className={`text-sm font-medium ${searchedReport.riskLevel === "High" ? "text-red-500" : "text-gray-400"}`}>
             Risk Level: {searchedReport.riskLevel}
           </p>
         </div>
       )}
-
+  
       {/* Safety Report Form */}
-      <div className="p-6 bg-white shadow-md rounded mb-6">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">Create Safety Report</h2>
+      <div className="p-6 bg-gray-800 shadow-md rounded mb-6">
+        <h2 className="text-xl font-semibold mb-4 text-blue-300">Create Safety Report</h2>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3">
-          <input {...register("reportTitle", { required: true })} placeholder="Report Title" className="p-2 border rounded" />
-          <textarea {...register("description", { required: true })} placeholder="Description" className="p-2 border rounded" />
-          <select {...register("riskLevel", { required: true })} className="p-2 border rounded">
+          <input {...register("reportTitle", { required: true })} placeholder="Report Title" className="p-2 border border-gray-600 bg-gray-700 text-white rounded" />
+          <textarea {...register("description", { required: true })} placeholder="Description" className="p-2 border border-gray-600 bg-gray-700 text-white rounded" />
+          <select {...register("riskLevel", { required: true })} className="p-2 border border-gray-600 bg-gray-700 text-white rounded">
             <option value="Low">Low Risk</option>
             <option value="Medium">Medium Risk</option>
             <option value="High">High Risk</option>
           </select>
-          <input type="date" {...register("incidentDate", { required: true })} className="p-2 border rounded" />
-          <input {...register("location", { required: true })} placeholder="Location" className="p-2 border rounded" />
-          <input type="file" {...register("attachments")} multiple className="p-2 border rounded" />
+          <input {...register("createdBy", { required: true })} placeholder="Created By" className="p-2 border border-gray-600 bg-gray-700 text-white rounded" />
+          <input type="date" {...register("incidentDate", { required: true })} className="p-2 border border-gray-600 bg-gray-700 text-white rounded" />
+          <input {...register("location", { required: true })} placeholder="Location" className="p-2 border border-gray-600 bg-gray-700 text-white rounded" />
+          <input type="file" {...register("attachments")} multiple className="p-2 border border-gray-600 bg-gray-700 text-white rounded" />
           <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
             {loading ? "Submitting..." : "Submit Report"}
           </button>
         </form>
       </div>
+  
       {/* Action Confirmation Modal */}
-{modal.show && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-    <div className="bg-white p-6 rounded shadow-md w-96">
-      <h3 className="text-lg font-semibold text-gray-800">
-        Are you sure you want to {modal.action} this report?
-      </h3>
-      <div className="flex justify-end gap-2 mt-4">
-        <button
-          onClick={() => setModal({ show: false, action: null, id: null })}
-          className="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleAction} // Call the function here
-          className={`px-4 py-2 rounded ${
-            modal.action === "approve" ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600"
-          } text-white`}
-        >
-          Confirm
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
+      {modal.show && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-gray-800 p-6 rounded shadow-md w-96">
+            <h3 className="text-lg font-semibold text-blue-300">
+              Are you sure you want to {modal.action} this report?
+            </h3>
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => setModal({ show: false, action: null, id: null })}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAction}
+                className={`px-4 py-2 rounded ${
+                  modal.action === "approve" ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600"
+                } text-white`}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+  
       {/* Safety Reports List */}
-      <h2 className="text-2xl font-semibold mb-4 text-gray-800">Safety Reports</h2>
+      <h2 className="text-2xl font-semibold mb-4 text-blue-300">Safety Reports</h2>
       {loading ? (
-        <p className="text-center text-blue-500">Loading reports...</p>
+        <p className="text-center text-blue-400">Loading reports...</p>
       ) : reports.length === 0 ? (
-        <p className="text-center text-gray-500">No reports available</p>
+        <p className="text-center text-gray-400">No reports available</p>
       ) : (
         <div className="grid gap-4">
           {reports.map((report) => (
-            <div key={report._id} className="p-4 bg-white shadow-md rounded flex justify-between items-center">
+            <div key={report._id} className="p-4 bg-gray-800 shadow-md rounded flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-semibold">{report.reportTitle}</h3>
-                <p className="text-gray-700">{report.description}</p>
-                <p className={`text-sm font-medium ${report.riskLevel === "High" ? "text-red-600" : "text-gray-500"}`}>
+                <h3 className="text-lg font-semibold text-blue-300">{report.reportTitle}</h3>
+                <p className="text-gray-300">{report.description}</p>
+                <p className={`text-sm font-medium ${report.riskLevel === "High" ? "text-red-500" : "text-gray-400"}`}>
                   Risk Level: {report.riskLevel}
                 </p>
               </div>
@@ -216,10 +219,11 @@ const SafetyReportsPage = () => {
           ))}
         </div>
       )}
-
+  
       <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
+  
 };
 
 export default SafetyReportsPage;

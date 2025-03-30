@@ -50,6 +50,8 @@ const Dashboard = () => {
   const [filteredMaintenance, setFilteredMaintenance] = useState([]);
   const [maintenanceTasks, setMaintenanceTasks] = useState([]);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+
   const customIcon = L.icon({
     iconUrl: markerIcon,
     shadowUrl: markerShadow,
@@ -65,6 +67,19 @@ const Dashboard = () => {
     priority: 3,
     status: 'pending',
   });
+// Function to generate random chart data
+const generateRandomData = () => ({
+  labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+  datasets: [
+    {
+      label: "Productivity Score",
+      data: Array.from({ length: 7 }, () => Math.floor(Math.random() * 100)),
+      backgroundColor: "rgba(54, 162, 235, 0.5)",
+      borderColor: "rgba(54, 162, 235, 1)",
+      borderWidth: 2,
+    },
+  ],
+});
 
   const lineChartData = {
     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
@@ -358,6 +373,17 @@ const updateMaintenanceTask = async (taskId, updatedData, setMaintenanceTasks) =
     alert("Failed to update task. Please try again.");
   }
 };
+
+  // Handle Date Change
+  const handleDateChange = (date, type) => {
+    if (type === "start") setStartDate(date);
+    if (type === "end") setEndDate(date);
+
+    // Update charts with new random data
+    setLineChartData(generateRandomData());
+    setPieChartData(generateRandomData());
+    setBarChartData(generateRandomData());
+  };
   return (
     <div className={`${isDarkMode ? "dark" : "light"} min-h-screen p-5 transition-all`}>
   
@@ -687,7 +713,7 @@ const updateMaintenanceTask = async (taskId, updatedData, setMaintenanceTasks) =
 )}
 
  {/* Task List */}
- <ul className="space-y-5">
+ <ul className="space-y-5 pt-3">
   {filteredMaintenance.map((task) => (
     <motion.li
       key={task._id}
@@ -713,16 +739,25 @@ const updateMaintenanceTask = async (taskId, updatedData, setMaintenanceTasks) =
           {task.priority === 3 ? '🚨' : task.priority === 2 ? '⚠️' : '✅'}
         </div>
         
-{/* Delete Icon - Fixed Clickability */}
-<div className="absolute top-3 right-3 z-50 cursor-pointer pointer-events-auto">
-        <span
-          onClick={() => handleDelete(task._id)}
-          className="text-gray-400 hover:text-red-500 text-xl transition-transform transform hover:scale-110"
-          title="Delete Task"
-        >
-          🗑️
-        </span>
-      </div>
+{/* Edit & Delete Icons */}
+<div className="absolute top-3 right-3 z-50 flex gap-3 cursor-pointer pointer-events-auto">
+<span
+  onClick={() => setEditingTask(task)}
+  className="text-gray-400 hover:text-blue-500 text-xl transition-transform transform hover:scale-110"
+  title="Edit Task"
+>
+  ✏️
+</span>
+
+          <span
+            onClick={() => handleDelete(task._id)}
+            className="text-gray-400 hover:text-red-500 text-xl transition-transform transform hover:scale-110"
+            title="Delete Task"
+          >
+            🗑️
+          </span>
+        </div>
+
         <div className="flex flex-col">
           <h2 className="text-xl font-semibold text-white tracking-wide">{task.task}</h2>
           <p className="text-gray-400 text-sm">📅 {new Date(task.date).toLocaleDateString()}</p>
@@ -767,7 +802,81 @@ const updateMaintenanceTask = async (taskId, updatedData, setMaintenanceTasks) =
     </motion.li>
   ))}
 </ul>
-
+{/* Edit Task Modal */}
+{editingTask && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div className="bg-gray-900 p-6 rounded-xl shadow-lg w-96 max-w-lg relative">
+      <h2 className="text-2xl font-semibold text-white mb-4">Edit Task</h2>
+      
+      {/* Task Name */}
+      <label className="text-gray-400 text-sm">Task Name</label>
+      <input
+        type="text"
+        className="w-full p-2 mt-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-blue-500 focus:outline-none"
+        value={editingTask.task}
+        onChange={(e) => setEditingTask({ ...editingTask, task: e.target.value })}
+      />
+      
+      {/* Description */}
+      <label className="text-gray-400 text-sm mt-3 block">Description</label>
+      <textarea
+        className="w-full p-2 mt-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-blue-500 focus:outline-none"
+        value={editingTask.description}
+        onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
+      ></textarea>
+      
+      {/* Due Date */}
+      <label className="text-gray-400 text-sm mt-3 block">Due Date</label>
+      <input
+        type="date"
+        className="w-full p-2 mt-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-blue-500 focus:outline-none"
+        value={editingTask.dueDate}
+        onChange={(e) => setEditingTask({ ...editingTask, dueDate: e.target.value })}
+      />
+      
+      {/* Priority */}
+      <label className="text-gray-400 text-sm mt-3 block">Priority</label>
+      <select
+        className="w-full p-2 mt-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-blue-500 focus:outline-none"
+        value={editingTask.priority}
+        onChange={(e) => setEditingTask({ ...editingTask, priority: e.target.value })}
+      >
+        <option value="1">✅ Low</option>
+        <option value="2">⚠️ Medium</option>
+        <option value="3">🚨 High</option>
+      </select>
+      
+      {/* Status */}
+      <label className="text-gray-400 text-sm mt-3 block">Status</label>
+      <select
+        className="w-full p-2 mt-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-blue-500 focus:outline-none"
+        value={editingTask.status}
+        onChange={(e) => setEditingTask({ ...editingTask, status: e.target.value })}
+      >
+        <option value="Pending">⏳ Pending</option>
+        <option value="In Progress">⚙️ In Progress</option>
+        <option value="Completed">✅ Completed</option>
+      </select>
+      
+      {/* Action Buttons */}
+      <div className="flex justify-end gap-2 mt-6">
+        <button
+          onClick={() => setEditingTask(null)}
+          className="px-4 py-2 bg-gray-600 rounded text-white hover:bg-gray-500 transition"
+        >Cancel</button>
+        <button
+          onClick={() => {
+            if (editingTask) {
+              updateMaintenanceTask(editingTask._id, editingTask, setMaintenanceTasks);
+              setEditingTask(null); // Close modal after saving
+            }
+          }}
+          className="px-4 py-2 bg-blue-500 rounded text-white hover:bg-blue-600 transition"
+        >Save</button>
+      </div>
+    </div>
+  </div>
+)}
 
 
 </div>

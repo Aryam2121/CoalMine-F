@@ -2,30 +2,30 @@
 // import { Transition } from '@headlessui/react';
 
 // const AttendancePage = () => {
-//   const [workers, setWorkers] = useState([]);
+//   const [userss, setuserss] = useState([]);
 //   const [attendance, setAttendance] = useState({});
 //   const [searchTerm, setSearchTerm] = useState('');
 //   const [currentPage, setCurrentPage] = useState(1);
-//   const [workersPerPage] = useState(5);
+//   const [userssPerPage] = useState(5);
 //   const [isSubmitting, setIsSubmitting] = useState(false);
 //   const [showModal, setShowModal] = useState(false);
 
 //   useEffect(() => {
-//     const fetchWorkers = async () => {
-//       const mockWorkers = Array.from({ length: 50 }, (_, i) => ({
+//     const fetchuserss = async () => {
+//       const mockuserss = Array.from({ length: 50 }, (_, i) => ({
 //         id: i + 1,
-//         name: `Worker ${i + 1}`,
+//         name: `users ${i + 1}`,
 //         department: i % 2 === 0 ? 'Mining' : 'Maintenance',
 //       }));
-//       setWorkers(mockWorkers);
+//       setuserss(mockuserss);
 //     };
-//     fetchWorkers();
+//     fetchuserss();
 //   }, []);
 
-//   const handleAttendanceChange = (workerId) => {
+//   const handleAttendanceChange = (usersId) => {
 //     setAttendance((prev) => ({
 //       ...prev,
-//       [workerId]: !prev[workerId],
+//       [usersId]: !prev[usersId],
 //     }));
 //   };
 
@@ -38,22 +38,22 @@
 //     }, 2000);
 //   };
 
-//   const filteredWorkers = workers.filter((worker) =>
-//     worker.name.toLowerCase().includes(searchTerm) ||
-//     worker.id.toString().includes(searchTerm)
+//   const filtereduserss = userss.filter((users) =>
+//     users.name.toLowerCase().includes(searchTerm) ||
+//     users.id.toString().includes(searchTerm)
 //   );
 
-//   const indexOfLastWorker = currentPage * workersPerPage;
-//   const indexOfFirstWorker = indexOfLastWorker - workersPerPage;
-//   const currentWorkers = filteredWorkers.slice(indexOfFirstWorker, indexOfLastWorker);
+//   const indexOfLastusers = currentPage * userssPerPage;
+//   const indexOfFirstusers = indexOfLastusers - userssPerPage;
+//   const currentuserss = filtereduserss.slice(indexOfFirstusers, indexOfLastusers);
 
-//   const totalPages = Math.ceil(filteredWorkers.length / workersPerPage);
+//   const totalPages = Math.ceil(filtereduserss.length / userssPerPage);
 
 //   return (
 //     <div className="min-h-screen bg-gray-100 p-6">
 //       <div className="max-w-6xl mx-auto bg-white shadow-lg rounded-lg p-6">
 //         <h1 className="text-3xl font-bold mb-6 text-center text-indigo-700 animate-bounce">
-//           Worker Attendance
+//           users Attendance
 //         </h1>
 //         <div className="flex justify-between items-center mb-4">
 //           <input
@@ -68,7 +68,7 @@
 //         <table className="w-full border-collapse border border-gray-300">
 //           <thead>
 //             <tr className="bg-indigo-200">
-//               <th className="border border-gray-300 px-4 py-2">Worker ID</th>
+//               <th className="border border-gray-300 px-4 py-2">users ID</th>
 //               <th className="border border-gray-300 px-4 py-2">Name</th>
 //               <th className="border border-gray-300 px-4 py-2">Department</th>
 //               <th className="border border-gray-300 px-4 py-2">Present</th>
@@ -84,16 +84,16 @@
 //             leaveTo="opacity-0"
 //           >
 //             <tbody>
-//               {currentWorkers.map((worker) => (
-//                 <tr key={worker.id} className="hover:bg-indigo-100">
-//                   <td className="border border-gray-300 px-4 py-2">{worker.id}</td>
-//                   <td className="border border-gray-300 px-4 py-2">{worker.name}</td>
-//                   <td className="border border-gray-300 px-4 py-2">{worker.department}</td>
+//               {currentuserss.map((users) => (
+//                 <tr key={users.id} className="hover:bg-indigo-100">
+//                   <td className="border border-gray-300 px-4 py-2">{users.id}</td>
+//                   <td className="border border-gray-300 px-4 py-2">{users.name}</td>
+//                   <td className="border border-gray-300 px-4 py-2">{users.department}</td>
 //                   <td className="border border-gray-300 px-4 py-2 text-center">
 //                     <input
 //                       type="checkbox"
-//                       checked={attendance[worker.id] || false}
-//                       onChange={() => handleAttendanceChange(worker.id)}
+//                       checked={attendance[users.id] || false}
+//                       onChange={() => handleAttendanceChange(users.id)}
 //                       className="form-checkbox"
 //                     />
 //                   </td>
@@ -171,36 +171,36 @@
 // ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 // const AttendancePage = () => {
-//   const [workers, setWorkers] = useState([]);
-//   const [filteredWorkers, setFilteredWorkers] = useState([]);
+//   const [userss, setuserss] = useState([]);
+//   const [filtereduserss, setFiltereduserss] = useState([]);
 //   const [searchTerm, setSearchTerm] = useState("");
 //   const [selectedDate, setSelectedDate] = useState(new Date());
 
 //   // Mock data setup
 //   useEffect(() => {
-//     const mockWorkers = Array.from({ length: 50 }, (_, i) => ({
+//     const mockuserss = Array.from({ length: 50 }, (_, i) => ({
 //       id: i + 1,
-//       name: `Worker ${i + 1}`,
+//       name: `users ${i + 1}`,
 //       department: i % 2 === 0 ? "Mining" : "Maintenance",
 //       checkIn: i % 2 === 0 ? "09:00" : "10:00",
 //       checkOut: "18:00",
 //       workHours: i % 2 === 0 ? "9h" : "8h",
 //       status: i % 5 === 0 ? "Absent" : "Present",
 //     }));
-//     setWorkers(mockWorkers);
-//     setFilteredWorkers(mockWorkers);
+//     setuserss(mockuserss);
+//     setFiltereduserss(mockuserss);
 //   }, []);
 
-//   // Filter workers by search term
+//   // Filter userss by search term
 //   useEffect(() => {
-//     setFilteredWorkers(
-//       workers.filter(
-//         (worker) =>
-//           worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//           worker.id.toString().includes(searchTerm)
+//     setFiltereduserss(
+//       userss.filter(
+//         (users) =>
+//           users.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+//           users.id.toString().includes(searchTerm)
 //       )
 //     );
-//   }, [searchTerm, workers]);
+//   }, [searchTerm, userss]);
 
 //   const handleDateChange = (date) => setSelectedDate(date);
 
@@ -222,14 +222,14 @@
 //   const exportToCSV = () => {
 //     const csvData = [
 //       ["ID", "Name", "Department", "Check-in", "Check-out", "Work Hours", "Status"],
-//       ...filteredWorkers.map((worker) => [
-//         worker.id,
-//         worker.name,
-//         worker.department,
-//         worker.checkIn,
-//         worker.checkOut,
-//         worker.workHours,
-//         worker.status,
+//       ...filtereduserss.map((users) => [
+//         users.id,
+//         users.name,
+//         users.department,
+//         users.checkIn,
+//         users.checkOut,
+//         users.workHours,
+//         users.status,
 //       ]),
 //     ];
 //     const csvContent = "data:text/csv;charset=utf-8," + csvData.map((e) => e.join(",")).join("\n");
@@ -279,7 +279,7 @@
 //         </div>
 
 //         <div className="mt-4">
-//           <h2 className="text-lg font-bold mb-2">Worker Details</h2>
+//           <h2 className="text-lg font-bold mb-2">users Details</h2>
 //           <motion.table
 //             className="w-full border-collapse border border-gray-300"
 //             initial={{ opacity: 0 }}
@@ -298,24 +298,24 @@
 //               </tr>
 //             </thead>
 //             <tbody>
-//               {filteredWorkers.map((worker) => (
+//               {filtereduserss.map((users) => (
 //                 <motion.tr
-//                   key={worker.id}
+//                   key={users.id}
 //                   className="hover:bg-gray-100"
 //                   whileHover={{ scale: 1.02 }}
 //                 >
-//                   <td className="border border-gray-300 px-4 py-2">{worker.id}</td>
-//                   <td className="border border-gray-300 px-4 py-2">{worker.name}</td>
-//                   <td className="border border-gray-300 px-4 py-2">{worker.department}</td>
-//                   <td className="border border-gray-300 px-4 py-2">{worker.checkIn}</td>
-//                   <td className="border border-gray-300 px-4 py-2">{worker.checkOut}</td>
-//                   <td className="border border-gray-300 px-4 py-2">{worker.workHours}</td>
+//                   <td className="border border-gray-300 px-4 py-2">{users.id}</td>
+//                   <td className="border border-gray-300 px-4 py-2">{users.name}</td>
+//                   <td className="border border-gray-300 px-4 py-2">{users.department}</td>
+//                   <td className="border border-gray-300 px-4 py-2">{users.checkIn}</td>
+//                   <td className="border border-gray-300 px-4 py-2">{users.checkOut}</td>
+//                   <td className="border border-gray-300 px-4 py-2">{users.workHours}</td>
 //                   <td
 //                     className={`border border-gray-300 px-4 py-2 ${
-//                       worker.status === "Absent" ? "text-red-500" : "text-green-500"
+//                       users.status === "Absent" ? "text-red-500" : "text-green-500"
 //                     } font-bold`}
 //                   >
-//                     {worker.status}
+//                     {users.status}
 //                   </td>
 //                 </motion.tr>
 //               ))}
@@ -338,46 +338,48 @@ import axios from "axios";
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend,Filler);
-
+const roles = ["worker", "Inspector", "Safety Manager", "Shift Incharge"];
 const AttendancePage = () => {
-  const [workers, setWorkers] = useState([]);
-  const [filteredWorkers, setFilteredWorkers] = useState([]);
+  const [userss, setuserss] = useState([]);
+  const [filtereduserss, setFiltereduserss] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [attendanceStats, setAttendanceStats] = useState({ present: 0, absent: 0 });
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedWorker, setSelectedWorker] = useState(null);
+  const [selectedusers, setSelectedusers] = useState(null);
   const [attendanceChartData, setAttendanceChartData] = useState(null); 
   const [loading, setLoading] = useState(true);
-
-  // Fetch workers from backend
+  const [selectedRole, setSelectedRole] = useState("worker");
+  const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  // Fetch userss from backend
   useEffect(() => {
-    fetchWorkers();
-  }, []);
+    fetchUsers(selectedRole);
+  }, [selectedRole]);
 
-  const fetchWorkers = async () => {
+  const fetchUsers = async (role) => {
     setLoading(true);
     try {
-      const res = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getworkers`);
-      console.log("Fetched workers:", res.data);
-      setWorkers(res.data);
-      setFilteredWorkers(res.data);
+      const res = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getAllusersByrole?role=${role}&date=${selectedDate.toISOString().split('T')[0]}`);
+      setUsers(res.data);
+      setFilteredUsers(res.data);
       updateStats(res.data);
     } catch (err) {
-      console.error("Error fetching workers:", err.response?.data || err.message);
+      console.error("Error fetching users:", err.response?.data || err.message);
     } finally {
       setLoading(false);
     }
   };
   
+  
 
   // Update statistics
-  const updateStats = (workers) => {
-    const present = workers.filter((w) => w.status === "Present").length;
-    const absent = workers.length - present;
+  const updateStats = (userss) => {
+    const present = userss.filter((w) => w.status === "Present").length;
+    const absent = userss.length - present;
     setAttendanceStats({ present, absent });
 
-    const attendanceData = workers.map((_, index) => ({
+    const attendanceData = userss.map((_, index) => ({
       label: `Day ${index + 1}`,
       value: Math.random() * (100 - 70) + 70, // Random attendance % between 70-100
     }));
@@ -396,23 +398,23 @@ const AttendancePage = () => {
     });
   };
 
-  // Update worker attendance
+  // Update users attendance
   const handleAttendanceChange = async (id, status) => {
     try {
-      await axios.patch(`https://${import.meta.env.VITE_BACKEND}/api/workers/${id}`, { status });
-      fetchWorkers(); // Fetch fresh data after update
+      await axios.patch(`https://${import.meta.env.VITE_BACKEND}/api/${id}`, { status });
+      fetchuserss(); // Fetch fresh data after update
     } catch (err) {
       console.error("Error updating attendance:", err);
     }
   };
 
-  // Delete worker
-  const deleteWorker = async (id) => {
+  // Delete users
+  const deleteusers = async (id) => {
     try {
-      await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/workers/${id}`);
-      fetchWorkers(); // Fetch fresh data after deletion
+      await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/${id}`);
+      fetchuserss(); // Fetch fresh data after deletion
     } catch (err) {
-      console.error("Error deleting worker:", err);
+      console.error("Error deleting users:", err);
     }
   };
 
@@ -420,7 +422,7 @@ const AttendancePage = () => {
   const exportToCSV = () => {
     const csvData = [
       ["ID", "Name", "Department", "Status"],
-      ...workers.map((worker) => [worker._id, worker.name, worker.department, worker.status]),
+      ...userss.map((users) => [users._id, users.name, users.department, users.status]),
     ];
     const csvContent = "data:text/csv;charset=utf-8," + csvData.map((e) => e.join(",")).join("\n");
     const link = document.createElement("a");
@@ -432,8 +434,8 @@ const AttendancePage = () => {
   };
 
   // Open and close modal
-  const openModal = (worker) => {
-    setSelectedWorker(worker);
+  const openModal = (users) => {
+    setSelectedusers(users);
     setIsModalOpen(true);
   };
   const closeModal = () => setIsModalOpen(false);
@@ -447,15 +449,21 @@ const AttendancePage = () => {
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-2xl font-bold mb-6 text-center">Attendance Dashboard</h1>
-
+        <div className="mb-4 flex justify-center">
+          <select className="p-2 border rounded-lg" value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)}>
+            {roles.map((role) => (
+              <option key={role} value={role}>{role}</option>
+            ))}
+          </select>
+        </div>
         {loading ? (
           <p className="text-center text-lg">Loading...</p>
         ) : (
           <>
-            <div className="grid grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-4 gap-6 mb-6">
               <motion.div className="bg-blue-100 text-blue-800 p-4 rounded-lg shadow-md">
-                <h2 className="text-lg font-bold">Total Workers</h2>
-                <p className="text-2xl">{workers.length}</p>
+                <h2 className="text-lg font-bold">Total Users</h2>
+                <p className="text-2xl">{users.length}</p>
               </motion.div>
               <motion.div className="bg-green-100 text-green-800 p-4 rounded-lg shadow-md">
                 <h2 className="text-lg font-bold">Present</h2>
@@ -490,19 +498,19 @@ const AttendancePage = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-6">
-              {filteredWorkers.map((worker) => (
+              {filtereduserss.map((users) => (
                 <motion.div
-                  key={worker._id}
+                  key={users._id}
                   className="p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
                   whileHover={{ scale: 1.05 }}
                 >
-                  <h3 className="text-xl font-semibold">{worker.name}</h3>
-                  <p>{worker.department}</p>
+                  <h3 className="text-xl font-semibold">{users.name}</h3>
+                  <p>{users.department}</p>
                   <button
-                    onClick={() => handleAttendanceChange(worker._id, worker.status === "Present" ? "Absent" : "Present")}
-                    className={`px-4 py-2 rounded-lg text-white ${worker.status === "Present" ? "bg-green-600" : "bg-red-600"}`}
+                    onClick={() => handleAttendanceChange(users._id, users.status === "Present" ? "Absent" : "Present")}
+                    className={`px-4 py-2 rounded-lg text-white ${users.status === "Present" ? "bg-green-600" : "bg-red-600"}`}
                   >
-                    {worker.status === "Present" ? "Mark Absent" : "Mark Present"}
+                    {users.status === "Present" ? "Mark Absent" : "Mark Present"}
                   </button>
                 </motion.div>
               ))}
