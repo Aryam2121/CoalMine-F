@@ -143,7 +143,6 @@ const Resources = lazy(() => import('./components/Resources'));
 const Inventory = lazy(() => import('./components/Inventory'));
 const Alerts = lazy(() => import('./components/Alerts'));
 const Signup = lazy(() => import('./pages/Signup'));
-const CreateCoalMines = lazy(() => import('./components/CoalMineCards'));
 const Attendance = lazy(() => import('./components/Attendance'));
 const Chatbot = lazy(() => import('./components/chatbot'));
 const VoiceDictation = lazy(() => import('./components/voiceDictation'));
