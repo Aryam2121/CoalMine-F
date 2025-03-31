@@ -283,14 +283,7 @@ function App() {
                         </ProtectedRoute>
                       }
                     />
-                    <Route
-                      path="/createMines"
-                      element={
-                        <ProtectedRoute>
-                          <CreateCoalMines />
-                        </ProtectedRoute>
-                      }
-                    />
+                   
                     <Route
                       path="/Weather"
                       element={

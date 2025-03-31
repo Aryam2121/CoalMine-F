@@ -292,8 +292,9 @@ const CoalMineCards = () => {
   
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white py-8 px-4">
+    <div className="min-h-screen bg-gray-900 text-white py-8 px-12">
       <div className="flex justify-between items-center mb-6">
+      <h2 className="text-4xl font-bold mb-4 text-blue-400">Coal Mines</h2>
         <button
           className="px-4 py-2 bg-green-600 text-white rounded-lg flex items-center gap-2 hover:bg-green-700 transition"
           onClick={() => {
@@ -363,91 +364,118 @@ const CoalMineCards = () => {
           ))}
         </div>
       )}
-{/* Modal for Adding Worker */}
-{showWorkerModal && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+
+
+      {/* Modal for Creating/Editing Mine */}
+      {showModal && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-md">
     <motion.div
-      className="bg-gray-800 p-6 rounded-lg w-96 relative"
+      className="bg-gray-900 bg-opacity-90 p-6 rounded-2xl shadow-2xl w-96 relative border border-gray-700"
       initial={{ opacity: 0, y: -50 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
     >
-      <button className="absolute top-2 right-2 text-gray-400 hover:text-white" onClick={() => setShowWorkerModal(false)}>
-        <XCircle size={20} />
+      {/* Close Button */}
+      <button
+        className="absolute top-3 right-3 text-gray-400 hover:text-red-400 transition-transform transform hover:scale-110"
+        onClick={() => setShowModal(false)}
+      >
+        <XCircle size={24} />
       </button>
-      <h2 className="text-xl font-bold mb-4">Add Worker</h2>
-      <input
-        type="text"
-        placeholder="Worker Name"
-        className="w-full p-2 mb-2 bg-gray-700 text-white rounded"
-        value={workerForm.name}
-        onChange={(e) => handleWorkerChange("name", e.target.value)}
-      />
-      <input
-        type="text"
-        placeholder="Role"
-        className="w-full p-2 mb-2 bg-gray-700 text-white rounded"
-        value={workerForm.role}
-        onChange={(e) => handleWorkerChange("role", e.target.value)}
-      />
-      <input
-        type="text"
-        placeholder="Contact"
-        className="w-full p-2 mb-4 bg-gray-700 text-white rounded"
-        value={workerForm.contact}
-        onChange={(e) => handleWorkerChange("contact", e.target.value)}
-      />
-      <button className="w-full py-2 bg-green-600 text-white rounded-lg" onClick={handleAddWorker}>
-        Add Worker
-      </button>
+
+      <h2 className="text-2xl font-semibold text-white mb-5">
+        {editMode ? "Edit Mine" : "Create Mine"}
+      </h2>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          type="text"
+          placeholder="Mine Name"
+          className="w-full p-3 bg-gray-800 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-yellow-400 outline-none"
+          value={mineForm.name}
+          onChange={(e) => setMineForm({ ...mineForm, name: e.target.value })}
+        />
+        <input
+          type="text"
+          placeholder="Latitude"
+          className="w-full p-3 bg-gray-800 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-yellow-400 outline-none"
+          value={mineForm.location.latitude}
+          onChange={(e) =>
+            setMineForm({ ...mineForm, location: { ...mineForm.location, latitude: e.target.value } })
+          }
+        />
+        <input
+          type="text"
+          placeholder="Longitude"
+          className="w-full p-3 bg-gray-800 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-yellow-400 outline-none"
+          value={mineForm.location.longitude}
+          onChange={(e) =>
+            setMineForm({ ...mineForm, location: { ...mineForm.location, longitude: e.target.value } })
+          }
+        />
+        <button
+          type="submit"
+          className="w-full py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-500 transition-all duration-300 shadow-lg hover:shadow-green-400"
+        >
+          Save
+        </button>
+      </form>
     </motion.div>
   </div>
 )}
 
-      {/* Modal for Creating/Editing Mine */}
-      {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <motion.div
-            className="bg-gray-800 p-6 rounded-lg w-96 relative"
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <button className="absolute top-2 right-2 text-gray-400 hover:text-white" onClick={() => setShowModal(false)}>
-              <XCircle size={20} />
-            </button>
-            <h2 className="text-xl font-bold mb-4">{editMode ? "Edit Mine" : "Create Mine"}</h2>
-            <form onSubmit={handleSubmit}>
-              <input
-                type="text"
-                placeholder="Mine Name"
-                className="w-full p-2 mb-2 bg-gray-700 text-white rounded"
-                value={mineForm.name}
-                onChange={(e) => setMineForm({ ...mineForm, name: e.target.value })}
-              />
-              <input
-                type="text"
-                placeholder="Latitude"
-                className="w-full p-2 mb-2 bg-gray-700 text-white rounded"
-                value={mineForm.location.latitude}
-                onChange={(e) => setMineForm({ ...mineForm, location: { ...mineForm.location, latitude: e.target.value } })}
-              />
-              <input
-                type="text"
-                placeholder="Longitude"
-                className="w-full p-2 mb-2 bg-gray-700 text-white rounded"
-                value={mineForm.location.longitude}
-                onChange={(e) => setMineForm({ ...mineForm, location: { ...mineForm.location, longitude: e.target.value } })}
-              />
-              <button type="submit" className="w-full py-2 mt-2 bg-green-600 text-white rounded-lg">
-                Save
-              </button>
-            </form>
-          </motion.div>
-        </div>
-      )}
+{/* Modal for Adding Worker */}
+{showWorkerModal && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-md">
+    <motion.div
+      className="bg-gray-900 bg-opacity-90 p-6 rounded-2xl shadow-2xl w-96 relative border border-gray-700"
+      initial={{ opacity: 0, y: -50 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+    >
+      {/* Close Button */}
+      <button
+        className="absolute top-3 right-3 text-gray-400 hover:text-red-400 transition-transform transform hover:scale-110"
+        onClick={() => setShowWorkerModal(false)}
+      >
+        <XCircle size={24} />
+      </button>
+
+      <h2 className="text-2xl font-semibold text-white mb-5">Add Worker</h2>
+
+      <form className="space-y-4">
+        <input
+          type="text"
+          placeholder="Worker Name"
+          className="w-full p-3 bg-gray-800 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-blue-400 outline-none"
+          value={workerForm.name}
+          onChange={(e) => handleWorkerChange("name", e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Role"
+          className="w-full p-3 bg-gray-800 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-blue-400 outline-none"
+          value={workerForm.role}
+          onChange={(e) => handleWorkerChange("role", e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Contact"
+          className="w-full p-3 bg-gray-800 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-blue-400 outline-none"
+          value={workerForm.contact}
+          onChange={(e) => handleWorkerChange("contact", e.target.value)}
+        />
+        <button
+          className="w-full py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-500 transition-all duration-300 shadow-lg hover:shadow-green-400"
+          onClick={handleAddWorker}
+        >
+          Add Worker
+        </button>
+      </form>
+    </motion.div>
+  </div>
+)}
     </div>
   );
-};
-
+}
 export default CoalMineCards;
