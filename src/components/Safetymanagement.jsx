@@ -137,7 +137,7 @@ const SafetyManagementPlan = () => {
   };
   const deleteSafetyPlan = async (id) => {
     try {
-      await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/${id}`);
+      await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/safety/${id}`);
       setSuccessMessage("Safety Plan deleted successfully.");
       fetchSafetyPlans();
     } catch (error) {
@@ -223,7 +223,7 @@ const SafetyManagementPlan = () => {
                 <p className="text-gray-400"><strong>Status:</strong> {plan.status}</p>
                 {plan.file && (
                   <a 
-                 href={`https://${import.meta.env.VITE_BACKEND}/${plan.file}`} 
+                 href={`${plan.file}`} 
                     target="_blank" 
                       rel="noopener noreferrer" 
                            className="text-blue-400 hover:underline block mt-2"
@@ -287,6 +287,17 @@ const SafetyManagementPlan = () => {
           <option value="approved">Approved</option>
           <option value="rejected">Rejected</option>
             </select>
+            <div
+  {...getRootProps()}
+  className="border-2 border-dashed border-gray-500 p-6 text-center cursor-pointer bg-gray-700 text-white mb-4"
+>
+  <input
+    {...getInputProps()}
+    name="file"
+    onChange={handleInputChange} // You might not need this if react-dropzone handles it
+  />
+  <p>Drag & drop an image or PDF, or click to select a file</p>
+</div>
             <button onClick={updateSafetyPlan} className="bg-green-500 text-white px-4 py-2 rounded w-full mb-2">
               {loading ? <CircularProgress size={24} /> : "Update"}
             </button>

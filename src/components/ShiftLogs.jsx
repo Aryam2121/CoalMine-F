@@ -279,6 +279,7 @@ const ShiftHandoverLog = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const { transcript, resetTranscript } = useSpeechRecognition();
+  
   const [formData, setFormData] = useState({
     shiftDetails: "",
     shiftStartTime: "",
@@ -360,7 +361,7 @@ const ShiftHandoverLog = () => {
       alert('Log submitted successfully!');
     } catch (error) {
       console.error('Error submitting shift log:', error);
-      setErrorMessage('Failed to submit log. Please try again.');
+      
     } finally {
       setLoading(false);
     }
@@ -582,49 +583,52 @@ const ShiftHandoverLog = () => {
     
       {/* Previous Logs Section */}
       <h3 className="text-2xl font-bold text-blue-400 mt-8">📜 Previous Shift Logs</h3>
-{previousLogs.length > 0 ? (
-  <div className="space-y-6">
+      {previousLogs.length > 0 ? (
+  <div className="space-y-6 mt-4">
     {previousLogs.map((log) => (
-      <div
-        key={log._id}
-        className="bg-gray-800 bg-opacity-60 p-5 rounded-xl shadow-lg border border-gray-700 transition-all hover:shadow-2xl hover:border-blue-500"
-      >
-        <p className="text-lg text-gray-300">
-          <strong className="text-blue-300">🛠 Shift Details:</strong> {log.shiftDetails}
-        </p>
-        <p className="text-lg text-gray-300">
-          <strong className="text-red-400">⚠ Safety Issues:</strong> {log.safetyIssues}
-        </p>
-        <p className="text-lg text-gray-300">
-          <strong className="text-green-400">📌 Next Shift Tasks:</strong> {log.nextShiftTasks}
-        </p>
+      <div key={log._id} className="bg-gray-800 p-4 rounded-lg shadow-md text-white">
+        <p><strong>Shift Details:</strong> {log.shiftDetails}</p>
+        <p><strong>Safety Issues:</strong> {log.safetyIssues}</p>
+        <p><strong>Next Shift Tasks:</strong> {log.nextShiftTasks}</p>
+        <p><strong>Status:</strong> {log.status}</p>
+        <p><strong>Start Time:</strong> {log.shiftStartTime}</p>
+        <p><strong>End Time:</strong> {log.shiftEndTime}</p>
+        <p><strong>Notes:</strong> {log.notes}</p>
 
-        {/* Action Buttons */}
-        <div className="mt-4 flex gap-3">
+        {/* Optional file preview */}
+        {log.fileUrl && (
+          <div className="mt-2">
+            <a
+              href={log.fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 underline"
+            >
+              View Attached File
+            </a>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="mt-3 flex gap-4">
           <button
-            onClick={editLogId ? updateLog : submitLog}
-            className="bg-blue-500 hover:bg-blue-400 text-white px-4 py-2 rounded-lg font-semibold transition-all shadow-md"
+            onClick={() => editLog(log._id)}
+            className="bg-yellow-600 px-3 py-1 rounded-lg hover:bg-yellow-700"
           >
-            {editLogId ? "Update Log" : "Submit Log"}
+            Edit
           </button>
           <button
             onClick={() => deleteLog(log._id)}
-            className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-semibold transition-all shadow-md"
+            className="bg-red-600 px-3 py-1 rounded-lg hover:bg-red-700"
           >
             Delete
-          </button>
-          <button
-            onClick={() => editLog(log._id)}
-            className="bg-yellow-500 hover:bg-yellow-400 text-gray-900 px-4 py-2 rounded-lg font-semibold transition-all shadow-md"
-          >
-            Edit
           </button>
         </div>
       </div>
     ))}
   </div>
 ) : (
-  <p className="mt-6 text-center text-gray-400">🚫 No previous logs available.</p>
+  <p className="text-gray-400 mt-4">No previous logs found.</p>
 )}
 
     </div>
