@@ -279,7 +279,8 @@ const ShiftHandoverLog = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const { transcript, resetTranscript } = useSpeechRecognition();
-  
+  const [showEditModal, setShowEditModal] = useState(false);
+
   const [formData, setFormData] = useState({
     shiftDetails: "",
     shiftStartTime: "",
@@ -294,7 +295,7 @@ const ShiftHandoverLog = () => {
     const fetchShiftLogs = async () => {
       try {
         const response = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getAllLogs`);
-        setPreviousLogs(response.data);
+        setPreviousLogs(response.data.shiftLogs);
       } catch (error) {
         console.error('Error fetching shift logs:', error);
         setErrorMessage('Error fetching previous shift logs');
@@ -393,9 +394,15 @@ const ShiftHandoverLog = () => {
       shiftDetails: logToEdit.shiftDetails,
       safetyIssues: logToEdit.safetyIssues,
       nextShiftTasks: logToEdit.nextShiftTasks,
+      shiftStartTime: logToEdit.shiftStartTime,
+      shiftEndTime: logToEdit.shiftEndTime,
+      status: logToEdit.status,
     });
+    setAdditionalNotes(logToEdit.notes || '');
     setEditLogId(id);
+    setShowEditModal(true); // Show modal
   };
+  
 
   const updateLog = async () => {
     try {
@@ -577,7 +584,60 @@ const ShiftHandoverLog = () => {
           </div>
         )}
       </form>
-    
+      {showEditModal && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="bg-gray-800 p-6 rounded-lg w-full max-w-lg shadow-lg">
+      <h3 className="text-white text-xl font-semibold mb-4">Edit Shift Log</h3>
+
+      <div className="space-y-4">
+        <textarea
+          name="shiftDetails"
+          value={logData.shiftDetails}
+          onChange={handleInputChange}
+          placeholder="Edit shift details..."
+          className="w-full p-3 rounded bg-gray-700 text-white"
+        />
+
+        <textarea
+          name="safetyIssues"
+          value={logData.safetyIssues}
+          onChange={handleInputChange}
+          placeholder="Edit safety issues..."
+          className="w-full p-3 rounded bg-gray-700 text-white"
+        />
+
+        <textarea
+          name="nextShiftTasks"
+          value={logData.nextShiftTasks}
+          onChange={handleInputChange}
+          placeholder="Edit next shift tasks..."
+          className="w-full p-3 rounded bg-gray-700 text-white"
+        />
+
+        <div className="flex justify-end space-x-2">
+          <button
+            onClick={() => {
+              updateLog();
+            }}
+            className="bg-green-600 px-4 py-2 rounded text-white"
+          >
+            Save Changes
+          </button>
+          <button
+            onClick={() => {
+              setEditLogId(null);
+              resetForm();
+            }}
+            className="bg-red-600 px-4 py-2 rounded text-white"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
       {/* Auto-Save Status */}
       <div className="mt-6 text-sm text-gray-400 text-center">{autoSaveStatus}</div>
     
