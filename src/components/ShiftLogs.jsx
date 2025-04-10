@@ -389,6 +389,7 @@ const ShiftHandoverLog = () => {
   
 
   const editLog = (id) => {
+    console.log("Editing log ID:", id);
     const logToEdit = previousLogs.find((log) => log._id === id);
     setLogData({
       shiftDetails: logToEdit.shiftDetails,
@@ -586,49 +587,85 @@ const ShiftHandoverLog = () => {
       </form>
       {showEditModal && (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div className="bg-gray-800 p-6 rounded-lg w-full max-w-lg shadow-lg">
-      <h3 className="text-white text-xl font-semibold mb-4">Edit Shift Log</h3>
+    <div className="bg-gray-900 p-4 rounded-lg w-full max-w-md shadow-lg relative">
+      <button
+        onClick={() => {
+          setEditLogId(null);
+          resetForm();
+        }}
+        className="absolute top-2 right-2 text-white text-xl hover:text-red-500"
+      >
+        &times;
+      </button>
 
-      <div className="space-y-4">
+      <h3 className="text-white text-lg font-semibold mb-3">Edit Shift Log</h3>
+
+      <div className="space-y-3 text-sm">
         <textarea
           name="shiftDetails"
           value={logData.shiftDetails}
           onChange={handleInputChange}
-          placeholder="Edit shift details..."
-          className="w-full p-3 rounded bg-gray-700 text-white"
+          placeholder="Shift details"
+          className="w-full p-2 rounded bg-gray-800 text-white"
         />
-
         <textarea
           name="safetyIssues"
           value={logData.safetyIssues}
           onChange={handleInputChange}
-          placeholder="Edit safety issues..."
-          className="w-full p-3 rounded bg-gray-700 text-white"
+          placeholder="Safety issues"
+          className="w-full p-2 rounded bg-gray-800 text-white"
         />
-
         <textarea
           name="nextShiftTasks"
           value={logData.nextShiftTasks}
           onChange={handleInputChange}
-          placeholder="Edit next shift tasks..."
-          className="w-full p-3 rounded bg-gray-700 text-white"
+          placeholder="Next shift tasks"
+          className="w-full p-2 rounded bg-gray-800 text-white"
+        />
+        <input
+          type="time"
+          name="shiftStartTime"
+          value={logData.shiftStartTime}
+          onChange={handleInputChange}
+          className="w-full p-2 rounded bg-gray-800 text-white"
+        />
+        <input
+          type="time"
+          name="shiftEndTime"
+          value={logData.shiftEndTime}
+          onChange={handleInputChange}
+          className="w-full p-2 rounded bg-gray-800 text-white"
+        />
+        <select
+          name="status"
+          value={logData.status}
+          onChange={handleInputChange}
+          className="w-full p-2 rounded bg-gray-800 text-white"
+        >
+          <option value="Pending">Pending</option>
+          <option value="Ongoing">Ongoing</option>
+          <option value="Completed">Completed</option>
+        </select>
+        <textarea
+          placeholder="Additional notes..."
+          value={additionalNotes}
+          onChange={(e) => setAdditionalNotes(e.target.value)}
+          className="w-full p-2 rounded bg-gray-800 text-white"
         />
 
-        <div className="flex justify-end space-x-2">
+        <div className="flex justify-end space-x-2 pt-2">
           <button
-            onClick={() => {
-              updateLog();
-            }}
-            className="bg-green-600 px-4 py-2 rounded text-white"
+            onClick={updateLog}
+            className="bg-green-600 px-4 py-2 rounded text-white text-sm"
           >
-            Save Changes
+            Save
           </button>
           <button
             onClick={() => {
               setEditLogId(null);
               resetForm();
             }}
-            className="bg-red-600 px-4 py-2 rounded text-white"
+            className="bg-red-600 px-4 py-2 rounded text-white text-sm"
           >
             Cancel
           </button>
@@ -637,6 +674,7 @@ const ShiftHandoverLog = () => {
     </div>
   </div>
 )}
+
 
       {/* Auto-Save Status */}
       <div className="mt-6 text-sm text-gray-400 text-center">{autoSaveStatus}</div>
