@@ -36,12 +36,12 @@
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.2",
     "jsonwebtoken": "^9.0.2",
-    "jspdf": "^2.5.2",
+    "jspdf": "^3.0.4",
     "leaflet": "^1.9.4",
     "leaflet.heat": "^0.2.0",
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.475.0",
-    "nodemailer": "^6.10.0",
+    "nodemailer": "^7.0.10",
     "papaparse": "^5.4.1",
     "passport": "^0.7.0",
     "react": "^18.3.1",
@@ -79,6 +79,6 @@
     "globals": "^15.9.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.12",
-    "vite": "^5.4.1"
+    "vite": "^7.2.2"
   }
 }
