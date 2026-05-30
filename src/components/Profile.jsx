@@ -1,95 +1,160 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { motion } from "framer-motion";
-import { FiUser, FiMail, FiShield } from "react-icons/fi";
+import api from '../services/axios';
+import { useEffect, useState, useContext } from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { FiMail, FiShield, FiSettings, FiAward, FiCalendar } from 'react-icons/fi';
+import PageShell from './ui/PageShell';
+import Button from './ui/Button';
+import LoadingBlock from './ui/LoadingBlock';
+import { AuthContext } from '../context/AuthContext';
+import { getRoleInfo, getRoleBadgeClass } from '../utils/roles';
 
 const Profile = () => {
+  const { user: authUser } = useContext(AuthContext);
   const [user, setUser] = useState(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setError("User not authenticated");
-        setLoading(false);
-        return;
-      }
-
+    const load = async () => {
       try {
-        const res = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/users/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Cache-Control": "no-cache",
-            Pragma: "no-cache",
-          },
-        });
-        setUser(res.data);
+        const [profileRes, statsRes] = await Promise.all([
+          api.get('/users/me'),
+          api.get('/leaderboard/me').catch(() => ({ data: {} })),
+        ]);
+        setUser(profileRes.data);
+        setStats(statsRes.data?.stats ?? null);
       } catch (err) {
-        setError(err.response?.data?.message || "Failed to load profile");
+        setError(err.response?.data?.error || 'Failed to load profile');
+        if (authUser) setUser(authUser);
       } finally {
         setLoading(false);
       }
     };
-    fetchProfile();
-  }, []);
+    load();
+  }, [authUser]);
 
-  if (loading)
+  const getInitials = (name) =>
+    (name || '?')
+      .split(' ')
+      .map((w) => w[0]?.toUpperCase())
+      .join('')
+      .slice(0, 2);
+
+  const roleInfo = getRoleInfo(user?.role);
+
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-500 to-purple-600">
-        <div className="w-16 h-16 border-4 border-white border-dashed rounded-full animate-spin"></div>
-      </div>
+      <PageShell title="Profile" subtitle="Your account and activity">
+        <LoadingBlock />
+      </PageShell>
     );
+  }
 
-  if (error) return <p className="text-red-500 text-center mt-10">{error}</p>;
-
-  const getInitials = (name) => {
-    return name
-      ? name
-          .split(" ")
-          .map((word) => word[0].toUpperCase())
-          .join("")
-      : "";
-  };
+  if (error && !user) {
+    return (
+      <PageShell title="Profile">
+        <p className="text-red-400">{error}</p>
+      </PageShell>
+    );
+  }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 p-6">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-lg w-full bg-white/10 backdrop-blur-lg dark:bg-gray-900/70 p-8 rounded-2xl shadow-2xl text-center border border-white/20"
-      >
-        {/* Profile Avatar */}
+    <PageShell
+      title="Profile"
+      subtitle="Account details, role, and training summary"
+      action={
+        <Link to="/settings">
+          <Button variant="secondary"><FiSettings className="inline mr-1" /> Edit settings</Button>
+        </Link>
+      }
+    >
+      <div className="grid gap-6 lg:grid-cols-3">
         <motion.div
-          className="relative w-28 h-28 rounded-full bg-blue-600 text-white flex items-center justify-center text-4xl font-bold uppercase mx-auto shadow-lg border-4 border-white dark:border-gray-700"
-          whileHover={{ scale: 1.1 }}
-          transition={{ duration: 0.3 }}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="lg:col-span-1 ops-panel"
         >
-          {getInitials(user?.name)}
+          <div className="ops-panel-body text-center">
+            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-700 text-mine-950 flex items-center justify-center text-3xl font-bold mx-auto shadow-lg">
+              {getInitials(user?.name)}
+            </div>
+            <h2 className="mt-5 text-2xl font-bold text-white">{user?.name}</h2>
+            <p className="text-slate-400 flex items-center justify-center gap-2 mt-2 text-sm">
+              <FiMail /> {user?.email}
+            </p>
+            <span className={`inline-flex mt-4 items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium ${getRoleBadgeClass(user?.role)}`}>
+              <FiShield /> {roleInfo.label}
+            </span>
+            <p className="mt-4 text-xs text-slate-500 leading-relaxed px-2">{roleInfo.description}</p>
+            {user?.createdAt && (
+              <p className="mt-4 text-xs text-slate-500 flex items-center justify-center gap-1">
+                <FiCalendar /> Member since {new Date(user.createdAt).toLocaleDateString()}
+              </p>
+            )}
+          </div>
         </motion.div>
 
-        {/* User Name */}
-        <h2 className="mt-5 text-3xl font-bold text-gray-900 dark:text-white tracking-wide">
-          {user?.name}
-        </h2>
+        <div className="lg:col-span-2 space-y-4">
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="ops-panel">
+            <div className="ops-panel-header">
+              <h3 className="font-semibold text-white">Role & access</h3>
+            </div>
+            <div className="ops-panel-body">
+              <dl className="grid sm:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <dt className="text-slate-500">Role</dt>
+                  <dd className="text-white font-medium mt-1">{roleInfo.label}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Account ID</dt>
+                  <dd className="text-white font-mono text-xs mt-1 truncate">{user?._id}</dd>
+                </div>
+              </dl>
+              <p className="mt-4 text-xs text-slate-500">
+                Your role controls which pages and actions are available. Contact an administrator to change your role.
+              </p>
+            </div>
+          </motion.div>
 
-        {/* Email */}
-        <p className="text-gray-700 dark:text-gray-300 flex items-center justify-center gap-2 mt-3 text-lg">
-          <FiMail className="text-blue-400" /> {user?.email}
-        </p>
+          {stats && (
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="ops-panel">
+              <div className="ops-panel-header flex items-center gap-2">
+                <FiAward className="text-amber-400" />
+                <h3 className="font-semibold text-white">Training stats</h3>
+              </div>
+              <div className="ops-panel-body">
+                <div className="ops-kpi-grid !grid-cols-2 sm:!grid-cols-4">
+                  {[
+                    { label: 'Points', value: stats.totalPoints ?? 0 },
+                    { label: 'Level', value: stats.level ?? 1 },
+                    { label: 'Completed', value: stats.statistics?.trainingsCompleted ?? 0 },
+                    { label: 'Rank', value: stats.rank ? `#${stats.rank}` : '—' },
+                  ].map((s) => (
+                    <div key={s.label} className="ops-kpi !p-3 border-slate-700/50">
+                      <span className="ops-kpi-label">{s.label}</span>
+                      <p className="ops-kpi-value !text-lg">{s.value}</p>
+                    </div>
+                  ))}
+                </div>
+                <Link to="/training" className="inline-block mt-4 text-sm text-amber-400 hover:underline">
+                  Go to training center →
+                </Link>
+              </div>
+            </motion.div>
+          )}
 
-        {/* Role Badge */}
-        <motion.span
-          whileHover={{ scale: 1.1 }}
-          transition={{ duration: 0.3 }}
-          className="mt-3 inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition rounded-full shadow-md"
-        >
-          <FiShield className="text-white" /> {user?.role}
-        </motion.span>
-      </motion.div>
-    </div>
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="ops-panel">
+            <div className="ops-panel-body flex flex-wrap gap-3">
+              <Link to="/settings"><Button variant="secondary">Account settings</Button></Link>
+              <Link to="/attendance"><Button variant="ghost">Attendance</Button></Link>
+              <Link to="/safety-report"><Button variant="ghost">Safety reports</Button></Link>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </PageShell>
   );
 };
 

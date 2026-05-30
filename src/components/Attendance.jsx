@@ -1,524 +1,393 @@
-// import React, { useState, useEffect } from 'react';
-// import { Transition } from '@headlessui/react';
+import api from '../services/axios';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import Calendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
+import { Doughnut } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { motion } from 'framer-motion';
+import {
+  FaUserCheck,
+  FaUserTimes,
+  FaUsers,
+  FaSearch,
+  FaSyncAlt,
+  FaCalendarCheck,
+} from 'react-icons/fa';
+import PageShell from './ui/PageShell';
+import Button from './ui/Button';
+import LoadingBlock from './ui/LoadingBlock';
+import EmptyState from './ui/EmptyState';
+import { usePermissions } from '../hooks/usePermissions';
+import { PERMISSIONS } from '../utils/roles';
 
-// const AttendancePage = () => {
-//   const [userss, setuserss] = useState([]);
-//   const [attendance, setAttendance] = useState({});
-//   const [searchTerm, setSearchTerm] = useState('');
-//   const [currentPage, setCurrentPage] = useState(1);
-//   const [userssPerPage] = useState(5);
-//   const [isSubmitting, setIsSubmitting] = useState(false);
-//   const [showModal, setShowModal] = useState(false);
+ChartJS.register(ArcElement, Tooltip, Legend);
 
-//   useEffect(() => {
-//     const fetchuserss = async () => {
-//       const mockuserss = Array.from({ length: 50 }, (_, i) => ({
-//         id: i + 1,
-//         name: `users ${i + 1}`,
-//         department: i % 2 === 0 ? 'Mining' : 'Maintenance',
-//       }));
-//       setuserss(mockuserss);
-//     };
-//     fetchuserss();
-//   }, []);
+const ROLE_OPTIONS = ['worker', 'Inspector', 'Safety Manager', 'Shift Incharge'];
 
-//   const handleAttendanceChange = (usersId) => {
-//     setAttendance((prev) => ({
-//       ...prev,
-//       [usersId]: !prev[usersId],
-//     }));
-//   };
+const toDateStr = (d) => {
+  const x = Array.isArray(d) ? d[0] : d instanceof Date ? d : new Date(d);
+  if (!(x instanceof Date) || Number.isNaN(x.getTime())) {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  }
+  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+};
 
-//   const handleSubmit = () => {
-//     setShowModal(false);
-//     setIsSubmitting(true);
-//     setTimeout(() => {
-//       setIsSubmitting(false);
-//       alert('Attendance submitted successfully!');
-//     }, 2000);
-//   };
+const userIdStr = (u) => {
+  const raw = u?._id ?? u?.id ?? u?.userId;
+  if (raw == null) return '';
+  if (typeof raw === 'object' && typeof raw.toHexString === 'function') return raw.toHexString();
+  return String(raw).trim();
+};
 
-//   const filtereduserss = userss.filter((users) =>
-//     users.name.toLowerCase().includes(searchTerm) ||
-//     users.id.toString().includes(searchTerm)
-//   );
+const initials = (name = '') =>
+  name
+    .split(' ')
+    .filter(Boolean)
+    .map((n) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || '?';
 
-//   const indexOfLastusers = currentPage * userssPerPage;
-//   const indexOfFirstusers = indexOfLastusers - userssPerPage;
-//   const currentuserss = filtereduserss.slice(indexOfFirstusers, indexOfLastusers);
+const KPI_STYLES = {
+  total: 'border-slate-700/70 bg-slate-800/80',
+  present: 'border-emerald-500/25 bg-emerald-950/40',
+  absent: 'border-red-500/25 bg-red-950/40',
+  rate: 'border-amber-500/25 bg-amber-950/30',
+};
 
-//   const totalPages = Math.ceil(filtereduserss.length / userssPerPage);
-
-//   return (
-//     <div className="min-h-screen bg-gray-100 p-6">
-//       <div className="max-w-6xl mx-auto bg-white shadow-lg rounded-lg p-6">
-//         <h1 className="text-3xl font-bold mb-6 text-center text-indigo-700 animate-bounce">
-//           users Attendance
-//         </h1>
-//         <div className="flex justify-between items-center mb-4">
-//           <input
-//             type="text"
-//             placeholder="Search by name or ID"
-//             value={searchTerm}
-//             onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
-//             className="border border-gray-300 rounded-lg p-2 w-1/3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-//           />
-//           <span className="text-gray-500 text-sm">{new Date().toLocaleString()}</span>
-//         </div>
-//         <table className="w-full border-collapse border border-gray-300">
-//           <thead>
-//             <tr className="bg-indigo-200">
-//               <th className="border border-gray-300 px-4 py-2">users ID</th>
-//               <th className="border border-gray-300 px-4 py-2">Name</th>
-//               <th className="border border-gray-300 px-4 py-2">Department</th>
-//               <th className="border border-gray-300 px-4 py-2">Present</th>
-//             </tr>
-//           </thead>
-//           <Transition
-//             show={true}
-//             enter="transition-opacity duration-700"
-//             enterFrom="opacity-0"
-//             enterTo="opacity-100"
-//             leave="transition-opacity duration-700"
-//             leaveFrom="opacity-100"
-//             leaveTo="opacity-0"
-//           >
-//             <tbody>
-//               {currentuserss.map((users) => (
-//                 <tr key={users.id} className="hover:bg-indigo-100">
-//                   <td className="border border-gray-300 px-4 py-2">{users.id}</td>
-//                   <td className="border border-gray-300 px-4 py-2">{users.name}</td>
-//                   <td className="border border-gray-300 px-4 py-2">{users.department}</td>
-//                   <td className="border border-gray-300 px-4 py-2 text-center">
-//                     <input
-//                       type="checkbox"
-//                       checked={attendance[users.id] || false}
-//                       onChange={() => handleAttendanceChange(users.id)}
-//                       className="form-checkbox"
-//                     />
-//                   </td>
-//                 </tr>
-//               ))}
-//             </tbody>
-//           </Transition>
-//         </table>
-//         <div className="flex justify-between items-center mt-4">
-//           <button
-//             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-//             className="bg-gray-300 px-4 py-2 rounded-lg hover:bg-gray-400"
-//           >
-//             Previous
-//           </button>
-//           <span>
-//             Page {currentPage} of {totalPages}
-//           </span>
-//           <button
-//             onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-//             className="bg-gray-300 px-4 py-2 rounded-lg hover:bg-gray-400"
-//           >
-//             Next
-//           </button>
-//         </div>
-//         <button
-//           onClick={() => setShowModal(true)}
-//           className="mt-6 w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700"
-//         >
-//           Submit Attendance
-//         </button>
-//         {isSubmitting && (
-//           <div className="mt-4 text-center text-green-500 font-bold animate-pulse">
-//             Submitting attendance...
-//           </div>
-//         )}
-//       </div>
-
-//       {/* Confirmation Modal */}
-//       {showModal && (
-//         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-//           <div className="bg-white rounded-lg shadow-lg p-6 w-96">
-//             <h2 className="text-xl font-bold mb-4">Confirm Submission</h2>
-//             <p>Are you sure you want to submit the attendance?</p>
-//             <div className="flex justify-between mt-6">
-//               <button
-//                 onClick={() => setShowModal(false)}
-//                 className="bg-gray-300 px-4 py-2 rounded-lg hover:bg-gray-400"
-//               >
-//                 Cancel
-//               </button>
-//               <button
-//                 onClick={handleSubmit}
-//                 className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
-//               >
-//                 Submit
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default AttendancePage;
-// import React, { useState, useEffect } from "react";
-// import Calendar from "react-calendar";
-// import "react-calendar/dist/Calendar.css";
-// import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
-// import { Bar } from "react-chartjs-2";
-// import { motion } from "framer-motion";
-
-// // Register the required components
-// ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
-
-// const AttendancePage = () => {
-//   const [userss, setuserss] = useState([]);
-//   const [filtereduserss, setFiltereduserss] = useState([]);
-//   const [searchTerm, setSearchTerm] = useState("");
-//   const [selectedDate, setSelectedDate] = useState(new Date());
-
-//   // Mock data setup
-//   useEffect(() => {
-//     const mockuserss = Array.from({ length: 50 }, (_, i) => ({
-//       id: i + 1,
-//       name: `users ${i + 1}`,
-//       department: i % 2 === 0 ? "Mining" : "Maintenance",
-//       checkIn: i % 2 === 0 ? "09:00" : "10:00",
-//       checkOut: "18:00",
-//       workHours: i % 2 === 0 ? "9h" : "8h",
-//       status: i % 5 === 0 ? "Absent" : "Present",
-//     }));
-//     setuserss(mockuserss);
-//     setFiltereduserss(mockuserss);
-//   }, []);
-
-//   // Filter userss by search term
-//   useEffect(() => {
-//     setFiltereduserss(
-//       userss.filter(
-//         (users) =>
-//           users.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//           users.id.toString().includes(searchTerm)
-//       )
-//     );
-//   }, [searchTerm, userss]);
-
-//   const handleDateChange = (date) => setSelectedDate(date);
-
-//   // Attendance chart data
-//   const attendanceChartData = {
-//     labels: ["01 Jan", "02 Jan", "03 Jan", "04 Jan", "05 Jan"],
-//     datasets: [
-//       {
-//         label: "Attendance Percentage",
-//         data: [90, 85, 88, 92, 95],
-//         backgroundColor: "rgba(75, 192, 192, 0.6)",
-//         borderColor: "rgba(75, 192, 192, 1)",
-//         borderWidth: 1,
-//       },
-//     ],
-//   };
-
-//   // Export to CSV
-//   const exportToCSV = () => {
-//     const csvData = [
-//       ["ID", "Name", "Department", "Check-in", "Check-out", "Work Hours", "Status"],
-//       ...filtereduserss.map((users) => [
-//         users.id,
-//         users.name,
-//         users.department,
-//         users.checkIn,
-//         users.checkOut,
-//         users.workHours,
-//         users.status,
-//       ]),
-//     ];
-//     const csvContent = "data:text/csv;charset=utf-8," + csvData.map((e) => e.join(",")).join("\n");
-//     const link = document.createElement("a");
-//     link.setAttribute("href", encodeURI(csvContent));
-//     link.setAttribute("download", "attendance_data.csv");
-//     document.body.appendChild(link);
-//     link.click();
-//     document.body.removeChild(link);
-//   };
-
-//   return (
-//     <div className="min-h-screen bg-gray-100 p-6">
-//       <motion.div
-//         className="max-w-6xl mx-auto bg-white shadow-lg rounded-lg p-6"
-//         initial={{ opacity: 0, y: -20 }}
-//         animate={{ opacity: 1, y: 0 }}
-//         transition={{ duration: 0.5 }}
-//       >
-//         <h1 className="text-2xl font-bold mb-4 text-center">Attendance Dashboard</h1>
-//         <div className="grid grid-cols-3 gap-6">
-//           <motion.div className="col-span-2" whileHover={{ scale: 1.02 }}>
-//             <Bar data={attendanceChartData} />
-//           </motion.div>
-//           <motion.div whileHover={{ scale: 1.02 }}>
-//             <Calendar value={selectedDate} onChange={handleDateChange} />
-//           </motion.div>
-//         </div>
-
-//         <div className="mt-6 flex justify-between items-center">
-//           <input
-//             type="text"
-//             placeholder="Search by name or ID"
-//             value={searchTerm}
-//             onChange={(e) => setSearchTerm(e.target.value)}
-//             className="border border-gray-300 rounded-lg p-2 w-1/3"
-//           />
-//           <div>
-//             <button
-//               className="bg-indigo-600 text-white px-4 py-2 rounded-lg mr-4"
-//               onClick={exportToCSV}
-//             >
-//               Export to CSV
-//             </button>
-//             <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg">Advanced Filters</button>
-//           </div>
-//         </div>
-
-//         <div className="mt-4">
-//           <h2 className="text-lg font-bold mb-2">users Details</h2>
-//           <motion.table
-//             className="w-full border-collapse border border-gray-300"
-//             initial={{ opacity: 0 }}
-//             animate={{ opacity: 1 }}
-//             transition={{ duration: 0.5 }}
-//           >
-//             <thead className="bg-gray-200">
-//               <tr>
-//                 <th className="border border-gray-300 px-4 py-2">ID</th>
-//                 <th className="border border-gray-300 px-4 py-2">Name</th>
-//                 <th className="border border-gray-300 px-4 py-2">Department</th>
-//                 <th className="border border-gray-300 px-4 py-2">Check-in</th>
-//                 <th className="border border-gray-300 px-4 py-2">Check-out</th>
-//                 <th className="border border-gray-300 px-4 py-2">Work Hours</th>
-//                 <th className="border border-gray-300 px-4 py-2">Status</th>
-//               </tr>
-//             </thead>
-//             <tbody>
-//               {filtereduserss.map((users) => (
-//                 <motion.tr
-//                   key={users.id}
-//                   className="hover:bg-gray-100"
-//                   whileHover={{ scale: 1.02 }}
-//                 >
-//                   <td className="border border-gray-300 px-4 py-2">{users.id}</td>
-//                   <td className="border border-gray-300 px-4 py-2">{users.name}</td>
-//                   <td className="border border-gray-300 px-4 py-2">{users.department}</td>
-//                   <td className="border border-gray-300 px-4 py-2">{users.checkIn}</td>
-//                   <td className="border border-gray-300 px-4 py-2">{users.checkOut}</td>
-//                   <td className="border border-gray-300 px-4 py-2">{users.workHours}</td>
-//                   <td
-//                     className={`border border-gray-300 px-4 py-2 ${
-//                       users.status === "Absent" ? "text-red-500" : "text-green-500"
-//                     } font-bold`}
-//                   >
-//                     {users.status}
-//                   </td>
-//                 </motion.tr>
-//               ))}
-//             </tbody>
-//           </motion.table>
-//         </div>
-//       </motion.div>
-//     </div>
-//   );
-// };
-
-// export default AttendancePage;
-import React, { useState, useEffect } from "react";
-import Calendar from "react-calendar";
-import "react-calendar/dist/Calendar.css";
-import { Chart as ChartJS, LineElement, PointElement, LinearScale, Title, Tooltip, Legend, CategoryScale ,Filler} from "chart.js";
-import { Line } from "react-chartjs-2";
-import { motion } from "framer-motion";
-import axios from "axios";
-
-// Register Chart.js components
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend,Filler);
-const roles = ["worker", "Inspector", "Safety Manager", "Shift Incharge"];
 const AttendancePage = () => {
-  const [userss, setuserss] = useState([]);
-  const [filtereduserss, setFiltereduserss] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [attendanceStats, setAttendanceStats] = useState({ present: 0, absent: 0 });
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedusers, setSelectedusers] = useState(null);
-  const [attendanceChartData, setAttendanceChartData] = useState(null); 
-  const [loading, setLoading] = useState(true);
-  const [selectedRole, setSelectedRole] = useState("worker");
+  const { can, user } = usePermissions();
+  const canManageAll = can(PERMISSIONS.ATTENDANCE_MANAGE_ALL);
   const [users, setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
-  // Fetch userss from backend
-  useEffect(() => {
-    fetchUsers(selectedRole);
-  }, [selectedRole]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedRole, setSelectedRole] = useState('worker');
+  const [loading, setLoading] = useState(true);
+  const [statusMap, setStatusMap] = useState({});
+  const [savingId, setSavingId] = useState(null);
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [view, setView] = useState('all');
+  const [loadError, setLoadError] = useState('');
 
-  const fetchUsers = async (role) => {
+  const dateStr = toDateStr(selectedDate);
+
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
+    setLoadError('');
     try {
-      const res = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getAllusersByrole?role=${role}&date=${selectedDate.toISOString().split('T')[0]}`);
-      setUsers(res.data);
-      setFilteredUsers(res.data);
-      updateStats(res.data);
+      const res = await api.get('/attendance', {
+        params: {
+          date: dateStr,
+          ...(canManageAll ? { role: selectedRole } : {}),
+        },
+      });
+      const list = Array.isArray(res.data) ? res.data : [];
+      setUsers(list);
+      const map = {};
+      list.forEach((u) => {
+        map[userIdStr(u)] = u.status === 'Present' ? 'Present' : 'Absent';
+      });
+      setStatusMap(map);
     } catch (err) {
-      console.error("Error fetching users:", err.response?.data || err.message);
+      console.error(err);
+      const msg = err.response?.data?.error || 'Could not load attendance. Check login and backend.';
+      setLoadError(msg);
+      setUsers([]);
+      setStatusMap({});
     } finally {
       setLoading(false);
     }
+  }, [selectedRole, dateStr, canManageAll]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const toggleStatus = async (row) => {
+    const id = userIdStr(row);
+    if (!id) {
+      toast.error('Invalid user record — refresh and try again');
+      return;
+    }
+    const nextStatus = statusMap[id] === 'Present' ? 'Absent' : 'Present';
+    const prevStatus = statusMap[id];
+    setStatusMap((prev) => ({ ...prev, [id]: nextStatus }));
+    setSavingId(id);
+    try {
+      await api.put('/attendance', { userId: id, date: dateStr, status: nextStatus });
+      toast.success(`${row.name} → ${nextStatus}`, { autoClose: 1800 });
+    } catch (err) {
+      setStatusMap((prev) => ({ ...prev, [id]: prevStatus }));
+      const msg =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        (err.response?.status === 429 ? 'Too many requests — wait a moment' : 'Failed to save');
+      toast.error(msg);
+    } finally {
+      setSavingId(null);
+    }
   };
-  
-  
 
-  // Update statistics
-  const updateStats = (userss) => {
-    const present = userss.filter((w) => w.status === "Present").length;
-    const absent = userss.length - present;
-    setAttendanceStats({ present, absent });
+  const markAllPresent = async () => {
+    const targets = filtered;
+    if (!targets.length) return;
+    if (!window.confirm(`Mark all ${targets.length} visible staff as Present for ${dateStr}?`)) return;
 
-    const attendanceData = userss.map((_, index) => ({
-      label: `Day ${index + 1}`,
-      value: Math.random() * (100 - 70) + 70, // Random attendance % between 70-100
-    }));
+    setBulkSaving(true);
+    try {
+      if (canManageAll) {
+        await api.put('/attendance/bulk', {
+          date: dateStr,
+          status: 'Present',
+          userIds: targets.map((u) => userIdStr(u)),
+        });
+      }
+      toast.success(`Marked ${targets.length} as present`);
+      await fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Bulk update failed');
+    } finally {
+      setBulkSaving(false);
+    }
+  };
 
-    setAttendanceChartData({
-      labels: attendanceData.map((d) => d.label),
+  const filtered = useMemo(() => {
+    return users.filter((u) => {
+      const id = userIdStr(u);
+      const matchSearch =
+        !searchTerm ||
+        u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        u.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      if (!matchSearch) return false;
+      if (view === 'present') return statusMap[id] === 'Present';
+      if (view === 'absent') return statusMap[id] !== 'Present';
+      return true;
+    });
+  }, [users, searchTerm, view, statusMap]);
+
+  const present = useMemo(
+    () => Object.values(statusMap).filter((s) => s === 'Present').length,
+    [statusMap]
+  );
+  const total = users.length;
+  const absent = total - present;
+  const rate = total ? Math.round((present / total) * 100) : 0;
+
+  const chartData = useMemo(
+    () => ({
+      labels: ['Present', 'Absent'],
       datasets: [
         {
-          label: "Attendance Percentage",
-          data: attendanceData.map((d) => d.value),
-          borderColor: "#4CAF50",
-          backgroundColor: "rgba(76, 175, 80, 0.3)",
-          fill: true,
+          data: total ? [present, absent] : [1, 0],
+          backgroundColor: ['#10b981', '#ef4444'],
+          borderWidth: 0,
+          hoverOffset: 6,
         },
       ],
-    });
-  };
+    }),
+    [present, absent, total]
+  );
 
-  // Update users attendance
-  const handleAttendanceChange = async (id, status) => {
-    try {
-      await axios.patch(`https://${import.meta.env.VITE_BACKEND}/api/${id}`, { status });
-      fetchuserss(); // Fetch fresh data after update
-    } catch (err) {
-      console.error("Error updating attendance:", err);
-    }
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '72%',
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { color: '#94a3b8', padding: 12, usePointStyle: true, boxWidth: 8 },
+      },
+    },
   };
-
-  // Delete users
-  const deleteusers = async (id) => {
-    try {
-      await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/${id}`);
-      fetchuserss(); // Fetch fresh data after deletion
-    } catch (err) {
-      console.error("Error deleting users:", err);
-    }
-  };
-
-  // Export attendance data to CSV
-  const exportToCSV = () => {
-    const csvData = [
-      ["ID", "Name", "Department", "Status"],
-      ...userss.map((users) => [users._id, users.name, users.department, users.status]),
-    ];
-    const csvContent = "data:text/csv;charset=utf-8," + csvData.map((e) => e.join(",")).join("\n");
-    const link = document.createElement("a");
-    link.setAttribute("href", encodeURI(csvContent));
-    link.setAttribute("download", "attendance_data.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Open and close modal
-  const openModal = (users) => {
-    setSelectedusers(users);
-    setIsModalOpen(true);
-  };
-  const closeModal = () => setIsModalOpen(false);
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <motion.div
-        className="w-full min-h-screen bg-white shadow-lg rounded-lg p-6"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1 className="text-2xl font-bold mb-6 text-center">Attendance Dashboard</h1>
-        <div className="mb-4 flex justify-center">
-          <select className="p-2 border rounded-lg" value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)}>
-            {roles.map((role) => (
-              <option key={role} value={role}>{role}</option>
-            ))}
-          </select>
-        </div>
-        {loading ? (
-          <p className="text-center text-lg">Loading...</p>
-        ) : (
-          <>
-          <div className="grid grid-cols-4 gap-6 mb-6">
-              <motion.div className="bg-blue-100 text-blue-800 p-4 rounded-lg shadow-md">
-                <h2 className="text-lg font-bold">Total Users</h2>
-                <p className="text-2xl">{users.length}</p>
-              </motion.div>
-              <motion.div className="bg-green-100 text-green-800 p-4 rounded-lg shadow-md">
-                <h2 className="text-lg font-bold">Present</h2>
-                <p className="text-2xl">{attendanceStats.present}</p>
-              </motion.div>
-              <motion.div className="bg-red-100 text-red-800 p-4 rounded-lg shadow-md">
-                <h2 className="text-lg font-bold">Absent</h2>
-                <p className="text-2xl">{attendanceStats.absent}</p>
-              </motion.div>
+    <PageShell
+      variant="dark"
+      title="Attendance"
+      subtitle={
+        canManageAll
+          ? `Daily roll call · ${dateStr}`
+          : `Your attendance · ${dateStr}`
+      }
+      action={
+        canManageAll ? (
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={fetchUsers} disabled={loading}>
+              <FaSyncAlt /> Refresh
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={markAllPresent}
+              disabled={loading || bulkSaving || !filtered.length}
+            >
+              <FaUserCheck /> {bulkSaving ? 'Saving…' : 'Mark all present'}
+            </Button>
+          </div>
+        ) : null
+      }
+    >
+      <div className="ops-kpi-grid">
+        {[
+          { key: 'total', label: 'Total staff', value: total, icon: <FaUsers className="text-slate-400" /> },
+          { key: 'present', label: 'Present', value: present, icon: <FaUserCheck className="text-emerald-400" /> },
+          { key: 'absent', label: 'Absent', value: absent, icon: <FaUserTimes className="text-red-400" /> },
+          { key: 'rate', label: 'Attendance rate', value: `${rate}%`, icon: <FaCalendarCheck className="text-amber-400" /> },
+        ].map((kpi, i) => (
+          <motion.div
+            key={kpi.key}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className={`ops-kpi ${KPI_STYLES[kpi.key]}`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="ops-kpi-label">{kpi.label}</span>
+              {kpi.icon}
             </div>
+            <p className="ops-kpi-value text-white">{kpi.value}</p>
+          </motion.div>
+        ))}
+      </div>
 
-            <div className="grid grid-cols-3 gap-6 mb-6">
-              <motion.div className="col-span-2">
-                <Line data={attendanceChartData} />
-              </motion.div>
-              <motion.div>
-                <Calendar value={selectedDate} onChange={(date) => setSelectedDate(date)} />
-              </motion.div>
-            </div>
-
-            <div className="flex justify-between items-center mb-4">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        <div className="xl:col-span-8 space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center p-4 rounded-xl mb-0 bg-slate-900/50 border border-slate-700">
+            {canManageAll ? (
+              <select
+                className="input-field !w-full sm:!w-auto min-w-[140px] !bg-slate-800 !border-slate-600 !text-slate-100"
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+              >
+                {ROLE_OPTIONS.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="text-sm text-slate-400 self-center px-2">
+                Viewing: <span className="text-white font-medium">{user?.name || 'You'}</span>
+              </span>
+            )}
+            <div className="relative w-full sm:flex-1 sm:min-w-[220px]">
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm pointer-events-none" />
               <input
-                type="text"
-                placeholder="Search by name or ID"
+                className="input-field w-full !pl-9 !bg-slate-800 !border-slate-600 !text-slate-100"
+                placeholder="Search name or email"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="border border-gray-300 rounded-lg p-2 w-1/3"
               />
-              <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg" onClick={exportToCSV}>
-                Export to CSV
-              </button>
             </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              {filtereduserss.map((users) => (
-                <motion.div
-                  key={users._id}
-                  className="p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
-                  whileHover={{ scale: 1.05 }}
+            <div className="ops-tabs w-full sm:w-auto !mb-0 !p-1 !bg-slate-800/80 !border-slate-700">
+              {[
+                { id: 'all', label: 'All' },
+                { id: 'present', label: 'Present' },
+                { id: 'absent', label: 'Absent' },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={view === t.id ? 'ops-tab--active' : 'ops-tab'}
+                  onClick={() => setView(t.id)}
                 >
-                  <h3 className="text-xl font-semibold">{users.name}</h3>
-                  <p>{users.department}</p>
-                  <button
-                    onClick={() => handleAttendanceChange(users._id, users.status === "Present" ? "Absent" : "Present")}
-                    className={`px-4 py-2 rounded-lg text-white ${users.status === "Present" ? "bg-green-600" : "bg-red-600"}`}
-                  >
-                    {users.status === "Present" ? "Mark Absent" : "Mark Present"}
-                  </button>
-                </motion.div>
+                  {t.label}
+                </button>
               ))}
             </div>
-          </>
-        )}
-      </motion.div>
-    </div>
+          </div>
+
+          {loadError && !loading && (
+            <div className="rounded-xl border border-red-500/30 bg-red-950/30 px-4 py-3 text-sm text-red-200 flex flex-wrap items-center justify-between gap-2">
+              <span>{loadError}</span>
+              <Button variant="secondary" onClick={fetchUsers}>
+                Retry
+              </Button>
+            </div>
+          )}
+
+          {loading ? (
+            <LoadingBlock label="Loading attendance…" />
+          ) : filtered.length === 0 ? (
+            <EmptyState
+              title="No records"
+              message={
+                total === 0
+                  ? `No users with role "${selectedRole}" found. Try another role or date.`
+                  : 'No users match your search or filter.'
+              }
+            />
+          ) : (
+            <div className="space-y-2 max-h-[520px] overflow-y-auto scrollbar-hidden pr-1">
+              {filtered.map((u, i) => {
+                const id = userIdStr(u);
+                const isPresent = statusMap[id] === 'Present';
+                return (
+                  <motion.div
+                    key={id}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: Math.min(i * 0.02, 0.4) }}
+                    className="ops-person-row !bg-slate-800/40 !border-slate-700"
+                  >
+                    <div className="ops-avatar">{initials(u.name)}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-white truncate">{u.name}</p>
+                      <p className="text-sm text-slate-400 truncate">{u.email || u.role}</p>
+                    </div>
+                    <span className={isPresent ? 'status-pill--reviewed' : 'risk-pill--high'}>
+                      {isPresent ? 'Present' : 'Absent'}
+                    </span>
+                    <Button
+                      variant={isPresent ? 'secondary' : 'success'}
+                      className="!py-2 !text-xs shrink-0 min-w-[110px]"
+                      disabled={savingId === id || bulkSaving}
+                      onClick={() => toggleStatus(u)}
+                    >
+                      {savingId === id ? 'Saving…' : isPresent ? 'Mark absent' : 'Mark present'}
+                    </Button>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="xl:col-span-4 space-y-4">
+          <div className="ops-panel !bg-slate-900/70 !border-slate-700">
+            <div className="ops-panel-head !border-slate-800">
+              <h3 className="ops-panel-title">Distribution</h3>
+              <span className="text-xs text-slate-500">{present} / {total}</span>
+            </div>
+            <div className="ops-panel-body h-[220px]">
+              {total > 0 ? (
+                <Doughnut data={chartData} options={chartOptions} />
+              ) : (
+                <p className="text-sm text-slate-500 text-center py-16">No data for chart</p>
+              )}
+            </div>
+          </div>
+          <div className="ops-panel !bg-slate-900/70 !border-slate-700">
+            <div className="ops-panel-head !border-slate-800">
+              <h3 className="ops-panel-title">
+                <FaCalendarCheck className="text-amber-500" /> Select date
+              </h3>
+            </div>
+            <div className="ops-panel-body">
+              <Calendar
+                value={selectedDate}
+                onChange={(d) => setSelectedDate(d)}
+                className="attendance-calendar !border-0 !w-full !bg-transparent"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ToastContainer position="top-right" autoClose={2500} theme="dark" />
+    </PageShell>
   );
 };
 

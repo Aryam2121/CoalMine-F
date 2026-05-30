@@ -1,7 +1,9 @@
+import api from '../services/axios';
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, Tooltip } from "recharts";
 
 import { motion } from 'framer-motion';
+import PageShell from './ui/PageShell';
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 import {
@@ -13,7 +15,6 @@ import {
   AiOutlineUndo,
   AiOutlineBulb,
 } from 'react-icons/ai';
-import axios from 'axios';
 const COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
 
 const getRandomColor = (index) => COLORS[index % COLORS.length];
@@ -110,7 +111,7 @@ const Resources = () => {
   const [deletedResource, setDeletedResource] = useState(null);
 
   useEffect(() => {
-    axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getAllRes`)
+    api.get(`/getAllRes`)
       .then((response) => {
         console.log('Fetched resources:', response.data); // Debugging
         if (Array.isArray(response.data)) {
@@ -145,7 +146,7 @@ const Resources = () => {
     };
 
     if (editingId) {
-      axios.put(`https://${import.meta.env.VITE_BACKEND}/api/${editingId}`, resourceData)
+      api.put(`/updateRes/${editingId}`, resourceData)
         .then((response) => {
           setResources(resources.map((resource) =>
             resource._id === editingId ? response.data : resource
@@ -154,7 +155,7 @@ const Resources = () => {
         })
         .catch((error) => console.error('Error updating resource:', error));
     } else {
-      axios.post(`https://${import.meta.env.VITE_BACKEND}/api/addRes`, resourceData)
+      api.post(`/addRes`, resourceData)
         .then((response) => {
           setResources([...resources, response.data]);
         })
@@ -167,7 +168,7 @@ const Resources = () => {
   const handleDeleteResource = (id) => {
     const resourceToDelete = resources.find((resource) => resource._id === id);
     setDeletedResource(resourceToDelete);
-    axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/${id}`)
+    api.delete(`/deleteRes/${id}`)
       .then(() => {
         setResources(resources.filter((resource) => resource._id !== id));
       })
@@ -177,7 +178,7 @@ const Resources = () => {
 
   const handleUndoDelete = () => {
     if (deletedResource) {
-      axios.post(`https://${import.meta.env.VITE_BACKEND}/api/addRes`, deletedResource)
+      api.post(`/addRes`, deletedResource)
         .then(() => {
           setResources([...resources, deletedResource]);
           setDeletedResource(null);
@@ -216,12 +217,9 @@ const Resources = () => {
 
 
   return (
-    <div className={`min-h-screen text-black`}>
-
-
-    
+    <PageShell title="Resources" subtitle="Track equipment and material availability across sites" variant="dark">
       <motion.div
-        className="w-full min-h-screen bg-gray-800  p-12 rounded-lg shadow-lg"
+        className="w-full"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
@@ -340,7 +338,7 @@ const Resources = () => {
 </Droppable>
         </DragDropContext>
       </motion.div>
-    </div>
+    </PageShell>
   );
 };
 

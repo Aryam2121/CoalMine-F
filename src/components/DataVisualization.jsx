@@ -1,62 +1,77 @@
-import React, { useState, useEffect } from 'react';
-import { Line, Bar, Pie } from 'react-chartjs-2';
-import { Button, Select, MenuItem, Switch, FormControlLabel, InputLabel, Grid, Card, CardContent, CircularProgress, Snackbar, TextField, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
-import dayjs from 'dayjs';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
-import axios from 'axios';
+import api from '../services/axios';
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Line, Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
+import { FiPlus, FiTrash2, FiTrendingUp } from 'react-icons/fi';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import PageShell from './ui/PageShell';
+import Button from './ui/Button';
+import Modal from './ui/Modal';
+import FormField from './ui/FormField';
+import LoadingBlock from './ui/LoadingBlock';
+import EmptyState from './ui/EmptyState';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
+
+const defaultChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { labels: { color: '#94a3b8' } },
+  },
+  scales: {
+    x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(148,163,184,0.1)' } },
+    y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(148,163,184,0.1)' } },
+  },
+};
 
 const DataVisualization = () => {
-  const [chartData, setChartData] = useState({ labels: [], datasets: [] });
-  const [chartType, setChartType] = useState('line');
-  const [theme, setTheme] = useState('dark'); // Default to dark mode
-  const [startDate, setStartDate] = useState(dayjs().subtract(1, 'month'));
-  const [endDate, setEndDate] = useState(dayjs());
-  const [loading, setLoading] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({ id: '', date: dayjs(), value: '', description: '' });
-  const [isEdit, setIsEdit] = useState(false);
   const [data, setData] = useState([]);
+  const [chartType, setChartType] = useState('line');
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [loading, setLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [formData, setFormData] = useState({ date: '', value: '', description: '' });
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/prod/getData`, {
+      const response = await api.get('/prod/getData', {
         params: {
-          startDate: startDate.format('YYYY-MM-DD'),
-          endDate: endDate.format('YYYY-MM-DD'),
+          startDate,
+          endDate,
           page,
-          limit: 10,
+          limit: 20,
           sortBy: 'date',
           order: 'asc',
         },
       });
-
-      const { data, metadata } = response.data;
-      setData(data);
-      setTotalPages(metadata.totalPages);
-      setChartData({
-        labels: data.map((item) => item.date),
-        datasets: [
-          {
-            label: 'Real-Time Productivity',
-            data: data.map((item) => item.value),
-            backgroundColor: 'rgba(75,192,192,0.2)',
-            borderColor: 'rgba(75,192,192,1)',
-            borderWidth: 1,
-          },
-        ],
-      });
-    } catch (error) {
-      setSnackbarMessage('Error fetching data');
-      setSnackbarOpen(true);
+      const rows = response.data?.data ?? [];
+      setData(rows);
+      setTotalPages(response.data?.metadata?.totalPages ?? 1);
+    } catch {
+      toast.error('Failed to load productivity data');
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -66,225 +81,186 @@ const DataVisualization = () => {
     fetchData();
   }, [startDate, endDate, page]);
 
-  const handleFormChange = (field, value) => {
-    if (field === "value") {
-      value = value.split(",").map(num => parseFloat(num.trim())); // Convert string to array of numbers
-    }
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-  
+  const chartData = useMemo(() => {
+    const values = data.map((item) => {
+      const v = item.value;
+      if (Array.isArray(v)) return v[0] ?? 0;
+      return Number(v) || 0;
+    });
+    return {
+      labels: data.map((item) => item.date),
+      datasets: [
+        {
+          label: 'Productivity index',
+          data: values,
+          borderColor: '#f59e0b',
+          backgroundColor: chartType === 'line' ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.6)',
+          fill: chartType === 'line',
+          tension: 0.35,
+        },
+      ],
+    };
+  }, [data, chartType]);
+
+  const stats = useMemo(() => {
+    const values = data.map((item) => {
+      const v = item.value;
+      return Array.isArray(v) ? v[0] : Number(v) || 0;
+    });
+    const avg = values.length ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1) : 0;
+    const max = values.length ? Math.max(...values) : 0;
+    return { count: data.length, avg, max };
+  }, [data]);
+
   const handleSaveRecord = async () => {
     try {
-      const { id, date, value, description } = formData;
-      
-      // Ensure value is an array of numbers
-      const formattedValue = Array.isArray(value) ? value : value.split(",").map(num => parseFloat(num.trim()));
-  
-      if (isEdit) {
-        await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/prod/${id}`, { date, value: formattedValue, description });
-        setSnackbarMessage('Record updated successfully');
-      } else {
-        await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/prod/createData`, { date, value: formattedValue, description });
-        setSnackbarMessage('Record added successfully');
-      }
-      setSnackbarOpen(true);
-      setDialogOpen(false);
+      const formattedValue = formData.value
+        .split(',')
+        .map((n) => parseFloat(n.trim()))
+        .filter((n) => !Number.isNaN(n));
+      await api.post('/prod/createData', {
+        date: formData.date,
+        value: formattedValue.length ? formattedValue : [parseFloat(formData.value) || 0],
+        description: formData.description,
+      });
+      toast.success('Record added');
+      setModalOpen(false);
+      setFormData({ date: '', value: '', description: '' });
       fetchData();
-    } catch (error) {
-      setSnackbarMessage('Error saving record');
-      setSnackbarOpen(true);
+    } catch {
+      toast.error('Failed to save record');
     }
   };
-  
+
   const handleDeleteRecord = async (id) => {
+    if (!window.confirm('Delete this record?')) return;
     try {
-      await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/prod/${id}`);
-      setSnackbarMessage('Record deleted successfully');
-      setSnackbarOpen(true);
+      await api.delete(`/prod/${id}`);
+      toast.success('Record deleted');
       fetchData();
-    } catch (error) {
-      setSnackbarMessage('Error deleting record');
-      setSnackbarOpen(true);
+    } catch {
+      toast.error('Failed to delete');
     }
   };
 
-
-  const handleChartTypeChange = (event) => {
-    setChartType(event.target.value);
-  };
-
-  const ChartComponent = chartType === 'line' ? Line : chartType === 'bar' ? Bar : Pie;
+  const ChartComponent = chartType === 'bar' ? Bar : Line;
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <div className="p-10 rounded-xl shadow-lg bg-gray-900 text-white transition-all duration-300 min-h-screen">
-        <h2 className="text-4xl font-bold mb-6 text-center tracking-wide">📊 Real-Time Productivity Data</h2>
-  
-        <div className="flex justify-between items-center mb-8">
-          <FormControlLabel
-            control={
-              <Switch
-                checked={theme === 'dark'}
-                onChange={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="scale-110"
-              />
-            }
-            label="Dark Mode"
-            className="text-lg"
-          />
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => setDialogOpen(true)}
-            className="px-6 py-2 rounded-lg shadow-md hover:bg-blue-600 transition-all"
+    <PageShell title="Analytics" subtitle="Productivity trends and operational metrics" variant="dark">
+      <ToastContainer position="top-right" autoClose={3000} />
+
+      <div className="ops-kpi-grid mb-6">
+        {[
+          { label: 'Data points', value: stats.count, icon: <FiTrendingUp className="text-amber-400" /> },
+          { label: 'Average', value: stats.avg, icon: null },
+          { label: 'Peak', value: stats.max, icon: null },
+        ].map((kpi, i) => (
+          <motion.div
+            key={kpi.label}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="ops-kpi border-slate-700/70 bg-slate-900/50"
           >
-            ➕ Add New Record
-          </Button>
-        </div>
-  
-        <Grid container spacing={3} className="mb-6">
-          <Grid item xs={12} sm={6}>
-            <Card className="p-4 bg-gray-800/70 backdrop-blur-md rounded-xl shadow-md">
-              <CardContent>
-                <InputLabel className="font-medium text-lg mb-2">📉 Chart Type</InputLabel>
-                <Select
-                  value={chartType}
-                  onChange={handleChartTypeChange}
-                  fullWidth
-                  className="bg-gray-700 text-white p-2 rounded-md"
-                >
-                  <MenuItem value="line">📈 Line Chart</MenuItem>
-                  <MenuItem value="bar">📊 Bar Chart</MenuItem>
-                  <MenuItem value="pie">🥧 Pie Chart</MenuItem>
-                </Select>
-              </CardContent>
-            </Card>
-          </Grid>
-  
-          <Grid item xs={12} sm={6}>
-            <Card className="p-4 bg-gray-800/70 backdrop-blur-md rounded-xl shadow-md">
-              <CardContent>
-                <InputLabel className="font-medium text-lg mb-2">📆 Date Range</InputLabel>
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <DatePicker label="Start Date" value={startDate} onChange={(newValue) => setStartDate(newValue)} />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <DatePicker label="End Date" value={endDate} onChange={(date) => setEndDate(date)} />
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-  
-        <Card className="p-6 bg-gray-800/50 backdrop-blur-lg rounded-2xl shadow-xl border border-gray-700">
-  <CardContent>
-    <h3 className="text-2xl font-semibold mb-4 text-white flex items-center gap-2">
-      📋 Data Records
-    </h3>
-
-    {data.length === 0 ? (
-      <p className="text-gray-400 text-center text-lg py-6">
-        🚫 No records available
-      </p>
-    ) : (
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse rounded-lg overflow-hidden shadow-md">
-          <thead>
-            <tr className="bg-gray-800/90 text-white text-lg">
-              <th className="p-4 border-b border-gray-600">📅 Date</th>
-              <th className="p-4 border-b border-gray-600">📊 Value</th>
-              <th className="p-4 border-b border-gray-600">📝 Description</th>
-              <th className="p-4 border-b border-gray-600 text-center">⚙️ Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((record) => (
-              <tr
-                key={record.id}
-                className="border-b border-gray-700 bg-gray-900 hover:bg-gray-800/90 transition-all duration-300"
-              >
-                <td className="p-4 text-white">{record.date}</td>
-                <td className="p-4 text-white">{record.value}</td>
-                <td className="p-4 text-white">{record.description}</td>
-                <td className="p-4 flex gap-3 justify-center">
-                  <button
-                    onClick={() => handleDeleteRecord(record.id)}
-                    className="px-4 py-2 bg-red-600/80 text-white rounded-md shadow-md hover:bg-red-700 transition-all duration-300 transform hover:scale-105 active:scale-95"
-                  >
-                    🗑 Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            <div className="flex justify-between mb-1">
+              {kpi.icon}
+              <span className="ops-kpi-label">{kpi.label}</span>
+            </div>
+            <p className="ops-kpi-value">{kpi.value}</p>
+          </motion.div>
+        ))}
       </div>
-    )}
-  </CardContent>
-</Card>
 
-  
-        <div className="chart-container mb-8 h-[400px] flex justify-center items-center">
+      <div className="toolbar flex-wrap mb-4">
+        <select className="input-field !w-auto" value={chartType} onChange={(e) => setChartType(e.target.value)}>
+          <option value="line">Line chart</option>
+          <option value="bar">Bar chart</option>
+        </select>
+        <input type="date" className="input-field !w-auto" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+        <input type="date" className="input-field !w-auto" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+        <Button onClick={() => setModalOpen(true)}>
+          <FiPlus className="inline mr-1" /> Add record
+        </Button>
+      </div>
+
+      <div className="ops-panel mb-6">
+        <div className="ops-panel-body h-[320px]">
           {loading ? (
-            <CircularProgress size={50} />
-          ) : chartData.labels.length > 0 && chartData.datasets.length > 0 ? (
-            <ChartComponent data={chartData} options={{ maintainAspectRatio: false }} />
+            <LoadingBlock label="Loading chart…" />
+          ) : data.length === 0 ? (
+            <EmptyState title="No data" message="Add productivity records or widen the date range." />
           ) : (
-            <p className="text-center text-gray-400 text-lg">🚀 No data available for the selected chart type.</p>
+            <ChartComponent data={chartData} options={defaultChartOptions} />
           )}
         </div>
-  
-        <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
-          <DialogTitle className="text-2xl font-bold">
-            {isEdit ? '✏️ Edit Record' : '➕ Add New Record'}
-          </DialogTitle>
-          <DialogContent>
-            <TextField
-              label="📅 Date"
-              type="date"
-              value={formData.date}
-              onChange={(e) => handleFormChange('date', e.target.value)}
-              fullWidth
-              margin="normal"
-              InputLabelProps={{ shrink: true }}
-            />
-            <TextField
-              label="📊 Value"
-              value={formData.value}
-              onChange={(e) => handleFormChange('value', e.target.value)}
-              fullWidth
-              margin="normal"
-            />
-            <TextField
-              label="📝 Description"
-              value={formData.description}
-              onChange={(e) => handleFormChange('description', e.target.value)}
-              fullWidth
-              margin="normal"
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDialogOpen(false)} color="secondary">
-              ❌ Cancel
-            </Button>
-            <Button onClick={handleSaveRecord} color="primary">
-              {isEdit ? '💾 Update Record' : '✅ Add Record'}
-            </Button>
-          </DialogActions>
-        </Dialog>
-  
-        <Snackbar
-          open={snackbarOpen}
-          autoHideDuration={6000}
-          onClose={() => setSnackbarOpen(false)}
-          message={snackbarMessage}
-        />
       </div>
-    </LocalizationProvider>
+
+      <div className="ops-panel">
+        <div className="ops-panel-header">
+          <h3 className="font-semibold text-white text-sm">Records</h3>
+        </div>
+        <div className="ops-panel-body p-0 overflow-x-auto">
+          {data.length === 0 ? null : (
+            <table className="w-full text-sm">
+              <thead className="text-slate-500 border-b border-slate-800">
+                <tr>
+                  <th className="text-left p-3">Date</th>
+                  <th className="text-left p-3">Value</th>
+                  <th className="text-left p-3">Description</th>
+                  <th className="text-right p-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((record) => (
+                  <tr key={record.id || record._id} className="border-b border-slate-800/80 hover:bg-slate-800/30">
+                    <td className="p-3 text-white">{record.date}</td>
+                    <td className="p-3 text-amber-300">{Array.isArray(record.value) ? record.value.join(', ') : record.value}</td>
+                    <td className="p-3 text-slate-400">{record.description || '—'}</td>
+                    <td className="p-3 text-right">
+                      <button type="button" className="btn-ghost !text-red-400 !p-2" onClick={() => handleDeleteRecord(record.id || record._id)}>
+                        <FiTrash2 />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        {totalPages > 1 && (
+          <div className="flex justify-center gap-2 p-4 border-t border-slate-800">
+            <Button variant="secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</Button>
+            <span className="self-center text-xs text-slate-500">Page {page} / {totalPages}</span>
+            <Button variant="secondary" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Next</Button>
+          </div>
+        )}
+      </div>
+
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title="Add productivity record"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveRecord}>Save</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <FormField label="Date">
+            <input type="date" className="input-field" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} />
+          </FormField>
+          <FormField label="Value" hint="Single number or comma-separated">
+            <input className="input-field" value={formData.value} onChange={(e) => setFormData({ ...formData, value: e.target.value })} placeholder="e.g. 85 or 80,90,88" />
+          </FormField>
+          <FormField label="Description">
+            <input className="input-field" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+          </FormField>
+        </div>
+      </Modal>
+    </PageShell>
   );
-  
 };
 
 export default DataVisualization;

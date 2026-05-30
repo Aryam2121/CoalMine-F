@@ -1,166 +1,172 @@
-import React, { useEffect, useState } from "react";
-import axios from "../services/axios";
-import { motion } from "framer-motion";
-import { FaUserEdit, FaTrashAlt, FaEye, FaPlus, FaMoon, FaSun, FaTimes } from "react-icons/fa";
+import api from '../services/axios';
+import React, { useEffect, useState } from 'react';
+import AccessDenied from './AccessDenied';
+import { usePermissions } from '../hooks/usePermissions';
+import { PERMISSIONS } from '../utils/roles';
+import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
+import PageShell from './ui/PageShell';
+import Button from './ui/Button';
+import Modal from './ui/Modal';
+import FormField from './ui/FormField';
+import LoadingBlock from './ui/LoadingBlock';
+import EmptyState from './ui/EmptyState';
+
+const ROLES = ['worker', 'Inspector', 'Safety Manager', 'Shift Incharge', 'Mine admin', 'Super admin'];
 
 const UserManagement = () => {
+  const { can } = usePermissions();
   const [users, setUsers] = useState([]);
-  const [newUser, setNewUser] = useState({ username: "", role: "Worker", email: "" });
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [usersPerPage] = useState(10);
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'worker' });
+  const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true); // Default Dark Mode
+  const [editMode, setEditMode] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/users/getAllusers');
+      setUsers(Array.isArray(res.data) ? res.data : []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchWorkers = async () => {
-      try {
-        const response = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getworkers`);
-        setUsers(response.data);
-      } catch (error) {
-        console.error("Error fetching workers:", error);
-      }
-    };
-    fetchWorkers();
+    fetchUsers();
   }, []);
 
-  const handleAddOrUpdateWorker = async () => {
-    try {
-      if (isEditMode) {
-        const response = await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/addworkers/${selectedUser._id}`, newUser);
-        setUsers(users.map((user) => (user._id === selectedUser._id ? response.data : user)));
-      } else {
-        const response = await axios.post("/api/workers", newUser);
-        setUsers([...users, response.data]);
-      }
-      setNewUser({ username: "", role: "Worker", email: "" });
-      setIsEditMode(false);
-      setModalOpen(false);
-    } catch (error) {
-      console.error("Error saving worker:", error);
-    }
-  };
+  const filtered = users.filter(
+    (u) =>
+      u.name?.toLowerCase().includes(search.toLowerCase()) ||
+      u.email?.toLowerCase().includes(search.toLowerCase())
+  );
 
-  const handleDeleteWorker = async (id) => {
-    try {
-      await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/workers/${id}`);
-      setUsers(users.filter((user) => user._id !== id));
-    } catch (error) {
-      console.error("Error deleting worker:", error);
-    }
-  };
-
-  const handleEditUser = (user) => {
-    setNewUser(user);
-    setSelectedUser(user);
-    setIsEditMode(true);
+  const openCreate = () => {
+    setForm({ name: '', email: '', password: '', role: 'worker' });
+    setEditMode(false);
+    setSelected(null);
     setModalOpen(true);
   };
 
-  const filteredUsers = users.filter((user) =>
-    user.username.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const openEdit = (user) => {
+    setForm({ name: user.name, email: user.email, password: '', role: user.role });
+    setSelected(user);
+    setEditMode(true);
+    setModalOpen(true);
+  };
 
-  const indexOfLastUser = currentPage * usersPerPage;
-  const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const handleSave = async () => {
+    try {
+      if (editMode && selected) {
+        const payload = { name: form.name, email: form.email, role: form.role };
+        if (form.password) payload.password = form.password;
+        await api.put(`/users/${selected._id}`, payload);
+      } else {
+        await api.post('/users/', form);
+      }
+      setModalOpen(false);
+      fetchUsers();
+    } catch (e) {
+      alert(e.response?.data?.error || e.response?.data?.message || 'Failed to save user');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this user?')) return;
+    try {
+      await api.delete(`/users/${id}`);
+      fetchUsers();
+    } catch (e) {
+      alert(e.response?.data?.error || 'Failed to delete');
+    }
+  };
+
+  if (!can(PERMISSIONS.USER_MANAGE)) {
+    return <AccessDenied message="Only Mine Admin and Super Admin can manage user accounts." />;
+  }
 
   return (
-    <motion.div
-      className={`p-6 py-12 rounded-xl shadow-lg min-h-screen transition-all ${
-        isDarkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"
-      }`}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+    <PageShell
+      title="User management"
+      subtitle="Manage workers, inspectors, and administrators"
+      action={<Button onClick={openCreate}><FaPlus /> Add user</Button>}
     >
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-extrabold tracking-tight">User Management</h2>
-        <button
-          onClick={() => setIsDarkMode(!isDarkMode)}
-          className="p-2 rounded-full shadow-lg flex items-center gap-2 text-lg transition-all 
-            bg-gray-700 text-white hover:bg-gray-600 dark:bg-gray-200 dark:text-black"
-        >
-          {isDarkMode ? <FaSun size={20} /> : <FaMoon size={20} />}
-        </button>
-      </div>
-
-      <div className="flex gap-4 mb-4">
+      <div className="toolbar">
         <input
-          type="text"
-          placeholder="🔍 Search by username"
-          className="flex-1 p-3 border rounded-lg shadow-md focus:ring-2 focus:ring-blue-400 transition outline-none bg-gray-800 text-white"
-          onChange={(e) => setSearchTerm(e.target.value)}
+          className="input-field flex-1"
+          placeholder="Search by name or email…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
         />
-        <button
-          className="px-4 py-2 bg-green-500 text-white rounded-lg flex items-center gap-2 shadow-md hover:bg-green-600 transition"
-          onClick={() => {
-            setNewUser({ username: "", role: "Worker", email: "" });
-            setIsEditMode(false);
-            setModalOpen(true);
-          }}
-        >
-          <FaPlus /> Add User
-        </button>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full mt-4 border-collapse rounded-lg shadow-lg overflow-hidden">
-          <thead>
-            <tr className="bg-blue-500 text-white text-left">
-              <th className="p-3">Username</th>
-              <th className="p-3">Email</th>
-              <th className="p-3">Role</th>
-              <th className="p-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentUsers.map((user, index) => (
-              <tr key={user._id} className={`border-b hover:bg-gray-700 transition ${index % 2 === 0 ? "bg-gray-800" : "bg-gray-700"}`}>
-                <td className="p-3">{user.username}</td>
-                <td className="p-3">{user.email}</td>
-                <td className="p-3">{user.role}</td>
-                <td className="p-3 flex space-x-3">
-                  <button className="text-blue-400 hover:text-blue-600" onClick={() => setSelectedUser(user)}>
-                    <FaEye size={18} />
-                  </button>
-                  <button className="text-yellow-400 hover:text-yellow-600" onClick={() => handleEditUser(user)}>
-                    <FaUserEdit size={18} />
-                  </button>
-                  <button className="text-red-400 hover:text-red-600" onClick={() => handleDeleteWorker(user._id)}>
-                    <FaTrashAlt size={18} />
-                  </button>
-                </td>
+      {loading ? (
+        <LoadingBlock />
+      ) : filtered.length === 0 ? (
+        <EmptyState title="No users found" message="Add a user or adjust your search." action={<Button onClick={openCreate}>Add user</Button>} />
+      ) : (
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700">
+          <table className="table-modern">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th className="text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {modalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-md">
-          <motion.div
-            className="p-6 bg-gray-900 text-white rounded-lg shadow-xl w-96"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">{isEditMode ? "Edit User" : "Add User"}</h3>
-              <button className="text-red-400 hover:text-red-600" onClick={() => setModalOpen(false)}>
-                <FaTimes size={20} />
-              </button>
-            </div>
-
-            <input type="text" placeholder="Username" value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} className="w-full p-2 border bg-gray-800 text-white mb-2 rounded" />
-            <input type="email" placeholder="Email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} className="w-full p-2 border bg-gray-800 text-white mb-2 rounded" />
-            <button onClick={handleAddOrUpdateWorker} className="mt-4 px-4 py-2 w-full bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
-              {isEditMode ? "Update" : "Add"} User
-            </button>
-          </motion.div>
+            </thead>
+            <tbody>
+              {filtered.map((u) => (
+                <tr key={u._id}>
+                  <td className="font-medium text-slate-800 dark:text-white">{u.name}</td>
+                  <td>{u.email}</td>
+                  <td><span className="badge-warning">{u.role}</span></td>
+                  <td className="text-right space-x-2">
+                    <button type="button" className="btn-ghost !py-1" onClick={() => openEdit(u)}><FaEdit /></button>
+                    <button type="button" className="btn-ghost !py-1 text-red-500" onClick={() => handleDelete(u._id)}><FaTrash /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
-    </motion.div>
+
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editMode ? 'Edit user' : 'New user'}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleSave}>Save</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <FormField label="Name">
+            <input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </FormField>
+          <FormField label="Email">
+            <input className="input-field" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          </FormField>
+          <FormField label={editMode ? 'New password (optional)' : 'Password'}>
+            <input className="input-field" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+          </FormField>
+          <FormField label="Role">
+            <select className="input-field" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+              {ROLES.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </FormField>
+        </div>
+      </Modal>
+    </PageShell>
   );
 };
 

@@ -64,6 +64,7 @@
     "react-toastify": "^10.0.6",
     "recharts": "^2.12.7",
     "regenerator-runtime": "^0.14.1",
+    "socket.io-client": "^4.8.3",
     "vite-plugin-imp": "^2.4.0"
   },
   "devDependencies": {

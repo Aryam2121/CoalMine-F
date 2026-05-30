@@ -1,164 +1,236 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import axios from "axios";
-import { FiUser, FiMail, FiLock, FiSun, FiMoon } from "react-icons/fi";
+import api from '../services/axios';
+import { useState, useEffect, useContext } from 'react';
+import { motion } from 'framer-motion';
+import PageShell from './ui/PageShell';
+import Button from './ui/Button';
+import FormField from './ui/FormField';
+import LoadingBlock from './ui/LoadingBlock';
+import { FiUser, FiMail, FiLock, FiSun, FiMoon, FiBell, FiShield } from 'react-icons/fi';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { AuthContext } from '../context/AuthContext';
+import { getRoleInfo, getRoleBadgeClass } from '../utils/roles';
 
 const Settings = () => {
-  const [user, setUser] = useState({ name: "", email: "", password: "" });
-  const [theme, setTheme] = useState("dark");
+  const { user: authUser, login } = useContext(AuthContext);
+  const [user, setUser] = useState({ name: '', email: '', password: '', _id: '' });
+  const [theme, setTheme] = useState(localStorage.getItem('darkMode') === 'true' ? 'dark' : 'light');
+  const [notifications, setNotifications] = useState({
+    alerts: true,
+    email: true,
+    training: false,
+  });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [tab, setTab] = useState('account');
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setError("User not authenticated");
-        setLoading(false);
-        return;
-      }
-
+    const stored = localStorage.getItem('notificationPrefs');
+    if (stored) {
       try {
-        const res = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/users/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setUser({ ...res.data, password: "" });
-      } catch (err) {
-        setError(err.response?.data?.message || "Failed to load profile");
+        setNotifications(JSON.parse(stored));
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get('/users/me');
+        setUser({ ...res.data, password: '' });
+      } catch {
+        if (authUser) setUser({ ...authUser, password: '' });
+        toast.error('Failed to load settings');
       } finally {
         setLoading(false);
       }
-    };
-    fetchProfile();
-  }, []);
+    })();
+  }, [authUser]);
 
   const handleChange = (e) => {
     setUser({ ...user, [e.target.name]: e.target.value });
   };
 
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    const isDark = next === 'dark';
+    document.documentElement.classList.toggle('dark', isDark);
+    localStorage.setItem('darkMode', String(isDark));
+    toast.info(`${isDark ? 'Dark' : 'Light'} mode enabled`);
+  };
+
+  const saveNotificationPrefs = () => {
+    localStorage.setItem('notificationPrefs', JSON.stringify(notifications));
+    toast.success('Notification preferences saved');
+  };
+
   const handleSave = async () => {
+    if (!user._id) return;
+    setSaving(true);
     try {
-      const token = localStorage.getItem("token");
-      await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/users/${user._id}`, user, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      alert("Profile updated successfully!");
-    } catch (error) {
-      alert("Error updating profile");
+      const payload = { name: user.name, email: user.email };
+      if (user.password?.trim()) payload.password = user.password;
+      const { data } = await api.put(`/users/profile/${user._id}`, payload);
+      setUser((u) => ({ ...data, password: '' }));
+      login(data, localStorage.getItem('token'));
+      toast.success('Profile updated');
+    } catch (e) {
+      toast.error(e.response?.data?.error || 'Failed to update profile');
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (loading)
+  const roleInfo = getRoleInfo(user?.role || authUser?.role);
+
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="w-16 h-16 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
-      </div>
+      <PageShell title="Settings" subtitle="Loading…">
+        <LoadingBlock />
+      </PageShell>
     );
+  }
 
-  if (error) return <p className="text-red-500 text-center">{error}</p>;
+  const tabs = [
+    { id: 'account', label: 'Account', icon: FiUser },
+    { id: 'appearance', label: 'Appearance', icon: FiSun },
+    { id: 'notifications', label: 'Notifications', icon: FiBell },
+  ];
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className=" p-8 bg-white/10 backdrop-blur-lg dark:bg-gray-900 text-white rounded-2xl shadow-xl border border-white/20 min-h-screen"
-    >
-      <h2 className="text-3xl font-bold text-center mb-6 text-white">
-        Profile Settings
-      </h2>
+    <PageShell title="Settings" subtitle="Manage your account, theme, and preferences">
+      <ToastContainer position="top-right" autoClose={3000} />
 
-      <div className="space-y-5">
-        {/* Name Input */}
-        <div className="relative">
-          <label className="block text-sm font-medium mb-1">Name</label>
-          <div className="flex items-center bg-gray-800 rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-blue-500">
-            <FiUser className="text-blue-400 mr-2" />
-            <input
-              type="text"
-              name="name"
-              value={user.name}
-              onChange={handleChange}
-              className="w-full bg-transparent text-white outline-none"
-            />
-          </div>
-        </div>
-
-        {/* Email Input */}
-        <div className="relative">
-          <label className="block text-sm font-medium mb-1">Email</label>
-          <div className="flex items-center bg-gray-800 rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-blue-500">
-            <FiMail className="text-blue-400 mr-2" />
-            <input
-              type="email"
-              name="email"
-              value={user.email}
-              onChange={handleChange}
-              className="w-full bg-transparent text-white outline-none"
-            />
-          </div>
-        </div>
-
-        {/* Password Input */}
-        <div className="relative">
-          <label className="block text-sm font-medium mb-1">New Password</label>
-          <div className="flex items-center bg-gray-800 rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-blue-500">
-            <FiLock className="text-blue-400 mr-2" />
-            <input
-              type="password"
-              name="password"
-              value={user.password}
-              onChange={handleChange}
-              placeholder="Enter new password"
-              className="w-full bg-transparent text-white outline-none"
-            />
-          </div>
-        </div>
-
-        {/* Theme Selector */}
-        <div>
-          <label className="block text-sm font-medium mb-1">Theme</label>
-          <div className="flex items-center gap-3 bg-gray-800 rounded-lg px-4 py-2 focus-within:ring-2 focus-within:ring-blue-500">
-            {theme === "light" ? (
-              <FiSun className="text-yellow-400" />
-            ) : (
-              <FiMoon className="text-blue-400" />
-            )}
-            <select
-              value={theme}
-              onChange={(e) => setTheme(e.target.value)}
-              className="w-full bg-transparent text-white outline-none cursor-pointer"
+      <div className="flex flex-col lg:flex-row gap-6 max-w-4xl">
+        <nav className="flex lg:flex-col gap-2 lg:w-48 shrink-0">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition ${
+                tab === t.id
+                  ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                  : 'text-slate-400 hover:bg-slate-800/50 border border-transparent'
+              }`}
             >
-              <option value="light" className="text-black">
-                Light
-              </option>
-              <option value="dark" className="text-black">
-                Dark
-              </option>
-            </select>
+              <t.icon className="w-4 h-4" /> {t.label}
+            </button>
+          ))}
+        </nav>
+
+        <motion.div
+          key={tab}
+          initial={{ opacity: 0, x: 8 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex-1 ops-panel"
+        >
+          <div className="ops-panel-body space-y-6">
+            {tab === 'account' && (
+              <>
+                <div className="flex items-center gap-3 pb-4 border-b border-slate-800">
+                  <span className={`rounded-full border px-2.5 py-0.5 text-xs ${getRoleBadgeClass(user.role)}`}>
+                    <FiShield className="inline w-3 h-3 mr-1" />
+                    {roleInfo.label}
+                  </span>
+                  <span className="text-xs text-slate-500">Role cannot be changed here</span>
+                </div>
+                <FormField label="Display name">
+                  <div className="relative">
+                    <FiUser className="absolute left-3 top-3 text-slate-500" />
+                    <input className="input-field !pl-10" name="name" value={user.name} onChange={handleChange} />
+                  </div>
+                </FormField>
+                <FormField label="Email">
+                  <div className="relative">
+                    <FiMail className="absolute left-3 top-3 text-slate-500" />
+                    <input className="input-field !pl-10" name="email" type="email" value={user.email} onChange={handleChange} />
+                  </div>
+                </FormField>
+                <FormField label="New password" hint="Leave blank to keep current password">
+                  <div className="relative">
+                    <FiLock className="absolute left-3 top-3 text-slate-500" />
+                    <input
+                      className="input-field !pl-10"
+                      name="password"
+                      type="password"
+                      value={user.password}
+                      onChange={handleChange}
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                    />
+                  </div>
+                </FormField>
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? 'Saving…' : 'Save changes'}
+                </Button>
+              </>
+            )}
+
+            {tab === 'appearance' && (
+              <>
+                <p className="text-sm text-slate-400">Choose how the app looks on this device.</p>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => theme !== 'light' && toggleTheme()}
+                    className={`rounded-xl border-2 p-4 text-left transition ${
+                      theme === 'light' ? 'border-amber-500 bg-amber-500/10' : 'border-slate-700 hover:border-slate-600'
+                    }`}
+                  >
+                    <FiSun className="w-6 h-6 text-amber-400 mb-2" />
+                    <p className="font-medium text-white">Light</p>
+                    <p className="text-xs text-slate-500 mt-1">Bright panels for daylight use</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => theme !== 'dark' && toggleTheme()}
+                    className={`rounded-xl border-2 p-4 text-left transition ${
+                      theme === 'dark' ? 'border-amber-500 bg-amber-500/10' : 'border-slate-700 hover:border-slate-600'
+                    }`}
+                  >
+                    <FiMoon className="w-6 h-6 text-violet-400 mb-2" />
+                    <p className="font-medium text-white">Dark</p>
+                    <p className="text-xs text-slate-500 mt-1">Easier on eyes underground</p>
+                  </button>
+                </div>
+              </>
+            )}
+
+            {tab === 'notifications' && (
+              <>
+                <p className="text-sm text-slate-400">Stored locally on this browser (demo preferences).</p>
+                {[
+                  { key: 'alerts', label: 'Safety alerts', desc: 'Critical mine alerts and SOS' },
+                  { key: 'email', label: 'Email digests', desc: 'Weekly summary emails' },
+                  { key: 'training', label: 'Training reminders', desc: 'Mandatory course deadlines' },
+                ].map((pref) => (
+                  <label
+                    key={pref.key}
+                    className="flex items-center justify-between gap-4 p-4 rounded-xl border border-slate-800 cursor-pointer hover:bg-slate-800/30"
+                  >
+                    <div>
+                      <p className="font-medium text-white text-sm">{pref.label}</p>
+                      <p className="text-xs text-slate-500">{pref.desc}</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={notifications[pref.key]}
+                      onChange={(e) => setNotifications({ ...notifications, [pref.key]: e.target.checked })}
+                      className="h-5 w-5 rounded border-slate-600 text-amber-500 focus:ring-amber-500"
+                    />
+                  </label>
+                ))}
+                <Button variant="secondary" onClick={saveNotificationPrefs}>Save preferences</Button>
+              </>
+            )}
           </div>
-        </div>
+        </motion.div>
       </div>
-
-      {/* Action Buttons */}
-      <div className="mt-6 flex justify-between">
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={handleSave}
-          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90 transition px-5 py-2 text-white font-semibold rounded-lg shadow-md"
-        >
-          Save Changes
-        </motion.button>
-
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="bg-gray-700 hover:bg-gray-800 transition px-5 py-2 text-white font-semibold rounded-lg shadow-md"
-        >
-          Cancel
-        </motion.button>
-      </div>
-    </motion.div>
+    </PageShell>
   );
 };
 

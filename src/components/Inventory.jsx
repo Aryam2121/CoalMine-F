@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import api from "../services/axios";
 import {
   Button,
   TextField,
@@ -28,6 +28,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { CSVLink } from "react-csv";
 import { motion } from "framer-motion";
 import SearchIcon from "@mui/icons-material/Search";
+import PageShell from "./ui/PageShell";
 // Define Material-UI dark theme
 const darkTheme = createTheme({
   palette: {
@@ -50,8 +51,8 @@ const Inventory = () => {
   const inventoryRef = useRef(null);
 
   useEffect(() => {
-    axios
-      .get(`https://${import.meta.env.VITE_BACKEND}/api/getAllRes`)
+    api
+      .get('/getAllRes')
       .then((response) => {
         if (Array.isArray(response.data)) {
           setResources(response.data);
@@ -98,22 +99,16 @@ const Inventory = () => {
   };
 
   const handleDeleteResource = (id) => {
-    axios
-      .delete(`https://${import.meta.env.VITE_BACKEND}/api/${id}`)
+    api
+      .delete(`/deleteRes/${id}`)
       .then(() => {
-        setResources(resources.filter((resource) => resource.id !== id));
+        setResources(resources.filter((resource) => resource._id !== id));
       })
       .catch((error) => console.error("Error deleting resource:", error));
   };
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <motion.div
-        className="p-6 bg-opacity-80  rounded-xl shadow-xl"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h2 className="text-3xl font-bold mb-6 text-center">📦 Inventory Management</h2>
+    <PageShell title="Inventory" subtitle="Equipment and supplies on hand" variant="dark">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
 
         {/* Search Bar */}
         <Box className="mb-4 w-full">
@@ -228,7 +223,7 @@ const Inventory = () => {
           </Box>
         </Modal>
       </motion.div>
-    </div>
+    </PageShell>
   );
 };
 

@@ -1,341 +1,290 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { FiDownload, FiSearch, FiChevronDown, FiChevronUp } from "react-icons/fi";
-import { MdCheckCircle, MdPending, MdCancel } from "react-icons/md";
-import axios from "axios";
+import api from '../services/axios';
+import { useState, useEffect, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { FiDownload, FiSearch, FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { MdCheckCircle, MdPending, MdCancel } from 'react-icons/md';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import PageShell from './ui/PageShell';
+import Button from './ui/Button';
+import Modal from './ui/Modal';
+import FormField from './ui/FormField';
+import LoadingBlock from './ui/LoadingBlock';
+import EmptyState from './ui/EmptyState';
+import { usePermissions } from '../hooks/usePermissions';
+import { PERMISSIONS } from '../utils/roles';
 
-const statusColors = {
-  Approved: "bg-green-500/20 text-green-600 dark:bg-green-700/30 dark:text-green-300",
-  Pending: "bg-yellow-500/20 text-yellow-600 dark:bg-yellow-700/30 dark:text-yellow-300",
-  Rejected: "bg-red-500/20 text-red-600 dark:bg-red-700/30 dark:text-red-300",
+const statusConfig = {
+  Approved: { pill: 'status-pill--reviewed', icon: MdCheckCircle },
+  Pending: { pill: 'status-pill--pending', icon: MdPending },
+  Rejected: { pill: 'risk-pill--high', icon: MdCancel },
 };
 
-const statusIcons = {
-  Approved: <MdCheckCircle className="text-green-600 dark:text-green-300 text-lg" />,
-  Pending: <MdPending className="text-yellow-600 dark:text-yellow-300 text-lg" />,
-  Rejected: <MdCancel className="text-red-600 dark:text-red-300 text-lg" />,
-};
+const emptyForm = { name: '', date: '', status: 'Pending', details: '' };
 
 export default function ComplianceReports() {
+  const { can } = usePermissions();
+  const canWrite = can(PERMISSIONS.COMPLIANCE_WRITE);
+
   const [reports, setReports] = useState([]);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
-  const [expandedRow, setExpandedRow] = useState(null);
-  const [totalReports, setTotalReports] = useState(0);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [newReport, setNewReport] = useState({
-    name: '',
-    date: '',
-    status: '',
-    details: '',
-  });
-  const [selectedReport, setSelectedReport] = useState(null); // Selected report for update
-  const [showModal, setShowModal] = useState(false); // Modal visibility
-  const filteredReports = Array.isArray(reports) ? reports.filter(
-    (report) => report?.name?.toLowerCase()?.includes(search.toLowerCase()) &&
-        (statusFilter === "" || report?.status === statusFilter) &&
-        (dateFilter === "" || report?.date >= dateFilter)
-) : [];
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState(emptyForm);
+  const [editReport, setEditReport] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-
-  
-  useEffect(() => {
-    const fetchReports = async () => {
-      setLoading(true);
-      try {
-        const { data } = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getReports`, {
-          params: { search, status: statusFilter, page, limit: 10 },
-        });
-  
-        console.log("Fetched reports:", data);
-        setReports(data.reports || []); // Ensure default empty array
-        setTotalReports(data.total || 0);
-      } catch (error) {
-        console.error("Error fetching reports:", error);
-        setReports([]); // Set an empty array on failure to prevent crashes
-      }
-      setLoading(false);
-    };
-  
-    fetchReports();
-  }, [search, statusFilter, dateFilter, page]);
-  
-
-  const handleAddReport = async () => {
+  const fetchReports = async () => {
+    setLoading(true);
     try {
-      const { data } = await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/addReports`, newReport);
-      setReports([data.report, ...reports]);
-      alert("Report added successfully!");
-      setNewReport({
-        name: '',
-        date: '',
-        status: '',
-        details: '',
+      const { data } = await api.get('/getReports', {
+        params: { search, status: statusFilter || undefined, page, limit: 12 },
       });
-    } catch (error) {
-      console.error("Error adding report:", error);
-      alert("Failed to add report.");
+      setReports(data.reports || []);
+      setTotal(data.total || 0);
+    } catch {
+      toast.error('Failed to load compliance reports');
+      setReports([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleUpdateReport = async (updatedReport) => {
+  useEffect(() => {
+    fetchReports();
+  }, [search, statusFilter, page]);
+
+  const stats = useMemo(() => ({
+    total: reports.length,
+    approved: reports.filter((r) => r.status === 'Approved').length,
+    pending: reports.filter((r) => r.status === 'Pending').length,
+    rejected: reports.filter((r) => r.status === 'Rejected').length,
+  }), [reports]);
+
+  const filtered = useMemo(() => {
+    return reports.filter((r) => {
+      const matchDate = !dateFilter || (r.date && r.date >= dateFilter);
+      const matchSearch = !search || r.name?.toLowerCase().includes(search.toLowerCase());
+      return matchDate && matchSearch;
+    });
+  }, [reports, search, dateFilter]);
+
+  const handleSave = async () => {
+    if (!form.name?.trim()) {
+      toast.error('Report name is required');
+      return;
+    }
+    setSubmitting(true);
     try {
-      const { data } = await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/updateReport/${updatedReport.id}`, updatedReport);
-
-
-      setReports((prevReports) =>
-        prevReports.map((report) =>
-          report.id === updatedReport.id ? data.report : report
-        )
-      );
-      setShowModal(false); // Close modal after update
-      alert("Report updated successfully!");
-    } catch (error) {
-      console.error("Error updating report:", error);
-      alert("Failed to update report.");
+      if (editReport) {
+        const id = editReport._id || editReport.id;
+        const { data } = await api.put(`/updateReport/${id}`, form);
+        setReports((prev) => prev.map((r) => ((r._id || r.id) === id ? data : r)));
+        toast.success('Report updated');
+      } else {
+        const { data } = await api.post('/addReports', form);
+        setReports((prev) => [data, ...prev]);
+        toast.success('Report added');
+      }
+      setForm(emptyForm);
+      setEditReport(null);
+      setModalOpen(false);
+      fetchReports();
+    } catch {
+      toast.error('Failed to save report');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleDeleteReport = async (reportId) => {
+  const handleDelete = async (reportId) => {
+    if (!window.confirm('Delete this compliance report?')) return;
     try {
-      await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/deleteReport/${reportId}`);
-      setReports(reports.filter((report) => report.id !== reportId));
-      alert("Report deleted successfully!");
-    } catch (error) {
-      console.error("Error deleting report:", error);
-      alert("Failed to delete report.");
+      await api.delete(`/deleteReport/${reportId}`);
+      setReports((prev) => prev.filter((r) => (r._id || r.id) !== reportId));
+      toast.success('Report deleted');
+    } catch {
+      toast.error('Failed to delete');
     }
+  };
+
+  const openEdit = (report) => {
+    setEditReport(report);
+    setForm({
+      name: report.name || '',
+      date: report.date || '',
+      status: report.status || 'Pending',
+      details: report.details || '',
+    });
+    setModalOpen(true);
   };
 
   const exportCSV = () => {
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      ["Report Name,Date,Status,Details", ...reports.map((r) => `${r.name},${r.date},${r.status},${r.details}`)].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "compliance_reports.csv");
-    document.body.appendChild(link);
+    const rows = [
+      'Report Name,Date,Status,Details',
+      ...filtered.map((r) => `"${r.name}","${r.date}","${r.status}","${(r.details || '').replace(/"/g, '""')}"`),
+    ];
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'compliance_reports.csv';
     link.click();
+    URL.revokeObjectURL(url);
   };
 
+  const totalPages = Math.max(1, Math.ceil(total / 12));
+
   return (
-    <div className="p-6  bg-gray-900 text-white">
-      {/* Page Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-200">📋 Compliance Reports</h1>
-        <button
-          onClick={exportCSV}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition"
-        >
-          <FiDownload />
-          Export CSV
-        </button>
-      </div>
+    <PageShell
+      title="Compliance reports"
+      subtitle="Regulatory submissions, audits, and approval tracking"
+      variant="dark"
+      action={
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={exportCSV}>
+            <FiDownload className="inline mr-1" /> Export
+          </Button>
+          {canWrite && (
+            <Button onClick={() => { setEditReport(null); setForm(emptyForm); setModalOpen(true); }}>
+              <FiPlus className="inline mr-1" /> New report
+            </Button>
+          )}
+        </div>
+      }
+    >
+      <ToastContainer position="top-right" autoClose={3000} />
 
-      {/* Filters Section */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="relative w-full">
-          <FiSearch className="absolute left-3 top-3 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search reports..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-400 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200"
-          />
-        </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="w-full sm:w-48 p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-400 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200"
-        >
-          <option value="">All Statuses</option>
-          <option value="Approved">✅ Approved</option>
-          <option value="Pending">⏳ Pending</option>
-          <option value="Rejected">❌ Rejected</option>
-        </select>
-        <input
-          type="date"
-          value={dateFilter}
-          onChange={(e) => setDateFilter(e.target.value)}
-          className="w-full sm:w-48 p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-400 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200"
-        />
-      </div>
-
-      {/* Add Report Form */}
-      <div className="bg-gray-800 shadow-xl rounded-lg p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Add New Report</h2>
-        <div className="mb-4">
-          <input
-            type="text"
-            placeholder="Report Name"
-            value={newReport.name}
-            onChange={(e) => setNewReport({ ...newReport, name: e.target.value })}
-            className="p-3 border rounded-lg w-full bg-gray-700 text-white"
-          />
-        </div>
-        <div className="mb-4">
-          <input
-            type="date"
-            value={newReport.date}
-            onChange={(e) => setNewReport({ ...newReport, date: e.target.value })}
-            className="p-3 border rounded-lg w-full bg-gray-700 text-white"
-          />
-        </div>
-        <div className="mb-4">
-          <select
-            value={newReport.status}
-            onChange={(e) => setNewReport({ ...newReport, status: e.target.value })}
-            className="p-3 border rounded-lg w-full bg-gray-700 text-white"
+      <div className="ops-kpi-grid mb-6">
+        {[
+          { label: 'Total reports', value: stats.total },
+          { label: 'Approved', value: stats.approved, cls: 'text-emerald-400' },
+          { label: 'Pending review', value: stats.pending, cls: 'text-amber-400' },
+          { label: 'Rejected', value: stats.rejected, cls: 'text-red-400' },
+        ].map((kpi, i) => (
+          <motion.div
+            key={kpi.label}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="ops-kpi border-slate-700/70 bg-slate-900/50"
           >
-            <option value="Approved">Approved</option>
-            <option value="Pending">Pending</option>
-            <option value="Rejected">Rejected</option>
-          </select>
-        </div>
-        <div className="mb-4">
-          <textarea
-            placeholder="Details"
-            value={newReport.details}
-            onChange={(e) => setNewReport({ ...newReport, details: e.target.value })}
-            className="p-3 border rounded-lg w-full bg-gray-700 text-white"
+            <span className="ops-kpi-label">{kpi.label}</span>
+            <p className={`ops-kpi-value ${kpi.cls || ''}`}>{kpi.value}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="toolbar mb-4">
+        <div className="relative flex-1 min-w-[200px]">
+          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <input
+            type="text"
+            placeholder="Search reports…"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            className="input-field !pl-10"
           />
         </div>
-        <button
-          onClick={handleAddReport}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg"
-        >
-          Add Report
-        </button>
+        <select className="input-field !w-auto" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
+          <option value="">All statuses</option>
+          <option value="Approved">Approved</option>
+          <option value="Pending">Pending</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+        <input type="date" className="input-field !w-auto" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
       </div>
 
-      {/* Reports Table */}
-      <div className="bg-gray-800 shadow-xl rounded-lg overflow-hidden backdrop-blur-md bg-opacity-80 border border-gray-300 dark:border-gray-700">
-        {loading ? (
-          <div className="p-6 text-center text-gray-500 dark:text-gray-400">Loading...</div>
-        ) : (
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 text-gray-700 dark:text-gray-300 sticky top-0">
-              <tr>
-                <th className="p-4">Report Name</th>
-                <th className="p-4">Date</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredReports.length > 0 ? (
-                filteredReports.map((report) => (
-                  <>
-                    <motion.tr
-                      key={report.id}
-                      whileHover={{ scale: 1.02 }}
-                      className="border-t hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200 cursor-pointer"
-                      onClick={() => setExpandedRow(expandedRow === report.id ? null : report.id)}
-                    >
-                      <td className="p-4 flex items-center gap-2">{statusIcons[report.status]} {report.name}</td>
-                      <td className="p-4">{report.date}</td>
-                      <td className="p-4">
-                        <span className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${statusColors[report.status]}`}>
-                          {statusIcons[report.status]} {report.status}
-                        </span>
-                      </td>
-                      <td className="p-4 text-center">
-                        {expandedRow === report.id ? <FiChevronUp /> : <FiChevronDown />}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDeleteReport(report._id); }}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          Delete
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setSelectedReport(report); setShowModal(true); }}
-                          className="ml-2 bg-blue-600 text-white px-4 py-2 rounded-lg"
-                        >
-                          Update Report
-                        </button>
-                      </td>
-                    </motion.tr>
-                    {expandedRow === report.id && (
-                      <tr>
-                        <td colSpan="4" className="p-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-                          {report.details}
-                        </td>
-                      </tr>
-                    )}
-                  </>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="4" className="p-4 text-center text-gray-500 dark:text-gray-400">
-                    No reports found 😞
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* Update Report Modal */}
-      {showModal && selectedReport && (
-        <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50">
-          <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-1/3">
-            <h2 className="text-xl font-semibold text-white mb-4">Update Report</h2>
-            <div className="mb-4">
-              <input
-                type="text"
-                value={selectedReport.name}
-                onChange={(e) => setSelectedReport({ ...selectedReport, name: e.target.value })}
-                className="p-3 border rounded-lg w-full bg-gray-700 text-white"
-              />
-            </div>
-            <div className="mb-4">
-              <input
-                type="date"
-                value={selectedReport.date}
-                onChange={(e) => setSelectedReport({ ...selectedReport, date: e.target.value })}
-                className="p-3 border rounded-lg w-full bg-gray-700 text-white"
-              />
-            </div>
-            <div className="mb-4">
-              <select
-                value={selectedReport.status}
-                onChange={(e) => setSelectedReport({ ...selectedReport, status: e.target.value })}
-                className="p-3 border rounded-lg w-full bg-gray-700 text-white"
+      {loading ? (
+        <LoadingBlock label="Loading compliance reports…" />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          title="No compliance reports"
+          message={canWrite ? 'Create your first regulatory submission.' : 'No reports match your filters.'}
+          action={canWrite ? <Button onClick={() => setModalOpen(true)}><FiPlus /> Add report</Button> : null}
+        />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((report, i) => {
+            const cfg = statusConfig[report.status] || statusConfig.Pending;
+            const Icon = cfg.icon;
+            const rowId = report._id || report.id;
+            return (
+              <motion.div
+                key={rowId}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className="ops-panel hover:border-amber-500/20 transition-colors"
               >
-                <option value="Approved">Approved</option>
-                <option value="Pending">Pending</option>
-                <option value="Rejected">Rejected</option>
-              </select>
-            </div>
-            <div className="mb-4">
-              <textarea
-                value={selectedReport.details}
-                onChange={(e) => setSelectedReport({ ...selectedReport, details: e.target.value })}
-                className="p-3 border rounded-lg w-full bg-gray-700 text-white"
-              />
-            </div>
-            <div className="flex justify-between">
-              <button
-                onClick={() => handleUpdateReport(selectedReport)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg"
-              >
-                Update
-              </button>
-              <button
-                onClick={() => setShowModal(false)}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
+                <div className="ops-panel-body space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-semibold text-white line-clamp-2">{report.name}</h3>
+                    <span className={`${cfg.pill} flex items-center gap-1 shrink-0`}>
+                      <Icon className="text-sm" /> {report.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">{report.date ? new Date(report.date).toLocaleDateString() : '—'}</p>
+                  <p className="text-sm text-slate-400 line-clamp-3">{report.details || 'No details'}</p>
+                  {canWrite && (
+                    <div className="flex gap-2 pt-2 border-t border-slate-800">
+                      <button type="button" className="btn-ghost !text-xs !text-blue-400" onClick={() => openEdit(report)}>
+                        <FiEdit2 /> Edit
+                      </button>
+                      <button type="button" className="btn-ghost !text-xs !text-red-400" onClick={() => handleDelete(rowId)}>
+                        <FiTrash2 /> Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       )}
-    </div>
+
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-2 mt-6">
+          <Button variant="secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</Button>
+          <span className="self-center text-sm text-slate-400">Page {page} of {totalPages}</span>
+          <Button variant="secondary" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Next</Button>
+        </div>
+      )}
+
+      <Modal
+        open={modalOpen}
+        onClose={() => { setModalOpen(false); setEditReport(null); setForm(emptyForm); }}
+        title={editReport ? 'Edit compliance report' : 'New compliance report'}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={submitting}>{submitting ? 'Saving…' : 'Save'}</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <FormField label="Report name *">
+            <input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </FormField>
+          <FormField label="Date">
+            <input type="date" className="input-field" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+          </FormField>
+          <FormField label="Status">
+            <select className="input-field" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+              <option value="Pending">Pending</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </FormField>
+          <FormField label="Details">
+            <textarea className="input-field min-h-[100px]" value={form.details} onChange={(e) => setForm({ ...form, details: e.target.value })} />
+          </FormField>
+        </div>
+      </Modal>
+    </PageShell>
   );
 }

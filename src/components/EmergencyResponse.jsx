@@ -1,390 +1,400 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { AlertCircle, CheckCircle, Clock, MapPin, Users, Activity } from 'lucide-react';
-import { toast } from 'react-toastify';
+import api from '../services/axios';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  AlertTriangle,
+  Clock,
+  MapPin,
+  Radio,
+  Shield,
+  CheckCircle2,
+  Flame,
+} from 'lucide-react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import Button from './ui/Button';
+import Modal from './ui/Modal';
+import LoadingBlock from './ui/LoadingBlock';
+import EmptyState from './ui/EmptyState';
+import { usePermissions } from '../hooks/usePermissions';
+import { PERMISSIONS } from '../utils/roles';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const EMERGENCY_TYPES = [
+  { value: 'fire', label: 'Fire', icon: '🔥' },
+  { value: 'explosion', label: 'Explosion', icon: '💥' },
+  { value: 'gas_leak', label: 'Gas leak', icon: '☁️' },
+  { value: 'collapse', label: 'Structural collapse', icon: '🏗️' },
+  { value: 'flooding', label: 'Flooding', icon: '🌊' },
+  { value: 'equipment_failure', label: 'Equipment failure', icon: '⚙️' },
+  { value: 'injury', label: 'Injury', icon: '🩹' },
+  { value: 'entrapment', label: 'Entrapment', icon: '⛏️' },
+  { value: 'power_failure', label: 'Power failure', icon: '⚡' },
+  { value: 'other', label: 'Other', icon: '⚠️' },
+];
+
+const SEVERITIES = ['minor', 'moderate', 'major', 'critical', 'catastrophic'];
+
+const severityClass = (s) => {
+  const map = {
+    catastrophic: 'risk-pill--high',
+    critical: 'risk-pill--high',
+    major: 'risk-pill--medium',
+    moderate: 'risk-pill--medium',
+    minor: 'risk-pill--low',
+  };
+  return map[s] || 'risk-pill--low';
+};
+
+const statusClass = (s) => {
+  const map = {
+    active: 'status-pill--pending',
+    responding: 'status-pill--in-progress',
+    contained: 'status-pill--draft',
+    resolved: 'status-pill--reviewed',
+    false_alarm: 'status-pill--completed',
+  };
+  return map[s] || 'status-pill--pending';
+};
+
+const formatLabel = (s) => (s || '').replace(/_/g, ' ');
 
 const EmergencyResponsePanel = ({ mineId }) => {
+  const { can } = usePermissions();
+  const canManage = can(PERMISSIONS.EMERGENCY_MANAGE);
+  const canSOS = can(PERMISSIONS.EMERGENCY_SOS);
+
   const [emergencies, setEmergencies] = useState([]);
   const [activeEmergencies, setActiveEmergencies] = useState([]);
   const [showSOSForm, setShowSOSForm] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [selectedEmergency, setSelectedEmergency] = useState(null);
+  const [filter, setFilter] = useState('all');
 
   const [sosForm, setSosForm] = useState({
     emergencyType: 'fire',
     severity: 'critical',
     description: '',
-    location: {
-      area: '',
-      level: '',
-      latitude: '',
-      longitude: ''
-    }
+    location: { area: '', level: '' },
   });
 
-  useEffect(() => {
-    fetchActiveEmergencies();
-    fetchEmergencies();
-    
-    // Poll for updates every 10 seconds
-    const interval = setInterval(fetchActiveEmergencies, 10000);
-    return () => clearInterval(interval);
+  const loadData = useCallback(async () => {
+    if (!mineId) return;
+    try {
+      const [activeRes, historyRes] = await Promise.all([
+        api.get('/emergencies/active'),
+        api.get('/emergencies', { params: { mineId, limit: 20 } }),
+      ]);
+      setActiveEmergencies(activeRes.data?.emergencies ?? []);
+      setEmergencies(historyRes.data?.emergencies ?? []);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to load emergency data');
+    } finally {
+      setLoading(false);
+    }
   }, [mineId]);
 
-  const fetchActiveEmergencies = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/emergencies/active`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setActiveEmergencies(response.data.emergencies);
-    } catch (error) {
-      console.error('Error fetching active emergencies:', error);
-    }
-  };
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, 15000);
+    return () => clearInterval(interval);
+  }, [loadData]);
 
-  const fetchEmergencies = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/emergencies?mineId=${mineId}&limit=10`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setEmergencies(response.data.emergencies);
-    } catch (error) {
-      console.error('Error fetching emergencies:', error);
-    }
-  };
+  const stats = useMemo(() => ({
+    active: activeEmergencies.length,
+    total: emergencies.length,
+    resolved: emergencies.filter((e) => e.status === 'resolved').length,
+    critical: activeEmergencies.filter((e) => ['critical', 'catastrophic'].includes(e.severity)).length,
+  }), [activeEmergencies, emergencies]);
+
+  const filteredHistory = useMemo(() => {
+    if (filter === 'active') return emergencies.filter((e) => !['resolved', 'false_alarm'].includes(e.status));
+    if (filter === 'resolved') return emergencies.filter((e) => e.status === 'resolved');
+    return emergencies;
+  }, [emergencies, filter]);
 
   const handleSOSSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-
+    setSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(`${API_URL}/emergency`, {
-        mineId,
-        ...sosForm
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      toast.success('🚨 Emergency response initiated!');
+      await api.post('/emergency', { mineId, ...sosForm });
+      toast.success('SOS alert sent — response teams notified');
       setShowSOSForm(false);
       setSosForm({
         emergencyType: 'fire',
         severity: 'critical',
         description: '',
-        location: { area: '', level: '', latitude: '', longitude: '' }
+        location: { area: '', level: '' },
       });
-      fetchActiveEmergencies();
-      fetchEmergencies();
-    } catch (error) {
-      console.error('Error creating emergency:', error);
-      toast.error('Failed to create emergency');
+      loadData();
+    } catch {
+      toast.error('Failed to send SOS');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   const updateEmergencyStatus = async (emergencyId, newStatus) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.patch(`${API_URL}/emergency/${emergencyId}/status`, {
+      await api.patch(`/emergency/${emergencyId}/status`, {
         status: newStatus,
-        notes: `Status updated to ${newStatus}`
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+        notes: `Status updated to ${newStatus}`,
       });
-      
-      toast.success('Emergency status updated');
-      fetchActiveEmergencies();
-      fetchEmergencies();
-    } catch (error) {
-      console.error('Error updating status:', error);
+      toast.success(`Marked as ${formatLabel(newStatus)}`);
+      loadData();
+      if (selectedEmergency?._id === emergencyId) {
+        setSelectedEmergency((prev) => (prev ? { ...prev, status: newStatus } : null));
+      }
+    } catch {
       toast.error('Failed to update status');
     }
   };
 
-  const getSeverityColor = (severity) => {
-    switch (severity) {
-      case 'catastrophic': return 'bg-red-900 text-white';
-      case 'critical': return 'bg-red-600 text-white';
-      case 'major': return 'bg-orange-500 text-white';
-      case 'moderate': return 'bg-yellow-500 text-white';
-      case 'minor': return 'bg-blue-500 text-white';
-      default: return 'bg-gray-500 text-white';
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active': return 'text-red-600 bg-red-100';
-      case 'responding': return 'text-orange-600 bg-orange-100';
-      case 'contained': return 'text-yellow-600 bg-yellow-100';
-      case 'resolved': return 'text-green-600 bg-green-100';
-      case 'false_alarm': return 'text-gray-600 bg-gray-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
+  if (loading) return <LoadingBlock label="Loading emergency center…" />;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          🚨 Emergency Response Center
-          {activeEmergencies.length > 0 && (
-            <span className="animate-pulse text-red-600">
-              ({activeEmergencies.length} Active)
-            </span>
-          )}
-        </h2>
-        <button
-          onClick={() => setShowSOSForm(!showSOSForm)}
-          className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold flex items-center gap-2 animate-pulse"
-        >
-          <AlertCircle size={20} />
-          SOS - EMERGENCY ALERT
-        </button>
+      <ToastContainer position="top-right" autoClose={3000} />
+
+      <div className="ops-kpi-grid">
+        {[
+          { label: 'Active incidents', value: stats.active, icon: <AlertTriangle className="text-red-500" />, alert: stats.active > 0 },
+          { label: 'Critical active', value: stats.critical, icon: <Flame className="text-orange-500" /> },
+          { label: 'Resolved (recent)', value: stats.resolved, icon: <CheckCircle2 className="text-emerald-500" /> },
+          { label: 'Total logged', value: stats.total, icon: <Shield className="text-amber-500" /> },
+        ].map((kpi, i) => (
+          <motion.div
+            key={kpi.label}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className={`ops-kpi border-slate-700/70 bg-slate-900/50 ${kpi.alert ? 'ring-2 ring-red-500/40' : ''}`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="ops-kpi-label">{kpi.label}</span>
+              {kpi.icon}
+            </div>
+            <p className={`ops-kpi-value ${kpi.alert ? 'text-red-400' : ''}`}>{kpi.value}</p>
+          </motion.div>
+        ))}
       </div>
 
-      {/* Active Emergency Alert Banner */}
-      {activeEmergencies.length > 0 && (
-        <div className="bg-red-600 text-white p-4 rounded-lg shadow-lg border-4 border-red-700 animate-pulse">
-          <div className="flex items-center gap-3">
-            <AlertCircle size={32} className="flex-shrink-0" />
-            <div className="flex-1">
-              <h3 className="text-xl font-bold">ACTIVE EMERGENCY IN PROGRESS</h3>
-              <p className="text-sm opacity-90">
-                {activeEmergencies.length} emergency situation(s) require immediate attention
-              </p>
-            </div>
-          </div>
+      {canSOS && (
+        <div className="flex flex-wrap gap-3 justify-between items-center">
+          <p className="text-sm text-slate-400">
+            {canManage ? 'Report incidents or update response status' : 'Report an emergency — managers will coordinate response'}
+          </p>
+          <Button
+            variant="danger"
+            onClick={() => setShowSOSForm(true)}
+            className="!bg-red-600 hover:!bg-red-700 animate-pulse"
+          >
+            <Radio className="w-4 h-4" /> SOS — Report emergency
+          </Button>
         </div>
       )}
 
-      {/* SOS Form */}
-      {showSOSForm && (
-        <div className="bg-white p-6 rounded-lg shadow-lg border-2 border-red-500">
-          <h3 className="text-xl font-bold mb-4 text-red-600">Report Emergency</h3>
-          <form onSubmit={handleSOSSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold mb-2">Emergency Type*</label>
-                <select
-                  value={sosForm.emergencyType}
-                  onChange={(e) => setSosForm({ ...sosForm, emergencyType: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
-                  required
-                >
-                  <option value="fire">Fire</option>
-                  <option value="explosion">Explosion</option>
-                  <option value="gas_leak">Gas Leak</option>
-                  <option value="collapse">Structural Collapse</option>
-                  <option value="flooding">Flooding</option>
-                  <option value="equipment_failure">Equipment Failure</option>
-                  <option value="injury">Injury</option>
-                  <option value="entrapment">Personnel Entrapment</option>
-                  <option value="power_failure">Power Failure</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-2">Severity*</label>
-                <select
-                  value={sosForm.severity}
-                  onChange={(e) => setSosForm({ ...sosForm, severity: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
-                  required
-                >
-                  <option value="catastrophic">Catastrophic</option>
-                  <option value="critical">Critical</option>
-                  <option value="major">Major</option>
-                  <option value="moderate">Moderate</option>
-                  <option value="minor">Minor</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-2">Area</label>
-                <input
-                  type="text"
-                  value={sosForm.location.area}
-                  onChange={(e) => setSosForm({ 
-                    ...sosForm, 
-                    location: { ...sosForm.location, area: e.target.value }
-                  })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
-                  placeholder="e.g., Section A, Level 3"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-2">Level/Floor</label>
-                <input
-                  type="text"
-                  value={sosForm.location.level}
-                  onChange={(e) => setSosForm({ 
-                    ...sosForm, 
-                    location: { ...sosForm.location, level: e.target.value }
-                  })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
-                  placeholder="e.g., Underground Level 2"
-                />
-              </div>
-            </div>
-
+      <AnimatePresence>
+        {stats.active > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="rounded-xl border-2 border-red-500/50 bg-red-950/40 p-4 flex items-center gap-3"
+          >
+            <AlertTriangle className="w-8 h-8 text-red-400 shrink-0 animate-pulse" />
             <div>
-              <label className="block text-sm font-semibold mb-2">Description*</label>
-              <textarea
-                value={sosForm.description}
-                onChange={(e) => setSosForm({ ...sosForm, description: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
-                rows="4"
-                placeholder="Provide detailed information about the emergency..."
-                required
-              />
+              <h3 className="font-bold text-red-200">Active emergency in progress</h3>
+              <p className="text-sm text-red-300/80">{stats.active} incident(s) require attention</p>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold disabled:opacity-50"
-              >
-                {loading ? 'Submitting...' : 'SEND SOS ALERT'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowSOSForm(false)}
-                className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Active Emergencies */}
       {activeEmergencies.length > 0 && (
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <Activity className="text-red-600" />
-            Active Emergencies
+        <section className="space-y-3">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <Radio className="text-red-400" /> Live incidents
           </h3>
-          <div className="space-y-4">
-            {activeEmergencies.map((emergency) => (
-              <div key={emergency._id} className="border-l-4 border-red-600 bg-red-50 p-4 rounded">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${getSeverityColor(emergency.severity)}`}>
-                        {emergency.severity.toUpperCase()}
-                      </span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(emergency.status)}`}>
-                        {emergency.status.replace('_', ' ').toUpperCase()}
-                      </span>
+          {activeEmergencies.map((emergency) => (
+            <motion.div
+              key={emergency._id}
+              layout
+              className="ops-panel border-l-4 border-l-red-500"
+            >
+              <div className="ops-panel-body">
+                <div className="flex flex-wrap justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      <span className={severityClass(emergency.severity)}>{emergency.severity}</span>
+                      <span className={statusClass(emergency.status)}>{formatLabel(emergency.status)}</span>
                     </div>
-                    <h4 className="font-semibold text-lg capitalize">
-                      {emergency.emergencyType.replace('_', ' ')}
+                    <h4 className="text-lg font-semibold text-white capitalize">
+                      {formatLabel(emergency.emergencyType)}
                     </h4>
-                    <p className="text-sm text-gray-700 mt-1">{emergency.description}</p>
+                    <p className="text-sm text-slate-400 mt-1">{emergency.description}</p>
+                    <div className="flex flex-wrap gap-4 mt-2 text-xs text-slate-500">
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(emergency.createdAt).toLocaleString()}</span>
+                      {emergency.location?.area && (
+                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{emergency.location.area}{emergency.location.level ? ` · ${emergency.location.level}` : ''}</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-right text-sm text-gray-600">
-                    <p className="flex items-center gap-1">
-                      <Clock size={14} />
-                      {new Date(emergency.createdAt).toLocaleString()}
-                    </p>
-                    {emergency.location?.area && (
-                      <p className="flex items-center gap-1 mt-1">
-                        <MapPin size={14} />
-                        {emergency.location.area}
-                      </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="secondary" className="!py-1.5 !text-xs" onClick={() => setSelectedEmergency(emergency)}>Details</Button>
+                    {canManage && emergency.status === 'active' && (
+                      <Button variant="secondary" className="!py-1.5 !text-xs" onClick={() => updateEmergencyStatus(emergency._id, 'responding')}>Responding</Button>
+                    )}
+                    {canManage && ['active', 'responding'].includes(emergency.status) && (
+                      <Button variant="secondary" className="!py-1.5 !text-xs" onClick={() => updateEmergencyStatus(emergency._id, 'contained')}>Contained</Button>
+                    )}
+                    {canManage && (
+                      <Button variant="success" className="!py-1.5 !text-xs" onClick={() => updateEmergencyStatus(emergency._id, 'resolved')}>Resolve</Button>
                     )}
                   </div>
                 </div>
-
-                <div className="flex gap-2 mt-3">
-                  <button
-                    onClick={() => updateEmergencyStatus(emergency._id, 'responding')}
-                    className="px-3 py-1 bg-orange-500 text-white rounded text-sm hover:bg-orange-600"
-                  >
-                    Mark Responding
-                  </button>
-                  <button
-                    onClick={() => updateEmergencyStatus(emergency._id, 'contained')}
-                    className="px-3 py-1 bg-yellow-500 text-white rounded text-sm hover:bg-yellow-600"
-                  >
-                    Mark Contained
-                  </button>
-                  <button
-                    onClick={() => updateEmergencyStatus(emergency._id, 'resolved')}
-                    className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
-                  >
-                    Mark Resolved
-                  </button>
-                  <button
-                    onClick={() => setSelectedEmergency(emergency)}
-                    className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
-                  >
-                    View Details
-                  </button>
-                </div>
               </div>
-            ))}
-          </div>
-        </div>
+            </motion.div>
+          ))}
+        </section>
       )}
 
-      {/* Recent Emergencies */}
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h3 className="text-xl font-bold mb-4">Recent Emergency History</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-4 py-2 text-left">ID</th>
-                <th className="px-4 py-2 text-left">Type</th>
-                <th className="px-4 py-2 text-left">Severity</th>
-                <th className="px-4 py-2 text-left">Status</th>
-                <th className="px-4 py-2 text-left">Date</th>
-                <th className="px-4 py-2 text-left">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {emergencies.map((emergency) => (
-                <tr key={emergency._id} className="border-b hover:bg-gray-50">
-                  <td className="px-4 py-2 font-mono text-sm">{emergency.emergencyId}</td>
-                  <td className="px-4 py-2 capitalize">{emergency.emergencyType.replace('_', ' ')}</td>
-                  <td className="px-4 py-2">
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${getSeverityColor(emergency.severity)}`}>
-                      {emergency.severity}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2">
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${getStatusColor(emergency.status)}`}>
-                      {emergency.status.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2 text-sm">{new Date(emergency.createdAt).toLocaleDateString()}</td>
-                  <td className="px-4 py-2">
-                    <button
-                      onClick={() => setSelectedEmergency(emergency)}
-                      className="text-blue-600 hover:underline text-sm"
-                    >
-                      View
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <section className="ops-panel">
+        <div className="ops-panel-header flex flex-wrap justify-between items-center gap-3">
+          <h3 className="font-semibold text-white">Incident history</h3>
+          <select className="input-field !w-auto !py-1.5 !text-sm" value={filter} onChange={(e) => setFilter(e.target.value)}>
+            <option value="all">All</option>
+            <option value="active">Open</option>
+            <option value="resolved">Resolved</option>
+          </select>
         </div>
-      </div>
+        <div className="ops-panel-body p-0 overflow-x-auto">
+          {filteredHistory.length === 0 ? (
+            <EmptyState title="No incidents" message="No emergencies match this filter." />
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="text-slate-500 border-b border-slate-800">
+                <tr>
+                  <th className="text-left p-3">ID</th>
+                  <th className="text-left p-3">Type</th>
+                  <th className="text-left p-3">Severity</th>
+                  <th className="text-left p-3">Status</th>
+                  <th className="text-left p-3">Date</th>
+                  <th className="text-right p-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredHistory.map((emergency) => (
+                  <tr key={emergency._id} className="border-b border-slate-800/80 hover:bg-slate-800/30">
+                    <td className="p-3 font-mono text-xs text-slate-400">{emergency.emergencyId || emergency._id?.slice(-6)}</td>
+                    <td className="p-3 text-slate-200 capitalize">{formatLabel(emergency.emergencyType)}</td>
+                    <td className="p-3"><span className={severityClass(emergency.severity)}>{emergency.severity}</span></td>
+                    <td className="p-3"><span className={statusClass(emergency.status)}>{formatLabel(emergency.status)}</span></td>
+                    <td className="p-3 text-slate-400">{new Date(emergency.createdAt).toLocaleDateString()}</td>
+                    <td className="p-3 text-right">
+                      <button type="button" className="text-amber-400 hover:underline text-xs" onClick={() => setSelectedEmergency(emergency)}>View</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </section>
+
+      <Modal open={showSOSForm} onClose={() => setShowSOSForm(false)} title="Report emergency" size="lg">
+        <form onSubmit={handleSOSSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {EMERGENCY_TYPES.map((t) => (
+              <button
+                key={t.value}
+                type="button"
+                onClick={() => setSosForm({ ...sosForm, emergencyType: t.value })}
+                className={`rounded-xl border p-2 text-center text-xs transition ${
+                  sosForm.emergencyType === t.value
+                    ? 'border-red-500 bg-red-500/10 text-white'
+                    : 'border-slate-600 text-slate-400 hover:border-slate-500'
+                }`}
+              >
+                <span className="text-lg block">{t.icon}</span>
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className="label-field">Severity</label>
+              <select
+                className="input-field"
+                value={sosForm.severity}
+                onChange={(e) => setSosForm({ ...sosForm, severity: e.target.value })}
+              >
+                {SEVERITIES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label-field">Area / section</label>
+              <input
+                className="input-field"
+                value={sosForm.location.area}
+                onChange={(e) => setSosForm({ ...sosForm, location: { ...sosForm.location, area: e.target.value } })}
+                placeholder="Section A, Level 3"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="label-field">Description *</label>
+            <textarea
+              className="input-field min-h-[100px]"
+              value={sosForm.description}
+              onChange={(e) => setSosForm({ ...sosForm, description: e.target.value })}
+              required
+              placeholder="What happened? Who is affected?"
+            />
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button type="button" variant="secondary" onClick={() => setShowSOSForm(false)}>Cancel</Button>
+            <Button type="submit" variant="danger" disabled={submitting}>
+              {submitting ? 'Sending…' : 'Send SOS alert'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={Boolean(selectedEmergency)}
+        onClose={() => setSelectedEmergency(null)}
+        title="Incident details"
+        size="md"
+      >
+        {selectedEmergency && (
+          <div className="space-y-4 text-sm">
+            <div className="flex flex-wrap gap-2">
+              <span className={severityClass(selectedEmergency.severity)}>{selectedEmergency.severity}</span>
+              <span className={statusClass(selectedEmergency.status)}>{formatLabel(selectedEmergency.status)}</span>
+            </div>
+            <p className="text-slate-300">{selectedEmergency.description}</p>
+            <dl className="grid grid-cols-2 gap-2 text-slate-400">
+              <dt>Type</dt><dd className="text-white capitalize">{formatLabel(selectedEmergency.emergencyType)}</dd>
+              <dt>Reported</dt><dd className="text-white">{new Date(selectedEmergency.createdAt).toLocaleString()}</dd>
+              {selectedEmergency.location?.area && (
+                <>
+                  <dt>Location</dt>
+                  <dd className="text-white">{selectedEmergency.location.area}</dd>
+                </>
+              )}
+            </dl>
+            {canManage && !['resolved', 'false_alarm'].includes(selectedEmergency.status) && (
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-700">
+                <Button variant="success" className="!text-xs" onClick={() => updateEmergencyStatus(selectedEmergency._id, 'resolved')}>Mark resolved</Button>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

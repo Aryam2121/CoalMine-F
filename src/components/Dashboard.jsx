@@ -1,892 +1,877 @@
-import React, { useState, useEffect } from 'react';
-import { ToastContainer, toast } from 'react-toastify';
+import api from '../services/axios';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { Line, Pie, Bar } from 'react-chartjs-2';
-import { useParams } from 'react-router-dom';
+import { Line, Doughnut, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
-  LineElement,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  ArcElement,
-  PointElement,
   Filler,
 } from 'chart.js';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import "leaflet.heat";
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { motion } from 'framer-motion';
-import Chatbot from './chatbot';
-import axios from 'axios'; // Added import for axios
-import 'leaflet/dist/leaflet.css';
+import {
+  FaIndustry,
+  FaUsers,
+  FaExclamationTriangle,
+  FaTools,
+  FaChartLine,
+  FaMapMarkedAlt,
+  FaHardHat,
+  FaBell,
+  FaClipboardList,
+  FaFileAlt,
+  FaSyncAlt,
+  FaPlus,
+  FaArrowRight,
+  FaShieldAlt,
+} from 'react-icons/fa';
+import Button from './ui/Button';
+import LoadingBlock from './ui/LoadingBlock';
+import EmptyState from './ui/EmptyState';
+import Modal from './ui/Modal';
+import useSocket from '../hooks/useSocket';
+import { toast } from 'react-toastify';
 
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
-ChartJS.register(Filler,Title, Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement, ArcElement);
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
- 
-const Dashboard = () => {
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [activeAlerts, setActiveAlerts] = useState([]);
-  const [heatmapData, setHeatmapData] = useState([]);
-  const { id } = useParams();
-  const [coalMine, setCoalMine] = useState(null);
-  const [mineLocations, setMineLocations] = useState([]);
-  const [locations, setLocations] = useState([]);
-  const [userLocation, setUserLocation] = useState([12.9716, 77.5946]); 
-  const [name, setName] = useState('');
-  const [lat, setLat] = useState('');
-  const [lng, setLng] = useState('');
-  const [filteredMaintenance, setFilteredMaintenance] = useState([]);
-  const [maintenanceTasks, setMaintenanceTasks] = useState([]);
-  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState(null);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
-  const customIcon = L.icon({
-    iconUrl: markerIcon,
-    shadowUrl: markerShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
-  });
-  const [newTask, setNewTask] = useState({
-    task: '',
-    date: '',
-    description: '',
-    priority: 3,
-    status: 'pending',
-  });
-// Function to generate random chart data
-const generateRandomData = () => ({
-  labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-  datasets: [
-    {
-      label: "Productivity Score",
-      data: Array.from({ length: 7 }, () => Math.floor(Math.random() * 100)),
-      backgroundColor: "rgba(54, 162, 235, 0.5)",
-      borderColor: "rgba(54, 162, 235, 1)",
-      borderWidth: 2,
-    },
-  ],
+const mapIcon = L.icon({
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
 });
 
-  const lineChartData = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+const daysAgo = (n) => {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d;
+};
+
+const timeAgo = (ts) => {
+  if (!ts) return '';
+  const diff = Date.now() - new Date(ts).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+};
+
+const chartColors = {
+  text: '#94a3b8',
+  grid: 'rgba(148, 163, 184, 0.15)',
+  tooltip: {
+    backgroundColor: 'rgba(15, 23, 42, 0.92)',
+    titleColor: '#f8fafc',
+    bodyColor: '#cbd5e1',
+    padding: 12,
+    cornerRadius: 10,
+    displayColors: true,
+  },
+};
+
+const DOUGHNUT_COLORS = ['#10b981', '#f59e0b', '#ef4444'];
+const BAR_COLORS = ['#3b82f6', '#8b5cf6', '#06b6d4', '#ec4899', '#f59e0b', '#64748b'];
+
+/** API returns datasets without colors — Chart.js then draws invisible segments on dark UI */
+function styleLineChart(chart) {
+  const ds = chart?.datasets?.[0];
+  if (!ds) return chart;
+  return {
+    ...chart,
     datasets: [
       {
-        label: 'Productivity Over the Week',
-        data: [70, 75, 80, 85, 90, 85, 80],
-        borderColor: '#4CAF50',
-        backgroundColor: 'rgba(76, 175, 80, 0.2)',
+        ...ds,
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.25)',
         fill: true,
+        tension: 0.4,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: '#f59e0b',
+        pointBorderColor: '#1e293b',
+        pointBorderWidth: 2,
       },
     ],
   };
+}
 
-  const pieChartData = {
-    labels: ['Safe', 'Warning', 'Critical'],
+function styleDoughnutChart(chart) {
+  const ds = chart?.datasets?.[0];
+  if (!ds) return chart;
+  const n = ds.data?.length || 3;
+  return {
+    ...chart,
     datasets: [
       {
-        label: 'Safety Compliance Breakdown',
-        data: [70, 20, 10],
-        backgroundColor: ['#4CAF50', '#FFEB3B', '#F44336'],
-        borderColor: '#ffffff',
-        borderWidth: 1,
+        ...ds,
+        backgroundColor: DOUGHNUT_COLORS.slice(0, n),
+        borderColor: '#1e293b',
+        borderWidth: 2,
+        hoverOffset: 8,
       },
     ],
   };
+}
 
-  const barChartData = {
-    labels: ['Dept A', 'Dept B', 'Dept C', 'Dept D'],
+function styleBarChart(chart) {
+  const ds = chart?.datasets?.[0];
+  if (!ds) return chart;
+  const n = ds.data?.length || 1;
+  return {
+    ...chart,
     datasets: [
       {
-        label: 'Department Performance',
-        data: [60, 80, 70, 90],
-        backgroundColor: '#2196F3',
-        borderColor: '#1976D2',
-        borderWidth: 1,
+        ...ds,
+        backgroundColor: BAR_COLORS.slice(0, n),
+        borderRadius: 6,
+        borderSkipped: false,
       },
     ],
   };
-  const Heatmap = ({ data }) => {
-    const map = useMap();
-  
-    useEffect(() => {
-      if (!map || heatmapData.length === 0) return;
-    
-      const heatLayer = L.heatLayer(
-        heatmapData.map(({ lat, lng, intensity }) => [lat, lng, intensity]),
-        { radius: 25, blur: 15, maxZoom: 17 }
-      );
-    
-      heatLayer.addTo(map);
-    
-      return () => map.removeLayer(heatLayer);
-    }, [map, heatmapData]);
-  }; 
-const notifications = [
-    { message: 'Safety gear check overdue', type: 'warning' },
-    { message: 'Gas leakage detected in Mine 2', type: 'critical' },
-  ];
+}
 
-  useEffect(() => {
-    const darkModeSetting = localStorage.getItem('darkMode') === 'true';
-    setIsDarkMode(darkModeSetting);
-  }, []);
-  
-  const toggleDarkMode = () => {
-    setIsDarkMode(prevMode => {
-      const newMode = !prevMode;
-      localStorage.setItem('darkMode', newMode);
-      return newMode;
-    });
-  };
-  
+const lineOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: { mode: 'index', intersect: false },
+  plugins: {
+    legend: { display: false },
+    tooltip: chartColors.tooltip,
+  },
+  scales: {
+    x: {
+      ticks: { color: chartColors.text, maxRotation: 0, autoSkip: true, maxTicksLimit: 7 },
+      grid: { display: false },
+    },
+    y: {
+      ticks: { color: chartColors.text },
+      grid: { color: chartColors.grid },
+      beginAtZero: true,
+    },
+  },
+};
 
-  const generateToast = () => {
-    const alert = notifications[Math.floor(Math.random() * notifications.length)];
-    if (alert.type === 'critical') {
-      toast.error(alert.message);
-    } else {
-      toast.warning(alert.message);
-    }
-  };
+const doughnutOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  cutout: '68%',
+  plugins: {
+    legend: {
+      position: 'bottom',
+      labels: {
+        color: chartColors.text,
+        padding: 20,
+        usePointStyle: true,
+        pointStyle: 'circle',
+        boxWidth: 10,
+        boxHeight: 10,
+      },
+    },
+    tooltip: chartColors.tooltip,
+  },
+};
 
-  useEffect(() => {
-    const interval = setInterval(generateToast, 5000);
-    return () => clearInterval(interval);
-  }, [notifications]);
+const barOptions = {
+  ...lineOptions,
+  indexAxis: 'y',
+  plugins: { ...lineOptions.plugins, legend: { display: false } },
+};
 
-  const addActiveAlert = () => {
-    const alert = notifications[Math.floor(Math.random() * notifications.length)];
-    const newAlert = { ...alert, id: Date.now() };
-    setActiveAlerts(prev => [newAlert, ...prev]);
+function buildChartsFromRaw({ productivity, alerts, resources }) {
+  const prodRecords = (productivity || [])
+    .slice()
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .slice(-7);
+  const prodLabels = prodRecords.map((r) =>
+    new Date(r.date).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' })
+  );
+  const prodData = prodRecords.map((r) => {
+    const vals = Array.isArray(r.value) ? r.value : [r.value];
+    return Math.round(vals.reduce((s, n) => s + Number(n), 0) / vals.length);
+  });
 
-    setTimeout(() => {
-      setActiveAlerts(prev => prev.filter(alert => alert.id !== newAlert.id));
-    }, 5000);
-  };
+  const resolved = (alerts || []).filter((a) => a.resolved).length;
+  const warning = (alerts || []).filter((a) => !a.resolved && a.type === 'warning').length;
+  const critical = (alerts || []).filter((a) => !a.resolved && a.type === 'critical').length;
 
-  useEffect(() => {
-    const interval = setInterval(addActiveAlert, 5000);
-    return () => clearInterval(interval);
-  }, [notifications]);
+  const byType = {};
+  (resources || []).forEach((r) => {
+    const k = r.type || 'other';
+    if (!byType[k]) byType[k] = { sum: 0, n: 0 };
+    byType[k].sum += r.used || 0;
+    byType[k].n += 1;
+  });
+  const typeEntries = Object.entries(byType).slice(0, 6);
 
-  useEffect(() => {
-    const fetchMaintenanceTasks = async () => {
-      try {
-        const { data } = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getallTask`);
-
-        if (data && data.length) {
-          setMaintenanceTasks(data);
-          setFilteredMaintenance(data);
-        } else {
-          console.log('No tasks found');
-        }
-      } catch (error) {
-        console.error('Error fetching tasks:', error);
-      }
-    };
-
-    fetchMaintenanceTasks();
-  }, []);
-
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  // Filter maintenance tasks based on search term
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch(`https://${import.meta.env.VITE_BACKEND}/api/createTask`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+  return {
+    productivity: {
+      labels: prodLabels.length ? prodLabels : ['—'],
+      datasets: [
+        {
+          label: 'Index',
+          data: prodData.length ? prodData : [0],
+          borderColor: '#f59e0b',
+          backgroundColor: (ctx) => {
+            const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 280);
+            g.addColorStop(0, 'rgba(245, 158, 11, 0.35)');
+            g.addColorStop(1, 'rgba(245, 158, 11, 0)');
+            return g;
+          },
+          fill: true,
+          tension: 0.4,
+          borderWidth: 2.5,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#f59e0b',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
         },
-        body: JSON.stringify(newTask),
-      });
+      ],
+    },
+    safety: {
+      labels: ['Resolved', 'Warning', 'Critical'],
+      datasets: [
+        {
+          data: [resolved, warning, critical],
+          backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+          borderWidth: 0,
+          hoverOffset: 8,
+        },
+      ],
+    },
+    resources: {
+      labels: typeEntries.map(([k]) => k.charAt(0).toUpperCase() + k.slice(1)),
+      datasets: [
+        {
+          data: typeEntries.map(([, v]) => Math.round(v.sum / v.n)),
+          backgroundColor: ['#3b82f6', '#8b5cf6', '#06b6d4', '#ec4899', '#f59e0b', '#64748b'],
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+      ],
+    },
+  };
+}
 
-      if (!response.ok) {
-        throw new Error('Error creating maintenance task');
-      }
+async function fetchDashboardFallback() {
+  const [alertsRes, maintRes, prodRes, resRes, locRes] = await Promise.all([
+    api.get('/alerts/getallalerts', { params: { limit: 50, page: 1 } }).catch(() => ({ data: { alerts: [] } })),
+    api.get('/getallTask').catch(() => ({ data: [] })),
+    api.get('/prod/getData', { params: { limit: 30, page: 1 } }).catch(() => ({ data: { data: [] } })),
+    api.get('/getAllRes').catch(() => ({ data: [] })),
+    api.get('/getallloc').catch(() => ({ data: [] })),
+  ]);
 
-      const data = await response.json();
-      setMaintenanceTasks((prevData) => [data, ...prevData]);
-      setNewTask({ task: '', date: '', description: '', priority: 3, status: 'pending' });
-      alert('Maintenance task created successfully');
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error('Error creating maintenance task:', error);
-    }
+  const alerts = alertsRes.data?.alerts || [];
+  const productivity = prodRes.data?.data || [];
+  const resources = Array.isArray(resRes.data) ? resRes.data : [];
+  const maintenance = Array.isArray(maintRes.data) ? maintRes.data : [];
+  const locations = Array.isArray(locRes.data) ? locRes.data : [];
+  const openAlerts = alerts.filter((a) => !a.resolved);
+  const charts = buildChartsFromRaw({ productivity, alerts, resources });
+  const weekly = charts.productivity.datasets[0].data;
+
+  return {
+    stats: {
+      activeMines: locations.length,
+      coalMineSites: locations.length,
+      totalWorkers: 0,
+      openAlerts: openAlerts.length,
+      criticalAlerts: openAlerts.filter((a) => a.type === 'critical').length,
+      maintenanceOpen: maintenance.filter((m) => !['completed', 'cancelled'].includes(m.status)).length,
+      avgProductivity: weekly.length ? Math.round(weekly.reduce((a, b) => a + b, 0) / weekly.length) : 0,
+    },
+    charts: {
+      productivity: { labels: charts.productivity.labels, datasets: charts.productivity.datasets },
+      safetyCompliance: { labels: charts.safety.labels, datasets: charts.safety.datasets },
+      departmentPerformance: { labels: charts.resources.labels, datasets: charts.resources.datasets },
+    },
+    recentAlerts: openAlerts.slice(0, 10).map((a) => ({
+      _id: a._id,
+      message: a.message,
+      type: a.type,
+      timestamp: a.timestamp,
+    })),
+    maintenance,
+    locations,
+  };
+}
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  show: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.05, duration: 0.4 } }),
+};
+
+function KpiCard({ label, value, icon, variant, sub, index = 0 }) {
+  return (
+    <motion.div variants={fadeUp} custom={index} className={`dash-kpi dash-kpi--${variant}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className={`dash-kpi-icon bg-white/60 dark:bg-white/5`}>{icon}</div>
+        {sub && <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">{sub}</span>}
+      </div>
+      <p className="dash-kpi-value mt-3">{value}</p>
+      <p className="dash-kpi-label mt-1">{label}</p>
+    </motion.div>
+  );
+}
+
+function Panel({ title, icon, action, children, className = '' }) {
+  return (
+    <motion.div variants={fadeUp} className={`dash-panel ${className}`}>
+      <div className="dash-panel-header">
+        <h3 className="dash-panel-title">
+          {icon}
+          {title}
+        </h3>
+        {action}
+      </div>
+      <div className="dash-panel-body">{children}</div>
+    </motion.div>
+  );
+}
+
+const Dashboard = () => {
+  const [startDate, setStartDate] = useState(daysAgo(30));
+  const [endDate, setEndDate] = useState(new Date());
+  const [stats, setStats] = useState(null);
+  const [lineChart, setLineChart] = useState(null);
+  const [pieChart, setPieChart] = useState(null);
+  const [barChart, setBarChart] = useState(null);
+  const [activeAlerts, setActiveAlerts] = useState([]);
+  const [maintenanceTasks, setMaintenanceTasks] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newTask, setNewTask] = useState({ task: '', date: '', description: '', priority: 3, status: 'pending' });
+
+  const applyPayload = (data) => {
+    setStats(data.stats);
+    const prod = data.charts?.productivity;
+    const safety = data.charts?.safetyCompliance;
+    const dept = data.charts?.departmentPerformance;
+
+    setLineChart(
+      styleLineChart({
+        labels: prod?.labels?.length ? prod.labels : ['—'],
+        datasets: prod?.datasets?.length
+          ? prod.datasets
+          : [{ label: 'Index', data: [0] }],
+      })
+    );
+
+    setPieChart(
+      styleDoughnutChart({
+        labels: safety?.labels || ['Resolved', 'Warning', 'Critical'],
+        datasets: safety?.datasets?.length
+          ? safety.datasets
+          : [{ data: [0, 0, 0] }],
+      })
+    );
+
+    setBarChart(
+      styleBarChart({
+        labels: dept?.labels?.length ? dept.labels : ['—'],
+        datasets: dept?.datasets?.length
+          ? dept.datasets
+          : [{ data: [0] }],
+      })
+    );
+
+    setActiveAlerts(
+      (data.recentAlerts || []).map((a) => ({
+        id: a._id,
+        message: a.message,
+        type: a.type,
+        timestamp: a.timestamp,
+      }))
+    );
+    setMaintenanceTasks(data.maintenance || []);
+    if (data.locations) setLocations(data.locations);
   };
 
-
- 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
-  useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        const response = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getallloc`);
-        console.log("Fetched Locations:", response.data);
-        setLocations(response.data);
-      } catch (error) {
-        setError("Error fetching locations");
-        console.error("Error fetching locations:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-  
-    fetchLocations();
-  
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        console.log("User Location:", position.coords);
-        setUserLocation([position.coords.latitude, position.coords.longitude]); // ✅ Update state
-      },
-      (error) => console.error("Error fetching user location:", error),
-      { enableHighAccuracy: true } // ✅ Improve accuracy
-    );
-  }, []);
-  
-  const fetchLocations = async () => {
+  const loadDashboard = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
-      const response = await  axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getallloc`);
-
-      console.log("Fetched Locations:", response.data);
-      setLocations(response.data);
-    } catch (error) {
-      setError("Error fetching locations");
-      console.error("Error fetching locations:", error);
+      const { data } = await api.get('/dashboard/summary', {
+        params: {
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0],
+        },
+      });
+      applyPayload(data);
+    } catch (err) {
+      console.warn('Dashboard summary failed, using fallback', err);
+      try {
+        applyPayload(await fetchDashboardFallback());
+      } catch (e2) {
+        setError('Could not load dashboard. Start backend and run npm run seed:large');
+        console.error(e2);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [startDate, endDate]);
 
-  const handleSubmitloc = async (e) => {
-    e.preventDefault();
-    
-    // Ensure values are valid
-    if (!name || !lat || !lng) {
-      alert("Please fill all fields!");
-      return;
-    }
-  
-    // Convert input to correct format
-    const formattedLat = parseFloat(lat);
-    const formattedLng = parseFloat(lng);
-  
-    if (isNaN(formattedLat) || isNaN(formattedLng)) {
-      alert("Invalid latitude or longitude values.");
-      return;
-    }
-  
-    try {
-      const locationData = {
-        name,
-        coordinates: {
-          type: "Point",
-          coordinates: [formattedLng, formattedLat], // Longitude first, then Latitude
-        },
-      };
-  
-      console.log("Sending locationData:", locationData);
-  
-      const response = await axios.post(
-        `https://${import.meta.env.VITE_BACKEND}/api/createloc`,
-        locationData
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  useEffect(() => {
+    api.get('/getallloc').then((r) => setLocations(r.data || [])).catch(() => {});
+  }, []);
+
+  const { socket, connected: socketConnected } = useSocket(true);
+
+  useEffect(() => {
+    if (!socket) return undefined;
+
+    const onNewAlert = (alert) => {
+      if (!alert || alert.resolved) return;
+      setActiveAlerts((prev) => {
+        if (prev.some((a) => a.id === alert._id)) return prev;
+        return [
+          {
+            id: alert._id,
+            message: alert.message,
+            type: alert.type,
+            timestamp: alert.timestamp || new Date().toISOString(),
+          },
+          ...prev,
+        ].slice(0, 10);
+      });
+      setStats((prev) =>
+        prev
+          ? {
+              ...prev,
+              openAlerts: (prev.openAlerts || 0) + 1,
+              criticalAlerts:
+                alert.type === 'critical' ? (prev.criticalAlerts || 0) + 1 : prev.criticalAlerts,
+            }
+          : prev
       );
-  
-      alert(`Location added: ${response.data.name}`);
-  
-      // Clear input fields
-      setName("");
-      setLat("");
-      setLng("");
-  
-      // Refresh location list
-      fetchLocations();
-  
-    } catch (error) {
-      console.error("Error adding location:", error.response?.data || error.message);
-      alert("Failed to add location.");
+      setPieChart((prev) => {
+        if (!prev?.datasets?.[0]) return prev;
+        const data = [...prev.datasets[0].data];
+        if (alert.type === 'critical') data[2] = (data[2] || 0) + 1;
+        else data[1] = (data[1] || 0) + 1;
+        return styleDoughnutChart({ labels: prev.labels, datasets: [{ data }] });
+      });
+      toast.info(`New ${alert.type} alert`, { autoClose: 3000 });
+    };
+
+    const onResolved = ({ alertId, alert }) => {
+      const id = alertId || alert?._id;
+      setActiveAlerts((prev) => prev.filter((a) => a.id !== id));
+      setStats((prev) =>
+        prev
+          ? {
+              ...prev,
+              openAlerts: Math.max(0, (prev.openAlerts || 0) - 1),
+              criticalAlerts:
+                alert?.type === 'critical'
+                  ? Math.max(0, (prev.criticalAlerts || 0) - 1)
+                  : prev.criticalAlerts,
+            }
+          : prev
+      );
+      setPieChart((prev) => {
+        if (!prev?.datasets?.[0]) return prev;
+        const data = [...prev.datasets[0].data];
+        data[0] = (data[0] || 0) + 1;
+        if (alert?.type === 'critical') data[2] = Math.max(0, (data[2] || 0) - 1);
+        else data[1] = Math.max(0, (data[1] || 0) - 1);
+        return styleDoughnutChart({ labels: prev.labels, datasets: [{ data }] });
+      });
+    };
+
+    const onBulkResolved = () => {
+      setActiveAlerts([]);
+      loadDashboard();
+    };
+
+    const onDeleted = ({ alertId }) => {
+      setActiveAlerts((prev) => prev.filter((a) => a.id !== alertId));
+    };
+
+    socket.on('alert:new', onNewAlert);
+    socket.on('alert:resolved', onResolved);
+    socket.on('alert:bulk-resolved', onBulkResolved);
+    socket.on('alert:deleted', onDeleted);
+
+    return () => {
+      socket.off('alert:new', onNewAlert);
+      socket.off('alert:resolved', onResolved);
+      socket.off('alert:bulk-resolved', onBulkResolved);
+      socket.off('alert:deleted', onDeleted);
+    };
+  }, [socket, loadDashboard]);
+
+  const filteredMaintenance = useMemo(() => {
+    if (!searchTerm.trim()) return maintenanceTasks;
+    const q = searchTerm.toLowerCase();
+    return maintenanceTasks.filter(
+      (t) => t.task?.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q)
+    );
+  }, [maintenanceTasks, searchTerm]);
+
+  const maintPreview = filteredMaintenance.slice(0, 6);
+
+  const handleCreateTask = async (e) => {
+    e.preventDefault();
+    try {
+      const { data } = await api.post('/createTask', newTask);
+      setMaintenanceTasks((prev) => [data, ...prev]);
+      setIsModalOpen(false);
+      setNewTask({ task: '', date: '', description: '', priority: 3, status: 'pending' });
+      loadDashboard();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to create task');
     }
   };
-  // Fetch a task by ID
-const getMaintenanceById = async (id) => {
-  try {
-    const response = await axios.get(`https://${import.meta.env.VITE_BACKEND}/getTask/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching task by ID:", error);
-    throw error;
-  }
-};
 
-// Delete a task by ID
-const handleDelete = async (taskId) => {
-  try {
-    const confirmDelete = window.confirm("Are you sure you want to delete this task?");
-    if (!confirmDelete) return;
+  if (loading) return <LoadingBlock label="Loading operations dashboard…" />;
 
-    await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/deleteTask/${taskId}`);
-    
-    // Remove deleted task from UI
-    setFilteredMaintenance((prevTasks) => prevTasks.filter((task) => task._id !== taskId));
-    setMaintenanceTasks((prevTasks) => prevTasks.filter((task) => task._id !== taskId));
-
-    console.log("Task deleted successfully");
-  } catch (error) {
-    console.error("Error deleting task:", error);
-  }
-};
-
-const updateMaintenanceTask = async (taskId, updatedData, setMaintenanceTasks) => {
-  try {
-    const { data } = await axios.put(
-      `https://${import.meta.env.VITE_BACKEND}/api/updateTask/${taskId}`,
-      updatedData
-    );
-
-    console.log("Task updated:", data);
-
-    // Update state to reflect changes
-    setMaintenanceTasks((prevTasks) =>
-      prevTasks.map((task) => (task._id === taskId ? data.updatedTask : task))
-    );
-    
-    alert("Task updated successfully!");
-  } catch (error) {
-    console.error("Error updating task:", error);
-    alert("Failed to update task. Please try again.");
-  }
-};
-
-  // Handle Date Change
-  const handleDateChange = (date, type) => {
-    if (type === "start") setStartDate(date);
-    if (type === "end") setEndDate(date);
-
-    // Update charts with new random data
-    setLineChartData(generateRandomData());
-    setPieChartData(generateRandomData());
-    setBarChartData(generateRandomData());
-  };
   return (
-    <div className={`${isDarkMode ? "dark" : "light"} min-h-screen p-5 transition-all`}>
-  
-    <ToastContainer />
-    <div className="p-8 space-y-8">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-blue-500">
-          Dashboard
-        </h1>
-        <button
-          onClick={toggleDarkMode}
-          className={`px-6 py-2 rounded-full text-lg font-semibold transition-all transform hover:scale-105 ${
-            isDarkMode
-              ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              : 'bg-blue-600 text-white hover:bg-blue-500'
-          }`}
-        >
-          {isDarkMode ? 'Light Mode' : 'Dark Mode'}
-        </button>
-      </div>
+    <div className="page-wrap min-h-full">
+      <ToastContainer position="top-right" autoClose={4000} />
 
-      {/* Date Picker */}
-      <div className="flex space-x-4">
+      {/* Hero */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="dash-hero"
+      >
+        <div className="dash-hero-glow" />
+        <div className="dash-hero-glow-2" />
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-3 mb-3">
+              <span className={`dash-live-dot ${socketConnected ? '' : 'opacity-40'}`} />
+              <span className={`text-xs font-semibold uppercase tracking-widest ${socketConnected ? 'text-emerald-400' : 'text-slate-500'}`}>
+                {socketConnected ? 'Live · connected' : 'Live · reconnecting…'}
+              </span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
+              Operations Command Center
+            </h1>
+            <p className="text-slate-400 mt-2 max-w-xl text-sm md:text-base">
+              Real-time safety, productivity, and maintenance across all mine sites — powered by your database.
+            </p>
+            <div className="flex flex-wrap gap-2 mt-5">
+              <Link to="/alerts" className="dash-quick-link">
+                <FaBell /> Alerts
+              </Link>
+              <Link to="/emergency" className="dash-quick-link">
+                <FaExclamationTriangle /> Emergency
+              </Link>
+              <Link to="/shift-logs" className="dash-quick-link">
+                <FaClipboardList /> Shift logs
+              </Link>
+              <Link to="/coal-mines" className="dash-quick-link">
+                <FaHardHat /> Mines
+              </Link>
+              <Link to="/report-generation" className="dash-quick-link">
+                <FaFileAlt /> Reports
+              </Link>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 shrink-0">
+            <Button variant="secondary" onClick={loadDashboard} className="!bg-white/10 !text-white !border-white/20 hover:!bg-white/20">
+              <FaSyncAlt className={loading ? 'animate-spin' : ''} /> Refresh
+            </Button>
+            <Button onClick={() => setIsModalOpen(true)} className="shadow-lg shadow-amber-500/25">
+              <FaPlus /> New task
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+
+      {error && (
+        <div className="alert-banner-error mb-6 flex flex-wrap items-center justify-between gap-3">
+          <span>{error}</span>
+          <Button variant="secondary" onClick={loadDashboard}>Retry</Button>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="dash-filter-bar">
+        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Date range</span>
         <DatePicker
           selected={startDate}
-          onChange={(date) => setStartDate(date)}
+          onChange={setStartDate}
           selectsStart
           startDate={startDate}
           endDate={endDate}
-          className={`w-full max-w-xs border rounded-lg p-3 transition ${
-            isDarkMode
-              ? 'bg-gray-800 text-gray-300 border-gray-700'
-              : 'bg-white text-gray-900 border-gray-300'
-          }`}
+          className="input-field !w-auto !py-2 !text-sm"
         />
+        <span className="text-slate-400">→</span>
         <DatePicker
           selected={endDate}
-          onChange={(date) => setEndDate(date)}
+          onChange={setEndDate}
           selectsEnd
           startDate={startDate}
           endDate={endDate}
           minDate={startDate}
-          className={`w-full max-w-xs border rounded-lg p-3 transition ${
-            isDarkMode
-              ? 'bg-gray-800 text-gray-300 border-gray-700'
-              : 'bg-white text-gray-900 border-gray-300'
-          }`}
+          className="input-field !w-auto !py-2 !text-sm"
         />
-      </div>
-
-    {/* Ultra Enhanced Cards */}
-<div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 py-10">
-  {[
-    {
-      title: '📊 Weekly Productivity',
-      bg: 'from-teal-500 to-teal-800',
-      glow: 'shadow-teal-500/60',
-      chart: <Line data={lineChartData} />,
-    },
-    {
-      title: '🛡️ Safety Compliance',
-      bg: 'from-green-400 to-green-800',
-      glow: 'shadow-green-500/60',
-      chart: <Pie data={pieChartData} />,
-    },
-    {
-      title: '🏆 Department Performance',
-      bg: 'from-blue-500 to-blue-800',
-      glow: 'shadow-blue-500/60',
-      chart: <Bar data={barChartData} />,
-    },
-  ].map(({ title, bg, glow, chart }, index) => (
-    <motion.div
-      key={index}
-      className={`relative bg-gradient-to-br ${bg} p-8 rounded-3xl shadow-xl 
-      transition-all transform hover:scale-105 hover:-translate-y-3 
-      hover:${glow} backdrop-blur-xl bg-opacity-30 border border-white/20 
-      before:absolute before:-inset-1 before:bg-white/10 before:rounded-3xl before:blur-lg`}
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.2 }}
-    >
-      {/* Pulsating Border Glow */}
-      <div className="absolute inset-0 w-full h-full border-2 rounded-3xl border-transparent animate-pulse 
-        before:absolute before:w-full before:h-full before:rounded-3xl 
-        before:border before:border-opacity-40 before:animate-flicker 
-        before:border-white before:transition-opacity before:duration-700 before:ease-in-out"></div>
-
-      {/* Soft Glass Reflection */}
-      <div className="absolute inset-0 bg-white/10 rounded-3xl blur-lg opacity-20"></div>
-
-      {/* Floating Particles Background */}
-      {/* <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-5 left-10 w-2 h-2 bg-white rounded-full animate-blink"></div>
-        <div className="absolute bottom-5 right-10 w-3 h-3 bg-white rounded-full animate-blink delay-500"></div>
-        <div className="absolute top-10 right-16 w-1.5 h-1.5 bg-white rounded-full animate-blink delay-700"></div>
-      </div> */}
-
-      {/* Title */}
-      <h3 className="text-2xl font-bold text-white mb-4 drop-shadow-lg tracking-wider">
-        {title}
-      </h3>
-
-      {/* Chart */}
-      <div className="h-48">{chart}</div>
-    </motion.div>
-  ))}
-</div>
-
-
-
-
-        {/* Alerts Section */}
-      <motion.div
-       className="bg-gray-800 p-6 rounded-xl shadow-lg text-white"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-          <h2 className="font-bold text-lg mb-4 text-blue-400">⚠️ Alerts</h2>
-
-        <ul className="space-y-4">
-          {activeAlerts.map(alert => (
-            <motion.li
-              key={alert.id}
-              className={`p-4 rounded-lg shadow-md ${
-                alert.type === 'critical'
-                  ? "bg-red-600 text-white"
-            : "bg-yellow-500 text-gray-900"
-              }`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-            >
-              {alert.message}
-            </motion.li>
-          ))}
-        </ul>
-      </motion.div>
-        {/* Header & Add Location Button */}
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-semibold text-white">🗺️ Mine Locations & Hazard Zones</h3>
-        <button
-          onClick={() => setIsMapModalOpen(true)}
-          className="bg-blue-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-blue-600 transition duration-200"
-        >
-          ➕ Add Location
-        </button>
-      </div>
-
-      {/* Map Section */}
-      <div className="h-[400px] lg:h-96 rounded-lg overflow-hidden border border-gray-600 z-10">
-      {loading ? (
-        <p className="text-center text-white">Loading...</p>
-      ) : error ? (
-        <p className="text-red-400">{error}</p>
-      ) : (
-        <MapContainer center={[20.5937, 78.9629]} zoom={5} key={userLocation.toString()} className="h-full w-full">
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-
-          {/* User Location Marker */}
-          <Marker position={userLocation} icon={customIcon}>
-            <Popup>Your Location</Popup>
-          </Marker>
-
-          {/* Database Locations */}
-          {locations.map((loc, index) => (
-            <Marker key={index} position={[loc.coordinates.coordinates[1], loc.coordinates.coordinates[0]]} icon={customIcon}>
-              <Popup className="text-gray-800 font-semibold">{loc.name}</Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-      )}
-      </div>
-
-      {/* Modal for Adding Location */}
-      {isMapModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-md z-50">
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-96 text-white transform scale-105">
-            <h2 className="text-xl font-semibold mb-4">➕ Add New Location</h2>
-            <form onSubmit={handleSubmitloc} className="flex flex-col gap-4">
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Location Name"
-                className="p-3 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-              <input
-                type="number"
-                value={lat}
-                onChange={(e) => setLat(e.target.value)}
-                placeholder="Latitude"
-                className="p-3 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-              <input
-                type="number"
-                value={lng}
-                onChange={(e) => setLng(e.target.value)}
-                placeholder="Longitude"
-                className="p-3 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-              <button type="submit" className="w-full py-2 bg-blue-500 rounded-md hover:bg-blue-600 transition duration-200">
-                ✅ Add Location
-              </button>
-              <button
-                onClick={() => setIsMapModalOpen(false)}
-                className="w-full py-2 bg-gray-600 rounded-md hover:bg-gray-700 transition duration-200"
-              >
-                ❌ Cancel
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-{/* Maintenance Search */}
-<div className="mt-8">
-  <div className="flex flex-col md:flex-row justify-between items-center mb-4 space-y-4 md:space-y-0">
-  <input
-  type="text"
-  placeholder="Search tasks"
-  className="w-full max-w-md bg-gray-800 text-white border border-gray-600 rounded-lg p-3 shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300 ease-in-out"
-  value={searchTerm}
-  onChange={(e) => setSearchTerm(e.target.value)}
-/>
-
-    <button
-      onClick={() => {
-        const fetchMaintenanceTasks = async () => {
-          try {
-            const { data } = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getallTask`);
-
-            if (data && data.length) {
-              setMaintenanceTasks(data);
-              setFilteredMaintenance(data);
-            } else {
-              console.log('No tasks found');
-            }
-          } catch (error) {
-            console.error('Error fetching tasks:', error);
-          }
-        };
-        fetchMaintenanceTasks();
-      }}
-      className="ml-4 bg-blue-500 text-white rounded-lg py-2 px-6 shadow-md hover:bg-blue-600 transition duration-200 ease-in-out"
-    >
-      Get All Tasks
-    </button>
-    
-  </div>
-  {/* Button to Open Modal */}
-<button
-  onClick={() => setIsModalOpen(true)}
-  className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl py-3 px-8 shadow-lg hover:scale-105 transition-transform duration-300"
->
-  + Create Task
-</button>
-
-{/* Modal */}
-{isModalOpen && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center transition-opacity duration-300 ease-in-out z-50">
-    <div className="bg-gray-800/90 backdrop-blur-lg p-6 rounded-2xl shadow-xl w-96 text-white">
-      <h2 className="text-2xl font-bold mb-4">Create New Task</h2>
-      
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          name="task"
-          value={newTask.task}
-          onChange={(e) => setNewTask({ ...newTask, task: e.target.value })}
-          placeholder="Task Name"
-          required
-          className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 transition-all"
-        />
-        
-        <input
-          type="date"
-          name="date"
-          value={newTask.date}
-          onChange={(e) => setNewTask({ ...newTask, date: e.target.value })}
-          required
-          className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 transition-all"
-        />
-        
-        <textarea
-          name="description"
-          value={newTask.description}
-          onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-          placeholder="Description"
-          className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 transition-all resize-none"
-        />
-        
-        <select
-          name="priority"
-          value={newTask.priority}
-          onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
-          className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 transition-all"
-        >
-          <option value={1}>Low Priority</option>
-          <option value={2}>Medium Priority</option>
-          <option value={3}>High Priority</option>
-        </select>
-
-        {/* Submit Button */}
-        <button
-          type="submit"
-          className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl py-3 shadow-lg hover:scale-105 transition-transform duration-300"
-        >
-          ✅ Create Task
-        </button>
-      </form>
-
-      {/* Close Button */}
-      <button
-        onClick={() => setIsModalOpen(false)}
-        className="block mx-auto mt-4 text-gray-400 hover:text-white transition"
-      >
-        ❌ Close
-      </button>
-    </div>
-  </div>
-)}
-
- {/* Task List */}
- <ul className="space-y-5 pt-3">
-  {filteredMaintenance.map((task) => (
-    <motion.li
-      key={task._id}
-      className="relative flex items-center justify-between p-6 rounded-xl border border-gray-500/20 
-      backdrop-blur-2xl bg-gray-900/50 shadow-lg hover:shadow-2xl transition-all 
-      transform hover:-translate-y-1 hover:scale-105 group overflow-hidden ring-1 ring-gray-700/50"
-      whileHover={{ scale: 1.05 }}
-    >
-      {/* Left Section - Task Details with Icon */}
-      <div className="flex items-center gap-4">
-        {/* Task Icon */}
-        <div
-          className={`w-12 h-12 flex items-center justify-center rounded-lg text-lg font-bold shadow-md 
-          ${
-            task.priority === 3
-              ? 'bg-red-500/20 text-red-400 border border-red-500/50'
-              : task.priority === 2
-              ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
-              : 'bg-green-500/20 text-green-400 border border-green-500/50'
-          }`}
-        >
-          
-          {task.priority === 3 ? '🚨' : task.priority === 2 ? '⚠️' : '✅'}
-        </div>
-        
-{/* Edit & Delete Icons */}
-<div className="absolute top-3 right-3 z-50 flex gap-3 cursor-pointer pointer-events-auto">
-<span
-  onClick={() => setEditingTask(task)}
-  className="text-gray-400 hover:text-blue-500 text-xl transition-transform transform hover:scale-110"
-  title="Edit Task"
->
-  ✏️
-</span>
-
-          <span
-            onClick={() => handleDelete(task._id)}
-            className="text-gray-400 hover:text-red-500 text-xl transition-transform transform hover:scale-110"
-            title="Delete Task"
-          >
-            🗑️
+        {stats && (
+          <span className="ml-auto text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">
+            {stats.openAlerts} open alerts · {stats.maintenanceOpen} active work orders
           </span>
-        </div>
+        )}
+      </div>
 
-        <div className="flex flex-col">
-          <h2 className="text-xl font-semibold text-white tracking-wide">{task.task}</h2>
-          <p className="text-gray-400 text-sm">📅 {new Date(task.date).toLocaleDateString()}</p>
-          <p className="text-gray-500 text-sm">{task.description}</p>
-
-          {/* Task Progress Bar */}
-          <div className="w-full bg-gray-700/50 h-2 mt-2 rounded-full overflow-hidden">
-            <div
-              className={`h-full transition-all duration-300 ${
-                task.priority === 3
-                  ? 'bg-red-500 w-5/6'
-                  : task.priority === 2
-                  ? 'bg-yellow-400 w-2/3'
-                  : 'bg-green-400 w-1/3'
-              }`}
-            ></div>
+      <motion.div initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }}>
+        {/* KPIs */}
+        {stats && (
+          <div className="dash-kpi-grid">
+            {[
+              { variant: 'slate', label: 'Active mines', value: stats.activeMines, icon: <FaIndustry className="text-slate-600" /> },
+              { variant: 'blue', label: 'Personnel', value: stats.totalWorkers, icon: <FaUsers className="text-blue-600" /> },
+              { variant: 'amber', label: 'Open alerts', value: stats.openAlerts, icon: <FaExclamationTriangle className="text-amber-600" />, sub: 'Unresolved' },
+              { variant: 'red', label: 'Critical', value: stats.criticalAlerts, icon: <FaShieldAlt className="text-red-600" />, sub: 'Needs action' },
+              { variant: 'violet', label: 'Maintenance', value: stats.maintenanceOpen, icon: <FaTools className="text-violet-600" /> },
+              { variant: 'emerald', label: 'Productivity', value: `${stats.avgProductivity}%`, icon: <FaChartLine className="text-emerald-600" />, sub: '7-day avg' },
+            ].map((kpi, i) => (
+              <KpiCard key={kpi.label} {...kpi} index={i} />
+            ))}
           </div>
+        )}
+
+        {/* Charts bento */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-6">
+          <Panel
+            className="xl:col-span-8"
+            title="Productivity trend"
+            icon={<FaChartLine className="text-amber-500" />}
+            action={<span className="text-xs text-slate-500">Last 7 periods</span>}
+          >
+            <div className="h-[300px]">
+              {lineChart && <Line data={lineChart} options={lineOptions} />}
+            </div>
+          </Panel>
+
+          <Panel
+            className="xl:col-span-4"
+            title="Alert breakdown"
+            icon={<FaExclamationTriangle className="text-amber-500" />}
+          >
+            <div className="h-[300px] flex items-center justify-center">
+              {pieChart && <Doughnut data={pieChart} options={doughnutOptions} />}
+            </div>
+          </Panel>
         </div>
-      </div>
 
-      {/* Priority Badge */}
-      <span
-        className={`px-3 py-1 text-xs font-semibold rounded-lg bg-opacity-25 backdrop-blur-md 
-        ${
-          task.priority === 3
-            ? 'bg-red-500/20 text-red-400 border border-red-500/50'
-            : task.priority === 2
-            ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
-            : 'bg-green-500/20 text-green-400 border border-green-500/50'
-        }`}
-      >
-        {task.priority === 3 ? '🔥 High' : task.priority === 2 ? '⚠️ Medium' : '✅ Low'}
-      </span>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <Panel title="Resource utilization" icon={<FaIndustry className="text-blue-500" />}>
+            <div className="h-[260px]">
+              {barChart && <Bar data={barChart} options={barOptions} />}
+            </div>
+          </Panel>
 
-      {/* Animated Glow Border */}
-      <div className="absolute inset-0 w-full h-full border-2 border-transparent rounded-xl 
-        group-hover:border-white/20 transition-all duration-300"></div>
-      
-      {/* Subtle Floating Neon Particles */}
-      <div className="absolute -top-2 -left-2 w-2 h-2 bg-white/40 rounded-full animate-blink"></div>
-      <div className="absolute bottom-2 right-2 w-3 h-3 bg-white/40 rounded-full animate-blink delay-500"></div>
-    </motion.li>
-  ))}
-</ul>
-{/* Edit Task Modal */}
-{editingTask && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-    <div className="bg-gray-900 p-6 rounded-xl shadow-lg w-96 max-w-lg relative">
-      <h2 className="text-2xl font-semibold text-white mb-4">Edit Task</h2>
-      
-      {/* Task Name */}
-      <label className="text-gray-400 text-sm">Task Name</label>
-      <input
-        type="text"
-        className="w-full p-2 mt-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-blue-500 focus:outline-none"
-        value={editingTask.task}
-        onChange={(e) => setEditingTask({ ...editingTask, task: e.target.value })}
-      />
-      
-      {/* Description */}
-      <label className="text-gray-400 text-sm mt-3 block">Description</label>
-      <textarea
-        className="w-full p-2 mt-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-blue-500 focus:outline-none"
-        value={editingTask.description}
-        onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
-      ></textarea>
-      
-      {/* Due Date */}
-      <label className="text-gray-400 text-sm mt-3 block">Due Date</label>
-      <input
-        type="date"
-        className="w-full p-2 mt-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-blue-500 focus:outline-none"
-        value={editingTask.dueDate}
-        onChange={(e) => setEditingTask({ ...editingTask, dueDate: e.target.value })}
-      />
-      
-      {/* Priority */}
-      <label className="text-gray-400 text-sm mt-3 block">Priority</label>
-      <select
-        className="w-full p-2 mt-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-blue-500 focus:outline-none"
-        value={editingTask.priority}
-        onChange={(e) => setEditingTask({ ...editingTask, priority: e.target.value })}
-      >
-        <option value="1">✅ Low</option>
-        <option value="2">⚠️ Medium</option>
-        <option value="3">🚨 High</option>
-      </select>
-      
-      {/* Status */}
-      <label className="text-gray-400 text-sm mt-3 block">Status</label>
-      <select
-        className="w-full p-2 mt-1 rounded bg-gray-800 text-white border border-gray-600 focus:border-blue-500 focus:outline-none"
-        value={editingTask.status}
-        onChange={(e) => setEditingTask({ ...editingTask, status: e.target.value })}
-      >
-        <option value="Pending">⏳ Pending</option>
-        <option value="In Progress">⚙️ In Progress</option>
-        <option value="Completed">✅ Completed</option>
-      </select>
-      
-      {/* Action Buttons */}
-      <div className="flex justify-end gap-2 mt-6">
-        <button
-          onClick={() => setEditingTask(null)}
-          className="px-4 py-2 bg-gray-600 rounded text-white hover:bg-gray-500 transition"
-        >Cancel</button>
-        <button
-          onClick={() => {
-            if (editingTask) {
-              updateMaintenanceTask(editingTask._id, editingTask, setMaintenanceTasks);
-              setEditingTask(null); // Close modal after saving
+          <Panel
+            title="Live alert feed"
+            icon={<FaBell className="text-red-500" />}
+            action={
+              <Link to="/alerts" className="text-xs font-semibold text-amber-600 hover:text-amber-500 flex items-center gap-1">
+                View all <FaArrowRight className="text-[10px]" />
+              </Link>
             }
-          }}
-          className="px-4 py-2 bg-blue-500 rounded text-white hover:bg-blue-600 transition"
-        >Save</button>
-      </div>
+          >
+            {activeAlerts.length === 0 ? (
+              <EmptyState title="All clear" message="No open alerts right now." />
+            ) : (
+              <ul className="dash-alert-feed">
+                {activeAlerts.map((alert) => (
+                  <li
+                    key={alert.id}
+                    className={
+                      alert.type === 'critical' ? 'dash-alert-item--critical' : 'dash-alert-item--warning'
+                    }
+                  >
+                    <div
+                      className={`mt-0.5 h-8 w-8 shrink-0 rounded-lg flex items-center justify-center ${
+                        alert.type === 'critical' ? 'bg-red-500/20 text-red-600' : 'bg-amber-500/20 text-amber-600'
+                      }`}
+                    >
+                      <FaExclamationTriangle className="text-sm" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-slate-800 dark:text-slate-100 font-medium leading-snug line-clamp-2">
+                        {alert.message}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">{timeAgo(alert.timestamp)}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
+        </div>
+
+        {/* Map */}
+        <Panel
+          className="mb-6"
+          title="Mine map"
+          icon={<FaMapMarkedAlt className="text-emerald-500" />}
+          action={
+            <Link to="/coal-mines" className="text-xs font-semibold text-amber-600 hover:underline">
+              Manage sites
+            </Link>
+          }
+        >
+          <div className="h-[340px] rounded-xl overflow-hidden ring-1 ring-slate-200/80 dark:ring-slate-700">
+            {locations.length > 0 ? (
+              <MapContainer center={[22.5, 82]} zoom={5} className="h-full w-full z-0">
+                <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+                {locations.map((loc) => (
+                  <Marker
+                    key={loc._id}
+                    position={[loc.coordinates.coordinates[1], loc.coordinates.coordinates[0]]}
+                    icon={mapIcon}
+                  >
+                    <Popup>
+                      <strong>{loc.name}</strong>
+                    </Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 text-sm">
+                No locations — run <code className="text-amber-600">npm run seed:large</code>
+              </div>
+            )}
+          </div>
+        </Panel>
+
+        {/* Maintenance */}
+        <Panel
+          title="Maintenance queue"
+          icon={<FaTools className="text-violet-500" />}
+          action={
+            <div className="flex gap-2 items-center">
+              <input
+                className="input-field !py-1.5 !text-xs !w-36"
+                placeholder="Search…"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <span className="text-xs text-slate-500">{filteredMaintenance.length} total</span>
+            </div>
+          }
+        >
+          {maintPreview.length === 0 ? (
+            <EmptyState title="No tasks" message="Create a work order or seed the database." />
+          ) : (
+            <div className="space-y-2">
+              {maintPreview.map((task) => {
+                const pct =
+                  task.status === 'completed' ? 100 : task.status === 'in-progress' ? 55 : task.status === 'overdue' ? 90 : 15;
+                return (
+                  <div key={task._id} className="dash-maint-card">
+                    <div
+                      className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 text-lg ${
+                        task.priority === 3
+                          ? 'bg-red-100 text-red-600 dark:bg-red-900/30'
+                          : task.priority === 2
+                          ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30'
+                          : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30'
+                      }`}
+                    >
+                      {task.priority === 3 ? '!' : task.priority === 2 ? '◆' : '✓'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-800 dark:text-white truncate">{task.task}</p>
+                      <p className="text-xs text-slate-500 truncate">{task.description}</p>
+                      <div className="mt-2 h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            task.status === 'completed'
+                              ? 'bg-emerald-500'
+                              : task.status === 'overdue'
+                              ? 'bg-red-500'
+                              : 'bg-amber-500'
+                          }`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="badge-warning text-[10px]">{task.status}</span>
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '—'}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+              {filteredMaintenance.length > 6 && (
+                <p className="text-center text-xs text-slate-500 pt-2">
+                  +{filteredMaintenance.length - 6} more tasks in database
+                </p>
+              )}
+            </div>
+          )}
+        </Panel>
+      </motion.div>
+
+      <Modal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="New maintenance task"
+        footer={
+          <>
+            <Button variant="secondary" type="button" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button type="submit" form="dash-task-form">Create task</Button>
+          </>
+        }
+      >
+        <form id="dash-task-form" onSubmit={handleCreateTask} className="space-y-4">
+          <input className="input-field" placeholder="Task name" value={newTask.task} onChange={(e) => setNewTask({ ...newTask, task: e.target.value })} required />
+          <input type="date" className="input-field" value={newTask.date} onChange={(e) => setNewTask({ ...newTask, date: e.target.value })} required />
+          <textarea className="input-field" rows={3} placeholder="Description" value={newTask.description} onChange={(e) => setNewTask({ ...newTask, description: e.target.value })} />
+          <select className="input-field" value={newTask.priority} onChange={(e) => setNewTask({ ...newTask, priority: Number(e.target.value) })}>
+            <option value={1}>Low priority</option>
+            <option value={2}>Medium priority</option>
+            <option value={3}>High priority</option>
+          </select>
+        </form>
+      </Modal>
     </div>
-  </div>
-)}
-
-
-</div>
-
-
-
-</div>
-  <Chatbot/>
-      </div>
-   
   );
 };
 

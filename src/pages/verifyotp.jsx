@@ -1,7 +1,6 @@
+import api from '../services/axios';
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-
 const VerifyOTP = () => {
   const [otp, setOtp] = useState("");
   const [message, setMessage] = useState("");
@@ -17,7 +16,7 @@ const VerifyOTP = () => {
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/auth/verify-otp`, {
+      const response = await api.post(`/auth/verify-otp`, {
         email: email,
         otp: otp,
       });

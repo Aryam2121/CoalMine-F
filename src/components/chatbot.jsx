@@ -1,379 +1,239 @@
-// import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Send, Bot, Sparkles, Trash2, WifiOff, Cpu } from 'lucide-react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import api from '../services/axios';
+import { getClientOfflineReply } from '../utils/mineSafetyKnowledge';
+import PageShell from './ui/PageShell';
+import Button from './ui/Button';
 
-// import axios from "axios";
-// import { motion } from "framer-motion";
-
-
-// const getChatResponse = async (message, language) => {
-//   try {
-  
-//     const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`;
-
-//     // Payload for Gemini API
-//     const payload = {
-//       contents: [{
-//         parts: [{ text: message }],
-//       }],
-//     };
-
-//     // Call the Gemini API
-//     const response = await axios.post(GEMINI_API_URL, payload, {
-//       headers: {
-//         'Content-Type': 'application/json',
-//       },
-//     });
-
-//     // Parse response and get the text from the first candidate
-//     const botReply = response.data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, no reply from Gemini';
-//     return botReply;
-//   } catch (error) {
-//     console.error('Error with Gemini API:', error.response?.data || error.message);
-//     return 'Sorry, something went wrong!';
-//   }
-// };
-// const Chatbot = () => {
-//   const [message, setMessage] = useState("");
-//   const [language, setLanguage] = useState("en");
-//   const [conversation, setConversation] = useState([]);
-//   const [loading, setLoading] = useState(false);
-//   const [isOpen, setIsOpen] = useState(false); // State to handle popup visibility
-
- 
-//   const handleSendMessage = async () => {
-//     if (!message) return;
-
-//     setLoading(true);
-//     setConversation([...conversation, { sender: "user", text: message }]);
-
-//     try {
-//       // Get the bot's response from Gemini API
-//       const reply = await getChatResponse(message, language);
-
-//       // Add the bot's response to the conversation
-//       setConversation((prev) => [
-//         ...prev,
-//         { sender: "user", text: message },
-//         { sender: "bot", text: reply },
-//       ]);
-//     } catch (error) {
-//       console.error("Error sending message:", error);
-//       setConversation((prev) => [
-//         ...prev,
-//         { sender: "user", text: message },
-//         { sender: "bot", text: "Sorry, I couldn't understand that." },
-//       ]);
-//     }
-
-//     setMessage("");
-//     setLoading(false);
-//   };
-//   const togglePopup = () => {
-//     setIsOpen(!isOpen);
-//   };
-
-//   return (
-//     <div className="relative">
-//     {/* Chatbot Button */}
-//     {!isOpen && (
-//       <button
-//         onClick={togglePopup}
-//         className="fixed bottom-6 right-6 bg-gradient-to-r from-indigo-500 to-blue-500 p-4 rounded-full shadow-lg hover:scale-110 hover:shadow-2xl transition-all duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-indigo-500"
-//       >
-//         <img
-//           src="/path/to/chatbot-logo.png"  // Update with your actual logo path
-//           alt="Chatbot Logo"
-//           className="w-8 h-8 object-cover transition-all duration-300 transform hover:rotate-45"  // Added rotation effect on hover
-//         />
-//       </button>
-//     )}
-  
-//     {/* Chatbot Popup */}
-//     {isOpen && (
-//       <motion.div
-//         className="fixed bottom-6 right-6 w-full max-w-md bg-white p-6 rounded-lg shadow-xl border border-gray-200 z-50"
-//         initial={{ opacity: 0, y: 100 }}
-//         animate={{ opacity: 1, y: 0 }}
-//         exit={{ opacity: 0, y: 100 }}
-//         transition={{ duration: 0.5, ease: "easeOut" }}
-//       >
-//         <div className="flex justify-between items-center mb-6">
-//           <h1 className="text-2xl font-semibold text-indigo-600">Multilingual Chatbot</h1>
-//           <button
-//             onClick={togglePopup}
-//             className="text-gray-500 hover:text-gray-700 text-2xl font-bold transition-all duration-200 focus:outline-none"
-//           >
-//             &times;
-//           </button>
-//         </div>
-  
-//         {/* Language Dropdown */}
-//         <div className="mb-6">
-//           <label htmlFor="language" className="block text-lg font-medium text-gray-700 mb-2">
-//             Choose Language
-//           </label>
-//           <select
-//             id="language"
-//             value={language}
-//             onChange={(e) => setLanguage(e.target.value)}
-//             className="w-full p-3 border rounded-lg bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
-//           >
-//             <option value="en">English</option>
-//             <option value="es">Spanish</option>
-//             <option value="fr">French</option>
-//             <option value="de">German</option>
-//             <option value="it">Italian</option>
-//             <option value="hi">Hindi</option>
-//             {/* Add more languages as needed */}
-//           </select>
-//         </div>
-  
-//         {/* Conversation Area */}
-//         <div className="h-72 overflow-y-auto mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
-//           {conversation.map((msg, index) => (
-//             <motion.div
-//               key={index}
-//               initial={{ opacity: 0 }}
-//               animate={{ opacity: 1 }}
-//               transition={{ duration: 0.5, ease: "easeOut" }}
-//               className={`mb-3 ${msg.sender === "user" ? "text-right" : "text-left"}`}
-//             >
-//               <div
-//                 className={`inline-block px-4 py-2 rounded-lg transition-all duration-300 transform ${
-//                   msg.sender === "user"
-//                     ? "bg-indigo-600 text-white shadow-lg scale-105"
-//                     : "bg-gradient-to-r from-gray-300 to-gray-100 text-gray-800 shadow-sm scale-100"
-//                 }`}
-//               >
-//                 {msg.text}
-//               </div>
-//             </motion.div>
-//           ))}
-//           {loading && (
-//             <motion.div
-//               className="text-left mb-3 text-gray-600"
-//               initial={{ opacity: 0 }}
-//               animate={{ opacity: 1 }}
-//               transition={{ duration: 0.5, ease: "easeOut" }}
-//             >
-//               <div className="inline-block px-4 py-2 bg-gray-300 text-gray-600 rounded-lg">
-//                 Typing...
-//               </div>
-//             </motion.div>
-//           )}
-//         </div>
-  
-//         {/* Message Input and Send Button */}
-//         <div className="flex items-center space-x-4">
-//           <div className="relative w-full">
-//             <input
-//               type="text"
-//               value={message}
-//               onChange={(e) => setMessage(e.target.value)}
-//               className="w-full p-3 border rounded-lg bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 focus:border-indigo-500"
-//               placeholder="Type your message..."
-//             />
-//             {message && (
-//               <button
-//                 onClick={() => setMessage('')}
-//                 className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
-//               >
-//                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-//                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-//                 </svg>
-//               </button>
-//             )}
-//           </div>
-//           <button
-//             onClick={handleSendMessage}
-//             disabled={loading}
-//             className="p-3 bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-lg disabled:bg-gray-400 hover:scale-110 hover:shadow-xl transition-all duration-200"
-//           >
-//             {loading ? "Sending..." : "Send"}
-//           </button>
-//         </div>
-//       </motion.div>
-//     )}
-//   </div>
-  
-
-
-//   );
-// };
-
-// export default Chatbot;
-import React, { useState } from "react";
-import axios from "axios";
-import { motion } from "framer-motion";
-import { Send, X, MessageCircle } from "lucide-react";
-
-const getChatResponse = async (message, language) => {
-  try {
-    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`;
-
-    const payload = {
-      contents: [{ parts: [{ text: message }] }],
-    };
-
-    const response = await axios.post(GEMINI_API_URL, payload, {
-      headers: { "Content-Type": "application/json" },
-    });
-
-    const botReply =
-      response.data.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "Sorry, no reply from Gemini";
-    return botReply;
-  } catch (error) {
-    console.error("Error with Gemini API:", error.response?.data || error.message);
-    return "Sorry, something went wrong!";
-  }
-};
+const SUGGESTED_PROMPTS = [
+  'What should I check during shift handover?',
+  'Explain gas detection procedures underground',
+  'How do I report a safety incident?',
+  'List PPE requirements for coal face workers',
+];
 
 const Chatbot = () => {
-  const [message, setMessage] = useState("");
-  const [language, setLanguage] = useState("en");
+  const [message, setMessage] = useState('');
+  const [language, setLanguage] = useState('en');
   const [conversation, setConversation] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
+  const [mode, setMode] = useState('offline'); // online | offline | error
+  const [statusHint, setStatusHint] = useState('');
+  const lastHintRef = useRef('');
+  const scrollRef = useRef(null);
 
-  const handleSendMessage = async () => {
-    if (!message) return;
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [conversation, loading]);
 
+  const sendText = async (text) => {
+    const userText = (text || message).trim();
+    if (!userText) return;
+    setMessage('');
     setLoading(true);
-    setConversation([...conversation, { sender: "user", text: message }]);
-
+    setConversation((prev) => [...prev, { sender: 'user', text: userText }]);
     try {
-      const reply = await getChatResponse(message, language);
+      const { data } = await api.post('/chat', {
+        message: userText,
+        language,
+      });
+      const reply = data.reply || 'No response received.';
+      const isOffline = Boolean(data.offline);
+      setMode(isOffline ? 'offline' : 'online');
+      if (!isOffline) lastHintRef.current = '';
+      setStatusHint(
+        isOffline
+          ? data.hint ||
+              (data.reason === 'quota_exceeded'
+                ? 'Gemini free-tier limit reached. Built-in answers are shown until quota resets.'
+                : '')
+          : ''
+      );
       setConversation((prev) => [
         ...prev,
-        { sender: "user", text: message },
-        { sender: "bot", text: reply },
+        {
+          sender: 'bot',
+          text: reply,
+          offline: isOffline,
+        },
       ]);
-    } catch (error) {
+      if (data.hint && isOffline && data.hint !== lastHintRef.current) {
+        lastHintRef.current = data.hint;
+        toast.info(data.hint, { autoClose: 8000, toastId: 'gemini-status' });
+      }
+    } catch (err) {
+      console.error('Chat API:', err);
+      setMode('error');
+      const fallback = getClientOfflineReply(userText);
       setConversation((prev) => [
         ...prev,
-        { sender: "user", text: message },
-        { sender: "bot", text: "Sorry, I couldn't understand that." },
+        {
+          sender: 'bot',
+          text: `**Could not reach the server.**\n\n${fallback}\n\nEnsure the backend is running (\`npm run dev\` in CoalMine-B).`,
+          offline: true,
+        },
       ]);
+      toast.error('Chat server unavailable — showing basic help only');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    setMessage("");
-    setLoading(false);
+  const clearChat = () => {
+    setConversation([]);
+    setMode('offline');
+    setStatusHint('');
+    toast.info('Conversation cleared');
   };
 
   return (
-    <div className="relative">
-      {/* Chatbot Toggle Button */}
-      {!isOpen && (
-        <motion.button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 bg-gradient-to-r from-indigo-600 to-blue-600 p-4 rounded-full shadow-lg hover:scale-110 transition-all"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+    <PageShell
+      title="AI assistant"
+      subtitle="Mine safety, compliance, and operations guidance"
+      variant="dark"
+    >
+      <ToastContainer position="top-right" autoClose={4000} />
+
+      <div className="max-w-3xl mx-auto space-y-4">
+        <div
+          className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm ${
+            mode === 'online'
+              ? 'border-emerald-500/30 bg-emerald-950/30 text-emerald-200'
+              : 'border-amber-500/30 bg-amber-950/30 text-amber-200'
+          }`}
         >
-          <MessageCircle className="w-8 h-8 text-white" />
-        </motion.button>
-      )}
+          {mode === 'online' ? (
+            <>
+              <Cpu className="w-4 h-4 shrink-0" />
+              <span>Connected to Google Gemini.</span>
+            </>
+          ) : (
+            <>
+              <WifiOff className="w-4 h-4 shrink-0" />
+              <span>
+                {statusHint ||
+                  'Using built-in safety knowledge. Set GEMINI_API_KEY in CoalMine-B/.env (Google AI Studio — AIza or AQ. key) and restart the backend.'}
+              </span>
+            </>
+          )}
+        </div>
 
-      {/* Chat Popup */}
-      {isOpen && (
-        <motion.div
-          className="fixed bottom-6 right-6 w-full max-w-md bg-gray-900 text-gray-100 p-6 rounded-lg shadow-xl border border-gray-700 z-50"
-          initial={{ opacity: 0, y: 100 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 100 }}
-          transition={{ duration: 0.4 }}
-        >
-          <div className="flex justify-between items-center mb-4">
-            <h1 className="text-xl font-bold text-blue-400">AI Chatbot</h1>
-            <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-200">
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-
-          {/* Language Selection */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-400">Choose Language</label>
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="w-full mt-1 p-2 rounded bg-gray-800 border border-gray-600 text-gray-300 focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="en">English</option>
-              <option value="es">Spanish</option>
-              <option value="fr">French</option>
-              <option value="de">German</option>
-              <option value="it">Italian</option>
-              <option value="hi">Hindi</option>
-            </select>
-          </div>
-
-          {/* Chat Messages */}
-          <div className="h-64 overflow-y-auto p-4 bg-gray-800 rounded-lg">
-            {conversation.map((msg, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-                className={`mb-3 ${
-                  msg.sender === "user" ? "text-right" : "text-left"
-                }`}
-              >
-                <div
-                  className={`inline-block px-4 py-2 rounded-lg shadow-md ${
-                    msg.sender === "user"
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-700 text-gray-300"
-                  }`}
+        <div className="ops-panel">
+          <div className="ops-panel-body">
+            <div className="flex flex-col min-h-[480px]">
+              <div className="flex flex-wrap gap-2 mb-4 items-center justify-between">
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  className="input-field !w-auto !py-1.5 !text-sm"
+                  disabled={loading}
                 >
-                  {msg.text}
-                </div>
-              </motion.div>
-            ))}
-            {loading && (
-              <motion.div
-                className="text-left mb-3 text-gray-400"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5 }}
-              >
-                <div className="inline-block px-4 py-2 bg-gray-600 text-gray-300 rounded-lg">
-                  Typing...
-                </div>
-              </motion.div>
-            )}
-          </div>
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="hi">Hindi</option>
+                </select>
+                {conversation.length > 0 && (
+                  <button type="button" onClick={clearChat} className="btn-ghost !text-xs text-slate-400">
+                    <Trash2 className="w-3 h-3 inline" /> Clear chat
+                  </button>
+                )}
+              </div>
 
-          {/* Message Input */}
-          <div className="flex items-center mt-4 space-x-3">
-            <div className="relative w-full">
-              <input
-                type="text"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-gray-300 focus:ring-2 focus:ring-blue-500"
-                placeholder="Type your message..."
-              />
-              {message && (
-                <button
-                  onClick={() => setMessage("")}
-                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-200"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+              {conversation.length === 0 && (
+                <div className="mb-4">
+                  <p className="text-xs text-slate-500 mb-2 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> Try asking:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {SUGGESTED_PROMPTS.map((prompt) => (
+                      <button
+                        key={prompt}
+                        type="button"
+                        onClick={() => sendText(prompt)}
+                        disabled={loading}
+                        className="text-left text-xs px-3 py-2 rounded-xl border border-slate-700 text-slate-300 hover:border-amber-500/40 hover:bg-amber-500/5 transition disabled:opacity-50"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
+
+              <div className="flex-1 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900/60 p-4 space-y-4 min-h-[320px] max-h-[50vh]">
+                {conversation.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="w-14 h-14 rounded-2xl bg-amber-500/15 flex items-center justify-center mb-3">
+                      <Bot className="w-7 h-7 text-amber-400" />
+                    </div>
+                    <p className="text-slate-400 text-sm max-w-sm">
+                      Ask about shift handover, gas safety, incidents, PPE, or emergencies — works even without an API key.
+                    </p>
+                  </div>
+                )}
+                {conversation.map((msg, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`flex gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    {msg.sender === 'bot' && (
+                      <div
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                          msg.offline ? 'bg-amber-500/20' : 'bg-violet-500/20'
+                        }`}
+                      >
+                        <Bot className={`w-4 h-4 ${msg.offline ? 'text-amber-300' : 'text-violet-300'}`} />
+                      </div>
+                    )}
+                    <div
+                      className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap ${
+                        msg.sender === 'user'
+                          ? 'bg-amber-500 text-mine-950 rounded-br-md'
+                          : msg.offline
+                            ? 'bg-slate-800/90 text-slate-200 border border-amber-500/30 rounded-bl-md'
+                            : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-bl-md'
+                      }`}
+                    >
+                      {msg.text.replace(/\*\*/g, '')}
+                    </div>
+                  </motion.div>
+                ))}
+                {loading && (
+                  <div className="flex gap-2 items-center text-slate-500 text-sm">
+                    <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                      <Bot className="w-4 h-4 animate-pulse" />
+                    </div>
+                    <span className="animate-pulse">Thinking…</span>
+                  </div>
+                )}
+                <div ref={scrollRef} />
+              </div>
+
+              <div className="flex gap-2 mt-4">
+                <input
+                  type="text"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendText()}
+                  className="input-field flex-1"
+                  placeholder="Ask a safety question…"
+                  disabled={loading}
+                />
+                <Button onClick={() => sendText()} disabled={loading || !message.trim()}>
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
-            <button
-              onClick={handleSendMessage}
-              disabled={loading}
-              className="p-3 bg-blue-600 text-white rounded-lg hover:scale-105 transition-all disabled:bg-gray-500"
-            >
-              <Send className="w-5 h-5" />
-            </button>
           </div>
-        </motion.div>
-      )}
-    </div>
+        </div>
+      </div>
+    </PageShell>
   );
 };
 

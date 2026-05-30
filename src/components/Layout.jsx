@@ -1,77 +1,34 @@
-// import React, { useState } from 'react';
-// import Sidebar from './Sidebar';
-// import Navbar from './Navbar';
-
-// const Layout = ({ children }) => {
-//   const [activePage, setActivePage] = useState('Dashboard');  // Default active page
-
-//   return (
-//     <div className="flex h-screen bg-[#F4F6FA]">
-//       {/* Sidebar */}
-//       <div className="w-64 shadow-lg bg-[#0F1E33] rounded-full fixed h-full top-0 left-0 z-10">
-//         <Sidebar setActivePage={setActivePage} />  {/* Pass setActivePage to Sidebar */}
-//       </div>
-
-//       {/* Main Content */}
-//       <div className="flex-1 flex flex-col ml-64">
-//         {/* Navbar */}
-//         <div className="shadow-lg bg-white rounded-full fixed w-full top-0 left-64 z-10">
-//           <Navbar activePage={activePage} />  {/* Pass activePage to Navbar */}
-//         </div>
-
-//         {/* Page Content */}
-//         <div className="flex-1  pt-4 bg-white mt-16 rounded-br-3xl shadow-md">
-//           {children}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default Layout;
-import React, { useState, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import { useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
-
+import { AuthContext } from '../context/AuthContext';
 const Layout = ({ children }) => {
   const [activePage, setActivePage] = useState('Dashboard');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated } = useContext(AuthContext);
   const location = useLocation();
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    setIsAuthenticated(!!token);
-  }, [location]);
+  const hideLayout = ['/login', '/signup'].includes(location.pathname);
 
-  const hideLayout = ["/login", "/signup"].includes(location.pathname);
+  if (!isAuthenticated || hideLayout) {
+    return <div className="app-shell-bg min-h-screen">{children}</div>;
+  }
 
   return (
-    <div className="flex h-screen bg-[#F4F6FA]" >
-      
-      {/* Navbar (Full Width, Fixed at Top) */}
-      {isAuthenticated && !hideLayout && (
-        <div className=" bg-white fixed w-full top-0 left-0 z-50">
-          <Navbar activePage={activePage} />
+    <div className="app-shell-bg flex h-screen overflow-hidden">
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 shadow-lg">
+        <Navbar activePage={activePage} />
+      </header>
+
+      <aside className="fixed left-0 top-16 z-40 hidden h-[calc(100vh-4rem)] w-64 md:block overflow-hidden">
+        <Sidebar setActivePage={setActivePage} activePage={activePage} />
+      </aside>
+
+      <main className="ml-0 md:ml-64 mt-16 flex-1 h-[calc(100vh-4rem)] overflow-y-auto overflow-x-hidden scrollbar-hidden p-3 md:p-5">
+        <div className="main-panel !overflow-visible">
+          {children}
         </div>
-      )}
-
-      <div className="flex w-full">
-        {/* Sidebar (Shifted Down Below Navbar) */}
-        {isAuthenticated && !hideLayout && (
-          <div className="w-64 shadow-lg bg-[#0F1E33] h-screen  fixed flex flex-col mt-16">
-          <Sidebar setActivePage={setActivePage} />
-          </div>
-        )}
-
-        {/* Main Content */}
-<div className={`flex-1 py-8 flex ${isAuthenticated && !hideLayout ? ' ml-64 mt-16' : ''}`} >
-  <div className="flex-1 bg-white shadow-md rounded-lg dark:bg-gray-900">
-    {children}
-  </div>
-</div>
-
-      </div>
+      </main>
     </div>
   );
 };

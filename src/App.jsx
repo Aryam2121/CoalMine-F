@@ -1,131 +1,15 @@
-// import React, { Suspense, lazy } from 'react';
-// import 'bootstrap/dist/css/bootstrap.min.css';
-// import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-// import { ResourceProvider } from './context/ResourceContext';
-// import { WeatherProvider } from './context/WeatherContext';
-// import Layout from './components/Layout'; // Import the Layout component
-// import WeatherTrivia from './components/weatherQuiz';
-// import { GoogleOAuthProvider } from '@react-oauth/google';
-
-
-// // Lazy-loaded components
-// const Notifications = lazy(() => import('./components/Notificationweb'));
-// const SafetyProtocol = lazy(() => import('./components/Safetyprotocol')); 
-// const CoalMineCards = lazy(() => import('./components/CoalMineCards'));
-// const Dashboard = lazy(() => import('./components/Dashboard'));
-// const WeatherAlerts = lazy(() => import('./components/WeatherWidget'));
-// const AuditLog = lazy(() => import('./components/AuditLog'));
-// const UserManagement = lazy(() => import('./components/UserManagement'));
-// const DataVisualization = lazy(() => import('./components/DataVisualization'));
-// const ReportGeneration = lazy(() => import('./components/ReportGeneration'));
-// const ShiftHandoverLog = lazy(() => import('./components/ShiftLogs'));
-// const SafetyManagementPlan = lazy(() => import('./components/Safetymanagement'));
-// const NotificationsFire = lazy(() => import('./components/NotificationFire'));
-// const Login = lazy(() => import('./pages/Login'));
-// const Resources = lazy(() => import('./components/Resources'));
-// const Inventory = lazy(() => import('./components/Inventory'));
-// const Alerts = lazy(() => import('./components/Alerts'));
-// const Signup = lazy(() => import('./pages/Signup'));
-// const CreateCoalMines = lazy(() => import('./components/CoalMineCards'));
-// const Attendance = lazy(() => import('./components/Attendance'));
-// const Chatbot = lazy(() => import('./components/chatbot'));
-// const VoiceDictation = lazy(()=> import('./components/voiceDictation'));
-// const Achievements = lazy(() => import('./components/Achievements'));
-
-// const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
-// function App() {
-//   return (
-//     <ResourceProvider>
-//       <WeatherProvider>
-//       <GoogleOAuthProvider clientId= {import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-//         <Router>
-//           {/* Wrap the application in the Layout */}
-//           <Layout>
-//           <Suspense fallback={<div className="loading-spinner">Loading...</div>}>
-
-//               <Routes>
-//                 <Route path='/voiceDictation' element={<VoiceDictation />} />
-//                 <Route path='/notificationsfire' element={<NotificationsFire />} />
-//                 <Route path='/safety-protocol' element={<SafetyProtocol />} />
-//                 <Route path='/achievements' element={<Achievements />} />
-//                 <Route path='/weatherQuiz' element={<WeatherTrivia />} />
-//                 <Route path="/chatbot" element={<Chatbot />} />
-//                 <Route path="/attendance" element={<Attendance />} />
-//                 <Route path="/coalMines" element={<CoalMineCards />} />
-//                 <Route path="/createMines" element={<CreateCoalMines />} />
-//                 <Route path="/Weather" element={<WeatherAlerts />} />
-//                 <Route path="/Audit-Logs" element={<AuditLog />} />
-//                 <Route path="/Data-Visualization" element={<DataVisualization />} />
-//                 <Route path="/Report-Generation" element={<ReportGeneration />} />
-//                 <Route path="/notifications" element={<Notifications />} />
-//                 <Route path="/login" element={<Login />} />
-//                 <Route path="/resources" element={<Resources />} />
-//                 <Route path="/inventory" element={<Inventory />} />
-//                 <Route path="/Alerts" element={<Alerts />} />
-//                 {/* <Route path="/User-Management" element={<UserManagement />} /> */}
-//                 {/* <Route path="/safety-plan" element={<SafetyManagementPlan />} /> */}
-//                 {/* <Route path="/shift-logs" element={<ShiftHandoverLog />} /> */}
-//                 {/* <Route path="/" element={<Dashboard />} /> */}
-//                 <Route 
-//                     path="/" 
-//                     element={
-//                       <ProtectedRoute>
-//                         <Dashboard />
-//                       </ProtectedRoute>
-//                     } 
-//                   />
-//                   <Route 
-//                     path="/User-Management" 
-//                     element={
-//                       <ProtectedRoute>
-//                         <UserManagement />
-//                       </ProtectedRoute>
-//                     } 
-//                   />
-//                   <Route 
-//                     path="/shift-logs" 
-//                     element={
-//                       <ProtectedRoute>
-//                         <ShiftHandoverLog />
-//                       </ProtectedRoute>
-//                     } 
-//                   />
-//                   <Route 
-//                     path="/safety-plan" 
-//                     element={
-//                       <ProtectedRoute>
-//                         <SafetyManagementPlan />
-//                       </ProtectedRoute>
-//                     } 
-//                   />
-//                 <Route path="*" element={<div>Page Not Found</div>} />
-            
-//                   <Route path="/signup" element={<Signup />} />
-              
-//               </Routes>
-//             </Suspense>
-//           </Layout>
-//         </Router>
-//         </GoogleOAuthProvider>
-//       </WeatherProvider>
-//     </ResourceProvider>
-//   );
-// }
-
-// export default App;
-// App.js
 import React, { Suspense, lazy } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { ResourceProvider } from './context/ResourceContext';
 import { WeatherProvider } from './context/WeatherContext';
-import { AuthProvider } from './context/AuthContext';  // Import AuthContext
-import Layout from './components/Layout'; // Import the Layout component
-import WeatherTrivia from './components/weatherQuiz';
+import { AuthProvider } from './context/AuthContext';
+import Layout from './components/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
+import PageNotFound from './components/PageNotFound';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import WeatherTrivia from './components/weatherQuiz';
 
-
-// Lazy-loaded components
 const Notifications = lazy(() => import('./components/Notificationweb'));
 const SafetyProtocol = lazy(() => import('./components/Safetyprotocol'));
 const CoalMineCards = lazy(() => import('./components/CoalMineCards'));
@@ -151,220 +35,71 @@ const ComplianceReports = lazy(() => import('./components/CompilanceReports'));
 const SafetyReportsPage = lazy(() => import('./components/SafetyReport'));
 const Profile = lazy(() => import('./components/Profile'));
 const Settings = lazy(() => import('./components/Settings'));
-// Protected Route Component
-const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
+const EmergencyPage = lazy(() => import('./pages/EmergencyPage'));
+const TrainingPage = lazy(() => import('./pages/TrainingPage'));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 
+const PageLoader = () => (
+  <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 page-wrap">
+    <div className="loading-spinner" aria-label="Loading page" />
+    <p className="text-sm text-slate-500">Loading page…</p>
+  </div>
+);
+
+const Guard = ({ children }) => <ProtectedRoute>{children}</ProtectedRoute>;
 
 function App() {
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
   return (
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+    <GoogleOAuthProvider clientId={googleClientId || ''}>
       <Router>
-        <AuthProvider> {/* Wrap the AuthProvider inside Router */}
+        <AuthProvider>
           <ResourceProvider>
             <WeatherProvider>
               <Layout>
-                <Suspense fallback={<div className="loading-spinner">Loading...</div>}>
+                <Suspense fallback={<PageLoader />}>
                   <Routes>
-                    {/* Public Routes */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
 
-                    {/* Protected Routes */}
-                    <Route
-                      path="/"
-                      element={
-                        <ProtectedRoute>
-                          <Dashboard />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/User-Management"
-                      element={
-                        <ProtectedRoute>
-                          <UserManagement />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/shift-logs"
-                      element={
-                        <ProtectedRoute>
-                          <ShiftHandoverLog />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/safety-plan"
-                      element={
-                        <ProtectedRoute>
-                          <SafetyManagementPlan />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/voiceDictation"
-                      element={
-                        <ProtectedRoute>
-                          <VoiceDictation />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/notificationsfire"
-                      element={
-                        <ProtectedRoute>
-                          <NotificationsFire />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/safety-protocol"
-                      element={
-                        <ProtectedRoute>
-                          <SafetyProtocol />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/achievements"
-                      element={
-                        <ProtectedRoute>
-                          <Achievements />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/weatherQuiz"
-                      element={
-                        <ProtectedRoute>
-                          <WeatherTrivia />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/chatbot"
-                      element={
-                        <ProtectedRoute>
-                          <Chatbot />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/profile"
-                      element={
-                        <ProtectedRoute>
-                          <Profile/>
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/settings"
-                      element={
-                        <ProtectedRoute>
-                          <Settings/>
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/attendance"
-                      element={
-                        <ProtectedRoute>
-                          <Attendance />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/coalMines"
-                      element={
-                        <ProtectedRoute>
-                          <CoalMineCards />
-                        </ProtectedRoute>
-                      }
-                    />
-                   
-                    <Route
-                      path="/Weather"
-                      element={
-                        <ProtectedRoute>
-                          <WeatherAlerts />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/Audit-Logs"
-                      element={
-                        <ProtectedRoute>
-                          <AuditLog />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/Data-Visualization"
-                      element={
-                        <ProtectedRoute>
-                          <DataVisualization />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/Report-Generation"
-                      element={
-                        <ProtectedRoute>
-                          <ReportGeneration />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/notifications"
-                      element={
-                        <ProtectedRoute>
-                          <Notifications />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/resources"
-                      element={
-                        <ProtectedRoute>
-                          <Resources />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/Safety-Report"
-                      element={
-                        <ProtectedRoute>
-                          <SafetyReportsPage />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/inventory"
-                      element={
-                        <ProtectedRoute>
-                          <Inventory />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/Alerts"
-                      element={
-                        <ProtectedRoute>
-                          <Alerts />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/compliance-reports"
-                      element={
-                        <ProtectedRoute>
-                          <ComplianceReports />
-                        </ProtectedRoute>
-                      }
-                    />
-                    
-                    <Route path="*" element={<div>Page Not Found</div>} />
+                    <Route path="/" element={<Guard><Dashboard /></Guard>} />
+                    <Route path="/coal-mines" element={<Guard><CoalMineCards /></Guard>} />
+                    <Route path="/coalMines" element={<Navigate to="/coal-mines" replace />} />
+                    <Route path="/shift-logs" element={<Guard><ShiftHandoverLog /></Guard>} />
+                    <Route path="/safety-plan" element={<Guard><SafetyManagementPlan /></Guard>} />
+                    <Route path="/user-management" element={<Guard><UserManagement /></Guard>} />
+                    <Route path="/User-Management" element={<Navigate to="/user-management" replace />} />
+                    <Route path="/resources" element={<Guard><Resources /></Guard>} />
+                    <Route path="/inventory" element={<Guard><Inventory /></Guard>} />
+                    <Route path="/weather" element={<Guard><WeatherAlerts /></Guard>} />
+                    <Route path="/Weather" element={<Navigate to="/weather" replace />} />
+                    <Route path="/data-visualization" element={<Guard><DataVisualization /></Guard>} />
+                    <Route path="/Data-Visualization" element={<Navigate to="/data-visualization" replace />} />
+                    <Route path="/report-generation" element={<Guard><ReportGeneration /></Guard>} />
+                    <Route path="/Report-Generation" element={<Navigate to="/report-generation" replace />} />
+                    <Route path="/audit-logs" element={<Guard><AuditLog /></Guard>} />
+                    <Route path="/Audit-Logs" element={<Navigate to="/audit-logs" replace />} />
+                    <Route path="/notifications" element={<Guard><Notifications /></Guard>} />
+                    <Route path="/alerts" element={<Guard><Alerts /></Guard>} />
+                    <Route path="/Alerts" element={<Navigate to="/alerts" replace />} />
+                    <Route path="/compliance-reports" element={<Guard><ComplianceReports /></Guard>} />
+                    <Route path="/safety-report" element={<Guard><SafetyReportsPage /></Guard>} />
+                    <Route path="/Safety-Report" element={<Navigate to="/safety-report" replace />} />
+                    <Route path="/attendance" element={<Guard><Attendance /></Guard>} />
+                    <Route path="/emergency" element={<Guard><EmergencyPage /></Guard>} />
+                    <Route path="/training" element={<Guard><TrainingPage /></Guard>} />
+                    <Route path="/predictive-analytics" element={<Guard><AnalyticsPage /></Guard>} />
+                    <Route path="/profile" element={<Guard><Profile /></Guard>} />
+                    <Route path="/settings" element={<Guard><Settings /></Guard>} />
+                    <Route path="/chatbot" element={<Guard><Chatbot /></Guard>} />
+                    <Route path="/achievements" element={<Guard><Achievements /></Guard>} />
+                    <Route path="/voiceDictation" element={<Guard><VoiceDictation /></Guard>} />
+                    <Route path="/notificationsfire" element={<Guard><NotificationsFire /></Guard>} />
+                    <Route path="/safety-protocol" element={<Guard><SafetyProtocol /></Guard>} />
+                    <Route path="/weatherQuiz" element={<Guard><WeatherTrivia /></Guard>} />
+
+                    <Route path="*" element={<PageNotFound />} />
                   </Routes>
                 </Suspense>
               </Layout>

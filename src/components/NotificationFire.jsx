@@ -1,7 +1,6 @@
+import api from '../services/axios';
 import React, { useEffect, useState } from "react";
 import { requestNotificationPermission, onMessageListener } from "../firebaseConfig";
-import axios from "axios";
-
 const NotificationsFire = () => {
   const [token, setToken] = useState(null);
   const [notifications, setNotifications] = useState([]);
@@ -31,7 +30,7 @@ const NotificationsFire = () => {
     };
 
     try {
-      await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/notifications/send-notification`, notificationData);
+      await api.post(`/notifications/send-notification`, notificationData);
       alert("Notification Sent!");
     } catch (error) {
       console.error("Error sending notification", error);

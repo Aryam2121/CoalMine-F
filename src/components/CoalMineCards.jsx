@@ -1,7 +1,5 @@
 // import React, { useState } from 'react';
-// import axios from 'axios';
-
-// // Modal Component for creating a coal mine
+// // // Modal Component for creating a coal mine
 // const CreateCoalMineModal = ({ showModal, setShowModal }) => {
 //   const [coalMine, setCoalMine] = useState({
 //     name: '',
@@ -42,7 +40,7 @@
 //   const handleSubmit = async (e) => {
 //     e.preventDefault();
 //     try {
-//       await axios.post('http://localhost:5000/api/createMines', coalMine);
+//       await api.post('http://localhost:5000/api/createMines', coalMine);
 //       alert('Coal Mine Created Successfully');
 //       setShowModal(false); // Close the modal after successful submission
 //     } catch (error) {
@@ -171,10 +169,18 @@
 // export default CreateCoalMines;
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import axios from "axios";
+import api from "../services/axios";
+import PageShell from "./ui/PageShell";
+import Button from "./ui/Button";
+import Card from "./ui/Card";
+import EmptyState from "./ui/EmptyState";
 import { XCircle, PlusCircle } from "lucide-react";
+import { usePermissions } from "../hooks/usePermissions";
+import { PERMISSIONS } from "../utils/roles";
 
 const CoalMineCards = () => {
+  const { can } = usePermissions();
+  const canWrite = can(PERMISSIONS.COAL_MINE_WRITE);
   const [mines, setMines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -200,11 +206,17 @@ const CoalMineCards = () => {
 
   const fetchMines = async () => {
     try {
-      const response = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getallMines`);
-      setMines(response.data.data);
-      setLoading(false);
+      setLoading(true);
+      setError(null);
+      const response = await api.get('/getallMines');
+      setMines(response.data?.data ?? response.data ?? []);
     } catch (err) {
-      setError(err.message);
+      const msg =
+        err.code === 'ERR_NETWORK'
+          ? 'Cannot reach the server. Start the backend (port 3000) or check VITE_BACKEND in .env.'
+          : err.response?.data?.message || err.message;
+      setError(msg);
+    } finally {
       setLoading(false);
     }
   };
@@ -213,10 +225,10 @@ const CoalMineCards = () => {
     e.preventDefault();
     try {
       if (editMode) {
-        await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/updateMine/${selectedMine._id}`, mineForm);
+        await api.put(`/updateMine/${selectedMine._id}`, mineForm);
         alert("Coal Mine Updated Successfully");
       } else {
-        await axios.post(`https://${import.meta.env.VITE_BACKEND}/api/createMines`, mineForm);
+        await api.post('/createMines', mineForm);
         alert("Coal Mine Created Successfully");
       }
       setShowModal(false);
@@ -230,7 +242,7 @@ const CoalMineCards = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this mine?")) {
       try {
-        await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/deleteMine/${id}`);
+        await api.delete(`/deleteMine/${id}`);
         alert("Coal Mine Deleted Successfully");
         fetchMines();
       } catch (error) {
@@ -276,7 +288,7 @@ const CoalMineCards = () => {
   
       console.log("🚀 Updated Mine Data before API call:", updatedMine);
   
-      await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/updateMine/${mineToUpdate._id}`, updatedMine);
+      await api.put(`/updateMine/${mineToUpdate._id}`, updatedMine);
   
       alert("✅ Worker added successfully!");
       setShowWorkerModal(false);
@@ -292,42 +304,45 @@ const CoalMineCards = () => {
   
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white py-8 px-12">
-      <div className="flex justify-between items-center mb-6">
-      <h2 className="text-4xl font-bold mb-4 text-blue-400">Coal Mines</h2>
-        <button
-          className="px-4 py-2 bg-green-600 text-white rounded-lg flex items-center gap-2 hover:bg-green-700 transition"
-          onClick={() => {
-            setShowModal(true);
-            setEditMode(false);
-            setMineForm({ name: "", location: { latitude: "", longitude: "" }, workers: [] });
-          }}
-        >
-          <PlusCircle size={18} /> Create New Mine
-        </button>
-      </div>
-
+    <PageShell
+      title="Coal Mines"
+      subtitle="Manage mine sites, locations, and assigned workers"
+      action={
+        canWrite ? (
+          <Button variant="success" onClick={() => {
+              setShowModal(true);
+              setEditMode(false);
+              setMineForm({ name: "", location: { latitude: "", longitude: "" }, workers: [] });
+            }}>
+            <PlusCircle size={18} /> New mine
+          </Button>
+        ) : null
+      }
+    >
       {loading ? (
-        <p className="text-center text-gray-400">Loading...</p>
+        <div className="flex justify-center py-20"><div className="loading-spinner" /></div>
       ) : error ? (
-        <p className="text-center text-red-500">{error}</p>
+        <EmptyState icon="⚠️" title="Could not load mines" message={error} />
+      ) : mines.length === 0 ? (
+        <EmptyState icon="⛏" title="No coal mines yet" message={canWrite ? 'Create your first mine to get started.' : 'No mines registered yet.'} action={
+          canWrite ? <Button onClick={() => setShowModal(true)}>Create mine</Button> : null
+        } />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {mines.map((mine) => (
-            <motion.div
+            <Card
               key={mine._id}
-              className="bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
+              className="!p-0 overflow-hidden border-slate-200 dark:border-slate-700"
             >
-              <h2 className="text-xl font-bold mb-2">{mine.name}</h2>
-              <p className="text-sm mb-2">
-                Location: {mine.location.latitude}, {mine.location.longitude}
+              <div className="h-1 bg-gradient-to-r from-amber-400 to-amber-600" />
+              <div className="p-5">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-1">{mine.name}</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
+                📍 {mine.location?.latitude}, {mine.location?.longitude}
               </p>
-              <h3 className="text-lg font-semibold text-gray-300">Workers:</h3>
-              {mine.workers.length > 0 ? (
-                mine.workers.map((worker, index) => (
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Workers</h3>
+              {(mine.workers?.length ?? 0) > 0 ? (
+                (mine.workers ?? []).map((worker, index) => (
                   <div key={index} className="mb-2 border-b border-gray-700 pb-2">
                     <p>Name: {worker.name}</p>
                     <p>Role: {worker.role}</p>
@@ -335,32 +350,30 @@ const CoalMineCards = () => {
                   </div>
                 ))
               ) : (
-                <p className="text-gray-400">No workers assigned.</p>
+                <p className="text-sm text-slate-400">No workers assigned.</p>
               )}
-            <button 
-  className="mt-2 px-3 py-1 bg-blue-500 text-white rounded-lg" 
-  onClick={() => {
-    setSelectedMine(mine);  
-    localStorage.setItem("selectedMine", JSON.stringify(mine));
+            {canWrite && (
+              <button
+                type="button"
+                className="mt-2 btn-primary !py-1.5 !px-3 !text-xs"
+                onClick={() => {
+                  setSelectedMine(mine);
+                  localStorage.setItem("selectedMine", JSON.stringify(mine));
+                  setTimeout(() => setShowWorkerModal(true), 50);
+                }}
+              >
+                + Add Worker
+              </button>
+            )}
 
-    setTimeout(() => {  // Delay opening modal to ensure state updates
-      setShowWorkerModal(true);
-    }, 50);
-  }}
->
-  + Add Worker
-</button>
-
-
-              <div className="flex gap-2 mt-4">
-                <button className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg" onClick={() => handleEdit(mine)}>
-                  Edit
-                </button>
-                <button className="w-full py-2 px-4 bg-red-600 text-white rounded-lg" onClick={() => handleDelete(mine._id)}>
-                  Delete
-                </button>
+              {canWrite && (
+              <div className="flex gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                <Button variant="secondary" className="flex-1 !py-2" onClick={() => handleEdit(mine)}>Edit</Button>
+                <Button variant="danger" className="flex-1 !py-2" onClick={() => handleDelete(mine._id)}>Delete</Button>
               </div>
-            </motion.div>
+              )}
+              </div>
+            </Card>
           ))}
         </div>
       )}
@@ -368,9 +381,9 @@ const CoalMineCards = () => {
 
       {/* Modal for Creating/Editing Mine */}
       {showModal && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-md">
+  <div className="modal-overlay">
     <motion.div
-      className="bg-gray-900 bg-opacity-90 p-6 rounded-2xl shadow-2xl w-96 relative border border-gray-700"
+      className="modal-panel !max-w-md relative dark:bg-slate-900"
       initial={{ opacity: 0, y: -50 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
@@ -426,9 +439,9 @@ const CoalMineCards = () => {
 
 {/* Modal for Adding Worker */}
 {showWorkerModal && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-md">
+  <div className="modal-overlay">
     <motion.div
-      className="bg-gray-900 bg-opacity-90 p-6 rounded-2xl shadow-2xl w-96 relative border border-gray-700"
+      className="modal-panel !max-w-md relative dark:bg-slate-900"
       initial={{ opacity: 0, y: -50 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
@@ -475,7 +488,7 @@ const CoalMineCards = () => {
     </motion.div>
   </div>
 )}
-    </div>
+    </PageShell>
   );
 }
 export default CoalMineCards;

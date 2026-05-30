@@ -1,737 +1,343 @@
-// import React, { useState, useEffect } from 'react';
-// import axios from '../services/axios';
-// import { useDropzone } from 'react-dropzone';
-// import ProgressBar from 'react-bootstrap/ProgressBar';
-// import 'react-datepicker/dist/react-datepicker.css';
-// import { FaFileUpload } from 'react-icons/fa';
-
-// const ShiftHandoverLog = () => {
-//   const [logData, setLogData] = useState({
-//     shiftDetails: '',
-//     safetyIssues: '',
-//     nextShiftTasks: '',
-//   });
-//   const [file, setFile] = useState(null);
-//   const [filePreview, setFilePreview] = useState(null);
-//   const [additionalNotes, setAdditionalNotes] = useState('');
-//   const [previousLogs, setPreviousLogs] = useState([]);
-//   const [autoSaveStatus, setAutoSaveStatus] = useState('Auto-saving every minute...');
-//   const [uploadProgress, setUploadProgress] = useState(0);
-//   const [uploading, setUploading] = useState(false);
-//   const [errorMessage, setErrorMessage] = useState('');
-//   const [loading, setLoading] = useState(false);
-//   useEffect(() => {
-//     const storedLogs = JSON.parse(localStorage.getItem('shiftHandoverLogs')) || [];
-//     setPreviousLogs(storedLogs);
-//   }, []);
-  
-
-//   useEffect(() => {
-//     const autoSave = setInterval(() => {
-//       localStorage.setItem('shiftHandoverLogData', JSON.stringify(logData));
-//       setAutoSaveStatus('Auto-saved at ' + new Date().toLocaleTimeString());
-//     }, 60000); // Auto-save every minute
-
-//     return () => clearInterval(autoSave);
-//   }, [logData]);
-
-//   const handleInputChange = (e) => {
-//     setLogData({ ...logData, [e.target.name]: e.target.value });
-//   };
-
-//   const handleFileChange = (acceptedFiles) => {
-//     if (acceptedFiles.length > 0) {
-//       setFile(acceptedFiles[0]);
-//       setFilePreview(URL.createObjectURL(acceptedFiles[0])); // To show the preview
-//     }
-//   };
-  
-
-//   const { getRootProps, getInputProps } = useDropzone({
-//     accept: 'image/*,application/pdf',
-//     onDrop: handleFileChange,
-//   });
-
-//   const handleNotesChange = (e) => {
-//     setAdditionalNotes(e.target.value);
-//   };
-
-//   const submitLog = () => {
-//     const formData = {
-//       shiftDetails: logData.shiftDetails,
-//       safetyIssues: logData.safetyIssues,
-//       nextShiftTasks: logData.nextShiftTasks,
-//       additionalNotes: additionalNotes,
-//       file: file ? file.name : null, // Just storing the file name for now
-//     };
-  
-//     console.log('Form Data:', formData); // Log form data to the console
-  
-//     setLoading(true);
-//     setErrorMessage('');
-//     setUploadProgress(0);
-//     setUploading(true);
-  
-//     // Simulate a delay to mimic a real API call
-//     setTimeout(() => {
-//       // Simulate a successful submission (randomly)
-//       const isSuccess = Math.random() > 0.1; // 90% chance of success, 10% failure
-  
-//       if (isSuccess) {
-//         alert('Log submitted successfully!');
-        
-//         // Simulate saving the data to localStorage
-//         const storedLogs = JSON.parse(localStorage.getItem('shiftHandoverLogs')) || [];
-//         storedLogs.push(formData);
-//         localStorage.setItem('shiftHandoverLogs', JSON.stringify(storedLogs));
-  
-//         // Update the previous logs state
-//         setPreviousLogs(storedLogs);
-  
-//         // Reset form state
-//         setLogData({ shiftDetails: '', safetyIssues: '', nextShiftTasks: '' });
-//         setFile(null);
-//         setFilePreview(null);
-//         setAdditionalNotes('');
-//         setUploadProgress(0);
-//       } else {
-//         setErrorMessage('Failed to submit log. Please try again.');
-//       }
-  
-//       setLoading(false);
-//       setUploading(false);
-//     }, 1500); // Simulate a 1.5-second delay
-//   };
-  
-//   const handleSubmit = (e) => {
-//     e.preventDefault();
-//     if (window.confirm('Are you sure you want to submit this log?')) {
-//       submitLog();
-//     }
-//   };
-//   const deleteLog = (index) => {
-//     const updatedLogs = [...previousLogs];
-//     updatedLogs.splice(index, 1); // Remove the log at the given index
-//     setPreviousLogs(updatedLogs);
-//     localStorage.setItem('shiftHandoverLogs', JSON.stringify(updatedLogs)); // Update localStorage
-//   };
-//   return (
-//     <div className="p-8 bg-white rounded-lg shadow-lg max-w-3xl mx-auto">
-//       <h2 className="text-3xl font-bold text-center mb-6 text-gray-800">Shift Handover Log</h2>
-//       <form onSubmit={handleSubmit} className="space-y-6">
-//         <div>
-//           <label htmlFor="shiftDetails" className="text-lg font-medium text-gray-700">Shift Details</label>
-//           <textarea
-//             id="shiftDetails"
-//             name="shiftDetails"
-//             value={logData.shiftDetails}
-//             onChange={handleInputChange}
-//             rows="4"
-//             className="block w-full p-4 mt-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
-//             placeholder="Enter shift details..."
-//           ></textarea>
-//         </div>
-
-//         <div>
-//           <label htmlFor="safetyIssues" className="text-lg font-medium text-gray-700">Safety Issues</label>
-//           <textarea
-//             id="safetyIssues"
-//             name="safetyIssues"
-//             value={logData.safetyIssues}
-//             onChange={handleInputChange}
-//             rows="4"
-//             className="block w-full p-4 mt-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
-//             placeholder="Enter safety issues..."
-//           ></textarea>
-//         </div>
-
-//         <div>
-//           <label htmlFor="nextShiftTasks" className="text-lg font-medium text-gray-700">Next Shift Tasks</label>
-//           <textarea
-//             id="nextShiftTasks"
-//             name="nextShiftTasks"
-//             value={logData.nextShiftTasks}
-//             onChange={handleInputChange}
-//             rows="4"
-//             className="block w-full p-4 mt-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
-//             placeholder="Enter tasks for the next shift..."
-//           ></textarea>
-//         </div>
-
-//         <div>
-//           <label htmlFor="additionalNotes" className="text-lg font-medium text-gray-700">Additional Notes</label>
-//           <textarea
-//             id="additionalNotes"
-//             name="additionalNotes"
-//             value={additionalNotes}
-//             onChange={handleNotesChange}
-//             rows="4"
-//             className="block w-full p-4 mt-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
-//             placeholder="Add any additional notes (optional)..."
-//           ></textarea>
-//         </div>
-
-//         {/* File Upload */}
-//         <div className="space-y-4">
-//           <div {...getRootProps()} className="p-6 border-dashed border-2 border-gray-300 rounded-lg text-center cursor-pointer hover:bg-gray-100">
-//             <input {...getInputProps()} />
-//             <p className="text-gray-600">Drag & drop a file here, or click to select one (Image/PDF)</p>
-//             {filePreview && <img src={filePreview} alt="Preview" className="mt-4 max-w-full h-auto" />}
-//             {!filePreview && <FaFileUpload className="text-3xl text-gray-600 mt-4" />}
-//           </div>
-//         </div>
-
-//         {/* Submit Button */}
-//         <button
-//           type="submit"
-//           className={`w-full py-3 rounded-lg hover:bg-blue-700 transition duration-300 ${loading ? 'bg-gray-500' : 'bg-blue-600'}`}
-//           disabled={loading}
-//         >
-//           {loading ? 'Submitting...' : 'Submit Log'}
-//         </button>
-
-//         {/* Error Message */}
-//         {errorMessage && <p className="text-red-600 mt-4 text-center">{errorMessage}</p>}
-
-//         {/* Upload Progress */}
-//         {uploading && (
-//           <div className="mt-4">
-//             <ProgressBar now={uploadProgress} label={`${uploadProgress}%`} />
-//           </div>
-//         )}
-//       </form>
-
-//       {/* Auto-Save Status */}
-//       <div className="mt-6 text-sm text-gray-600 text-center">{autoSaveStatus}</div>
-
-//       {/* Previous Logs Section */}
-//       <div className="mt-6 space-y-4">
-//         <h3 className="text-xl font-semibold text-gray-800">Previous Shift Logs</h3>
-//         {previousLogs.length > 0 ? (
-//           <ul>
-//             {previousLogs.map((log, index) => (
-//               <li key={index} className="p-4 border border-gray-300 rounded-lg shadow-sm">
-//                 <p><strong>Shift Details:</strong> {log.shiftDetails}</p>
-//                 <p><strong>Safety Issues:</strong> {log.safetyIssues}</p>
-//                 <p><strong>Next Shift Tasks:</strong> {log.nextShiftTasks}</p>
-//                 <p><strong>Additional Notes:</strong> {log.additionalNotes}</p>
-//                 {log.file && <a href={log.file} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">View Attached File</a>}
-//                 {/* Delete Button */}
-//                 <button
-//                   onClick={() => deleteLog(index)}
-//                   className="mt-4 text-red-500 hover:text-red-700"
-//                 >
-//                   Delete Log
-//                 </button>
-//               </li>
-//             ))}
-//           </ul>
-//         ) : (
-//           <p>No previous logs available.</p>
-//         )}
-//       </div>
-//     </div>
-//   );
-// };
-// export default ShiftHandoverLog;
-import React, { useState, useEffect } from 'react';
-import axios from '../services/axios'; // Import your axios instance
+import api from '../services/axios';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useDropzone } from 'react-dropzone';
-import ProgressBar from 'react-bootstrap/ProgressBar';
-import 'react-datepicker/dist/react-datepicker.css';
-import { FaFileUpload } from 'react-icons/fa';
-import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition'; // Speech Recognition
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { motion } from 'framer-motion';
+import {
+  FaClipboardList,
+  FaFileUpload,
+  FaClock,
+  FaEdit,
+  FaTrash,
+  FaExternalLinkAlt,
+  FaPlus,
+  FaSearch,
+} from 'react-icons/fa';
+import PageShell from './ui/PageShell';
+import Button from './ui/Button';
+import Modal from './ui/Modal';
+import FormField from './ui/FormField';
+import EmptyState from './ui/EmptyState';
+import LoadingBlock from './ui/LoadingBlock';
 
-import 'firebase/firestore';
-
-// Initialize Firebase
-const firebaseConfig = {
-  apiKey: 'your-api-key',
-  authDomain: 'your-auth-domain',
-  projectId: 'your-project-id',
-  storageBucket: 'your-storage-bucket',
-  messagingSenderId: 'your-messaging-sender-id',
-  appId: 'your-app-id',
+const emptyLog = {
+  shiftDetails: '',
+  shiftStartTime: '',
+  shiftEndTime: '',
+  status: 'pending',
+  notes: '',
 };
 
-// Initialize Firebase app
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-
-// Initialize Firestore
-const db = getFirestore(app);
+const statusClass = (s) => {
+  const v = (s || '').toLowerCase();
+  if (v === 'completed') return 'status-pill--completed';
+  if (v === 'in-progress') return 'status-pill--in-progress';
+  return 'status-pill--pending';
+};
 
 const ShiftHandoverLog = () => {
-  const [logData, setLogData] = useState({
-    shiftDetails: '',
-    safetyIssues: '',
-    nextShiftTasks: '',
-  });
+  const [logData, setLogData] = useState(emptyLog);
   const [file, setFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
-  const [additionalNotes, setAdditionalNotes] = useState('');
   const [previousLogs, setPreviousLogs] = useState([]);
-  const [editLogId, setEditLogId] = useState(null); // Track the log being edited
-  const [autoSaveStatus, setAutoSaveStatus] = useState('Auto-saving every minute...');
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploading, setUploading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [editLogId, setEditLogId] = useState(null);
   const [loading, setLoading] = useState(false);
-  const { transcript, resetTranscript } = useSpeechRecognition();
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [listLoading, setListLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
 
-  const [formData, setFormData] = useState({
-    shiftDetails: "",
-    shiftStartTime: "",
-    shiftEndTime: "",
-    status: "",
-    notes: "",
-    file: null,
-  });
+  const fetchLogs = async () => {
+    setListLoading(true);
+    try {
+      const { data } = await api.get('/getAllLogs', { params: { limit: 100, page: 1 } });
+      setPreviousLogs(data?.shiftLogs || []);
+    } catch {
+      toast.error('Failed to load shift logs');
+    } finally {
+      setListLoading(false);
+    }
+  };
 
-  // Fetch previous shift logs on load
   useEffect(() => {
-    const fetchShiftLogs = async () => {
-      try {
-        const response = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/getAllLogs`);
-        setPreviousLogs(response.data.shiftLogs);
-      } catch (error) {
-        console.error('Error fetching shift logs:', error);
-        setErrorMessage('Error fetching previous shift logs');
-      }
-    };
-
-    fetchShiftLogs();
+    fetchLogs();
   }, []);
 
   const handleInputChange = (e) => {
     setLogData({ ...logData, [e.target.name]: e.target.value });
   };
 
-  const handleFileChange = (acceptedFiles) => {
-    if (acceptedFiles.length > 0) {
-      setFile(acceptedFiles[0]);
-      setFilePreview(URL.createObjectURL(acceptedFiles[0]));
-    }
-  };
-
-  const { getRootProps, getInputProps } = useDropzone({
-    accept: 'image/*,application/pdf',
-    onDrop: handleFileChange,
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    accept: { 'image/*': [], 'application/pdf': [] },
+    maxFiles: 1,
+    onDrop: (files) => {
+      if (files[0]) {
+        setFile(files[0]);
+        setFilePreview(URL.createObjectURL(files[0]));
+      }
+    },
   });
 
-  const handleNotesChange = (e) => {
-    setAdditionalNotes(e.target.value);
+  const resetForm = () => {
+    setLogData(emptyLog);
+    setFile(null);
+    setFilePreview(null);
+    setEditLogId(null);
+    setShowForm(false);
+    setEditModalOpen(false);
   };
 
   const submitLog = async (e) => {
     e.preventDefault();
-    setErrorMessage('');
-  
-    if (!logData.shiftDetails || !logData.shiftStartTime || !logData.shiftEndTime) {
-      setErrorMessage('Please fill in all required fields.');
+    if (!logData.shiftDetails?.trim() || !logData.shiftStartTime || !logData.shiftEndTime) {
+      toast.error('Shift details, start time, and end time are required');
       return;
     }
-  
+    if (!file) {
+      toast.error('Please attach a photo or PDF for handover documentation');
+      return;
+    }
+
     const formData = new FormData();
     formData.append('shiftDetails', logData.shiftDetails);
     formData.append('shiftStartTime', logData.shiftStartTime);
     formData.append('shiftEndTime', logData.shiftEndTime);
     formData.append('status', logData.status || 'pending');
-    formData.append('notes', additionalNotes);
-  
-    if (file) {
-      formData.append('file', file);
-    }
-  
+    formData.append('notes', logData.notes || '');
+    formData.append('file', file);
+
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await axios.post(
-        `https://${import.meta.env.VITE_BACKEND}/api/createLogs`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        }
-      );
-  
-      setPreviousLogs([...previousLogs, response.data]);
+      const { data } = await api.post('/createLogs', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const saved = data?.shiftLog || data;
+      setPreviousLogs((prev) => [saved, ...prev].filter(Boolean));
+      toast.success('Shift log submitted');
       resetForm();
-      alert('Log submitted successfully!');
-    } catch (error) {
-      console.error('Error submitting shift log:', error);
-      
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to submit log');
     } finally {
       setLoading(false);
     }
   };
-  
-  const resetForm = () => {
-    setLogData({ shiftDetails: '', safetyIssues: '', nextShiftTasks: '' });
-    setFile(null);
-    setFilePreview(null);
-    setAdditionalNotes('');
-    setUploadProgress(0);
-  };
 
   const deleteLog = async (id) => {
+    if (!window.confirm('Delete this shift log?')) return;
     try {
-      await axios.delete(`https://${import.meta.env.VITE_BACKEND}/api/deleteLog/${id}`);
-      setPreviousLogs(previousLogs.filter((log) => log._id !== id));
-      alert('Log deleted successfully!');
-    } catch (error) {
-      console.error('Error deleting shift log:', error);
-      setErrorMessage('Failed to delete log. Please try again.');
+      await api.delete(`/deleteLog/${id}`);
+      setPreviousLogs((prev) => prev.filter((l) => l._id !== id));
+      toast.success('Log deleted');
+    } catch {
+      toast.error('Failed to delete');
     }
   };
-  
 
-  const editLog = (id) => {
-    console.log("Editing log ID:", id);
-    const logToEdit = previousLogs.find((log) => log._id === id);
+  const openEdit = (log) => {
     setLogData({
-      shiftDetails: logToEdit.shiftDetails,
-      safetyIssues: logToEdit.safetyIssues,
-      nextShiftTasks: logToEdit.nextShiftTasks,
-      shiftStartTime: logToEdit.shiftStartTime,
-      shiftEndTime: logToEdit.shiftEndTime,
-      status: logToEdit.status,
+      shiftDetails: log.shiftDetails || '',
+      shiftStartTime: log.shiftStartTime || '',
+      shiftEndTime: log.shiftEndTime || '',
+      status: log.status || 'pending',
+      notes: log.notes || '',
     });
-    setAdditionalNotes(logToEdit.notes || '');
-    setEditLogId(id);
-    setShowEditModal(true); // Show modal
+    setEditLogId(log._id);
+    setEditModalOpen(true);
   };
-  
 
   const updateLog = async () => {
+    if (!editLogId) return;
+    setLoading(true);
     try {
-      const updatedLog = {
+      const { data } = await api.put(`/updateLog/${editLogId}`, {
         shiftDetails: logData.shiftDetails,
-       
         shiftStartTime: logData.shiftStartTime,
         shiftEndTime: logData.shiftEndTime,
         status: logData.status,
-        notes: additionalNotes,
-      };
-  
-      const response = await axios.put(`https://${import.meta.env.VITE_BACKEND}/api/updateLog/${editLogId}`, updatedLog);
-  
-      setPreviousLogs(previousLogs.map((log) => (log._id === editLogId ? response.data : log)));
+        notes: logData.notes,
+      });
+      setPreviousLogs((prev) => prev.map((l) => (l._id === editLogId ? data : l)));
+      toast.success('Log updated');
       resetForm();
-      setEditLogId(null);
-      alert('Log updated successfully!');
-    } catch (error) {
-      console.error('Error updating shift log:', error);
-      setErrorMessage('Failed to update log. Please try again.');
+    } catch {
+      toast.error('Update failed');
+    } finally {
+      setLoading(false);
     }
   };
-  
 
-  const startVoiceRecognition = () => {
-    SpeechRecognition.startListening({ continuous: true });
-  };
+  const filtered = useMemo(
+    () =>
+      previousLogs.filter((log) => {
+        const q = search.toLowerCase();
+        const matchSearch =
+          !q ||
+          log.shiftDetails?.toLowerCase().includes(q) ||
+          log.notes?.toLowerCase().includes(q);
+        const matchStatus = !filterStatus || log.status === filterStatus;
+        return matchSearch && matchStatus;
+      }),
+    [previousLogs, search, filterStatus]
+  );
 
-  const stopVoiceRecognition = () => {
-    SpeechRecognition.stopListening();
-    setLogData((prevState) => ({
-      ...prevState,
-      shiftDetails: transcript,
-    }));
-  };
+  const stats = useMemo(
+    () => ({
+      total: previousLogs.length,
+      pending: previousLogs.filter((l) => l.status === 'pending').length,
+      completed: previousLogs.filter((l) => l.status === 'completed').length,
+    }),
+    [previousLogs]
+  );
 
   return (
-    <div className="p-12 bg-gray-900 rounded-lg shadow-lg w-full min-h-screen">
-      <h2 className="text-4xl font-bold text-center mb-6 text-white">Shift Handover Log</h2>
-      <form onSubmit={submitLog} className="space-y-6">
-        {/* Shift Details */}
-        <div>
-          <label htmlFor="shiftDetails" className="text-lg font-medium text-white">Shift Details</label>
-          <textarea
-            id="shiftDetails"
-            name="shiftDetails"
-            value={logData.shiftDetails}
-            onChange={handleInputChange}
-            rows="4"
-            className="block w-full p-4 mt-2 bg-gray-800 text-white border border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
-            placeholder="Enter shift details..."
-          ></textarea>
-        </div>
-    
-        {/* Safety Issues */}
-        <div>
-          <label htmlFor="safetyIssues" className="text-lg font-medium text-white">Safety Issues</label>
-          <textarea
-            id="safetyIssues"
-            name="safetyIssues"
-            value={logData.safetyIssues}
-            onChange={handleInputChange}
-            rows="4"
-            className="block w-full p-4 mt-2 bg-gray-800 text-white border border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
-            placeholder="Enter safety issues..."
-          ></textarea>
-        </div>
-        <div>
-  <label htmlFor="status" className="text-lg font-medium text-white">Status</label>
-  <select
-    id="status"
-    name="status"
-    value={logData.status}
-    onChange={handleInputChange}
-    className="block w-full p-3 mt-2 bg-gray-800 text-white border border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
-  >
-    <option value="pending">Pending</option>
-    <option value="in-progress">In Progress</option>
-    <option value="completed">Completed</option>
-  </select>
-</div>
-        {/* <div>
-  <label htmlFor="shiftDate" className="text-lg font-medium text-white">Shift Date</label>
-  <input
-    type="date"
-    id="shiftDate"
-    name="shiftDate"
-    value={logData.shiftDate}
-    onChange={handleInputChange}
-    className="block w-full p-2 mt-2 bg-gray-800 text-white border border-gray-700 rounded-lg"
-  />
-</div> */}
+    <PageShell
+      title="Shift logs"
+      subtitle="Handover documentation, timing, and shift status"
+      variant="dark"
+      action={
+        <Button onClick={() => { resetForm(); setShowForm(true); }}>
+          <FaPlus /> New log
+        </Button>
+      }
+    >
+      <div className="ops-kpi-grid !grid-cols-3 mb-8">
+        {[
+          { label: 'Total logs', value: stats.total },
+          { label: 'Pending', value: stats.pending },
+          { label: 'Completed', value: stats.completed },
+        ].map((s, i) => (
+          <motion.div key={s.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="ops-kpi border-slate-700/70 bg-slate-900/50">
+            <span className="ops-kpi-label">{s.label}</span>
+            <p className="ops-kpi-value">{s.value}</p>
+          </motion.div>
+        ))}
+      </div>
 
-<div>
-  <label htmlFor="shiftStartTime" className="text-lg font-medium text-white">Shift Start Time</label>
-  <input
-    type="time"
-    id="shiftStartTime"
-    name="shiftStartTime"
-    value={logData.shiftStartTime}
-    onChange={handleInputChange}
-    className="block w-full p-2 mt-2 bg-gray-800 text-white border border-gray-700 rounded-lg"
-  />
-</div>
-
-<div>
-  <label htmlFor="shiftEndTime" className="text-lg font-medium text-white">Shift End Time</label>
-  <input
-    type="time"
-    id="shiftEndTime"
-    name="shiftEndTime"
-    value={logData.shiftEndTime}
-    onChange={handleInputChange}
-    className="block w-full p-2 mt-2 bg-gray-800 text-white border border-gray-700 rounded-lg"
-  />
-</div>
-    
-        {/* Next Shift Tasks */}
-        <div>
-          <label htmlFor="nextShiftTasks" className="text-lg font-medium text-white">Next Shift Tasks</label>
-          <textarea
-            id="nextShiftTasks"
-            name="nextShiftTasks"
-            value={logData.nextShiftTasks}
-            onChange={handleInputChange}
-            rows="4"
-            className="block w-full p-4 mt-2 bg-gray-800 text-white border border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
-            placeholder="Enter tasks for the next shift..."
-          ></textarea>
-        </div>
-    
-        {/* Additional Notes */}
-        <div>
-          <label htmlFor="additionalNotes" className="text-lg font-medium text-white">Additional Notes</label>
-          <textarea
-            id="additionalNotes"
-            name="additionalNotes"
-            value={additionalNotes}
-            onChange={handleNotesChange}
-            rows="4"
-            className="block w-full p-4 mt-2 bg-gray-800 text-white border border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
-            placeholder="Add any additional notes (optional)..."
-          ></textarea>
-        </div>
-    
-        {/* File Upload */}
-        <div className="space-y-4">
-          <div {...getRootProps()} className="p-6 border-dashed border-2 border-gray-600 rounded-lg text-center cursor-pointer hover:bg-gray-700 transition-all duration-300">
-            <input {...getInputProps()} />
-            <p className="text-gray-400">Drag & drop a file here, or click to select one (Image/PDF)</p>
-            {filePreview && <img src={filePreview} alt="Preview" className="mt-4 max-w-full h-auto rounded-lg shadow-lg" />}
-            {!filePreview && <FaFileUpload className="text-3xl text-gray-400 mt-4" />}
+      {showForm && (
+        <motion.form initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} onSubmit={submitLog} className="ops-panel mb-8 border-amber-500/20">
+          <div className="ops-panel-head">
+            <h3 className="ops-panel-title"><FaClipboardList className="text-amber-500" /> Submit handover log</h3>
+            <button type="button" onClick={resetForm} className="btn-ghost !p-2 text-slate-400">✕</button>
           </div>
-        </div>
-    
-        {/* Submit Button */}
-        <button
-          type="submit"
-          className={`w-full py-3 rounded-lg hover:bg-blue-700 transition duration-300 ${loading ? 'bg-gray-500' : 'bg-blue-600'}`}
-          disabled={loading}
-        >
-          {loading ? 'Submitting...' : 'Submit Log'}
-        </button>
-    
-        {/* Error Message */}
-        {errorMessage && <p className="text-red-600 mt-4 text-center">{errorMessage}</p>}
-    
-        {/* Voice Control */}
-        <div className="mt-4 text-center">
-          <button onClick={startVoiceRecognition} className="bg-green-600 text-white p-2 rounded-lg">Start Voice</button>
-          <button onClick={stopVoiceRecognition} className="bg-red-600 text-white p-2 rounded-lg ml-2">Stop Voice</button>
-        </div>
-    
-        {/* Upload Progress */}
-        {uploading && (
-          <div className="mt-4">
-            <ProgressBar now={uploadProgress} label={`${uploadProgress}%`} />
+          <div className="ops-panel-body grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <FormField label="Shift details" className="lg:col-span-2">
+              <textarea name="shiftDetails" value={logData.shiftDetails} onChange={handleInputChange} rows={3} className="input-field" placeholder="Summary of shift activities…" />
+            </FormField>
+            <FormField label="Start time">
+              <input type="time" name="shiftStartTime" value={logData.shiftStartTime} onChange={handleInputChange} className="input-field" />
+            </FormField>
+            <FormField label="End time">
+              <input type="time" name="shiftEndTime" value={logData.shiftEndTime} onChange={handleInputChange} className="input-field" />
+            </FormField>
+            <FormField label="Status">
+              <select name="status" value={logData.status} onChange={handleInputChange} className="input-field">
+                <option value="pending">Pending</option>
+                <option value="in-progress">In progress</option>
+                <option value="completed">Completed</option>
+              </select>
+            </FormField>
+            <FormField label="Notes">
+              <textarea name="notes" value={logData.notes} onChange={handleInputChange} rows={2} className="input-field" placeholder="Optional notes…" />
+            </FormField>
+            <div className="lg:col-span-2">
+              <div {...getRootProps()} className={`dropzone-modern ${isDragActive ? 'border-amber-500 bg-amber-500/10' : ''}`}>
+                <input {...getInputProps()} />
+                <FaFileUpload className="mx-auto text-2xl text-slate-400 mb-2" />
+                <p className="text-sm text-slate-400">Attach handover photo or PDF (required)</p>
+              </div>
+              {filePreview && <img src={filePreview} alt="Preview" className="mt-3 max-h-40 rounded-lg border border-slate-700" />}
+            </div>
           </div>
-        )}
-      </form>
-      {showEditModal && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div className="bg-gray-900 p-4 rounded-lg w-full max-w-md shadow-lg relative">
-      <button
-        onClick={() => {
-          setEditLogId(null);
-          resetForm();
-        }}
-        className="absolute top-2 right-2 text-white text-xl hover:text-red-500"
-      >
-        &times;
-      </button>
+          <div className="px-5 pb-5">
+            <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+              {loading ? 'Submitting…' : 'Submit log'}
+            </Button>
+          </div>
+        </motion.form>
+      )}
 
-      <h3 className="text-white text-lg font-semibold mb-3">Edit Shift Log</h3>
-
-      <div className="space-y-3 text-sm">
-        <textarea
-          name="shiftDetails"
-          value={logData.shiftDetails}
-          onChange={handleInputChange}
-          placeholder="Shift details"
-          className="w-full p-2 rounded bg-gray-800 text-white"
-        />
-        <textarea
-          name="safetyIssues"
-          value={logData.safetyIssues}
-          onChange={handleInputChange}
-          placeholder="Safety issues"
-          className="w-full p-2 rounded bg-gray-800 text-white"
-        />
-        <textarea
-          name="nextShiftTasks"
-          value={logData.nextShiftTasks}
-          onChange={handleInputChange}
-          placeholder="Next shift tasks"
-          className="w-full p-2 rounded bg-gray-800 text-white"
-        />
-        <input
-          type="time"
-          name="shiftStartTime"
-          value={logData.shiftStartTime}
-          onChange={handleInputChange}
-          className="w-full p-2 rounded bg-gray-800 text-white"
-        />
-        <input
-          type="time"
-          name="shiftEndTime"
-          value={logData.shiftEndTime}
-          onChange={handleInputChange}
-          className="w-full p-2 rounded bg-gray-800 text-white"
-        />
-        <select
-          name="status"
-          value={logData.status}
-          onChange={handleInputChange}
-          className="w-full p-2 rounded bg-gray-800 text-white"
-        >
-          <option value="Pending">Pending</option>
-          <option value="Ongoing">Ongoing</option>
-          <option value="Completed">Completed</option>
+      <div className="toolbar !bg-slate-800/50 !border-slate-700 mb-6">
+        <div className="relative flex-1 min-w-[200px]">
+          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm" />
+          <input className="input-field !pl-9" placeholder="Search logs…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <select className="input-field !w-auto" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="in-progress">In progress</option>
+          <option value="completed">Completed</option>
         </select>
-        <textarea
-          placeholder="Additional notes..."
-          value={additionalNotes}
-          onChange={(e) => setAdditionalNotes(e.target.value)}
-          className="w-full p-2 rounded bg-gray-800 text-white"
-        />
-
-        <div className="flex justify-end space-x-2 pt-2">
-          <button
-            onClick={updateLog}
-            className="bg-green-600 px-4 py-2 rounded text-white text-sm"
-          >
-            Save
-          </button>
-          <button
-            onClick={() => {
-              setEditLogId(null);
-              resetForm();
-            }}
-            className="bg-red-600 px-4 py-2 rounded text-white text-sm"
-          >
-            Cancel
-          </button>
-        </div>
       </div>
-    </div>
-  </div>
-)}
 
+      {listLoading ? (
+        <LoadingBlock label="Loading shift logs…" />
+      ) : filtered.length === 0 ? (
+        <EmptyState title="No shift logs" message="Submit your first handover log to get started." action={<Button onClick={() => setShowForm(true)}><FaPlus /> Create log</Button>} />
+      ) : (
+        <div className="space-y-4">
+          {filtered.map((log, i) => (
+            <motion.div key={log._id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="shift-log-card">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-white mb-1">{log.shiftDetails}</p>
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-slate-400">
+                    <span className="flex items-center gap-1"><FaClock /> {log.shiftStartTime} – {log.shiftEndTime}</span>
+                    <span className={statusClass(log.status)}>{log.status}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {log.file && (
+                    <a href={log.file} target="_blank" rel="noopener noreferrer" className="btn-ghost !text-xs !text-amber-400">
+                      <FaExternalLinkAlt /> Attachment
+                    </a>
+                  )}
+                  <button type="button" onClick={() => openEdit(log)} className="btn-ghost !text-xs !text-blue-400"><FaEdit /> Edit</button>
+                  <button type="button" onClick={() => deleteLog(log._id)} className="btn-ghost !text-xs !text-red-400"><FaTrash /></button>
+                </div>
+              </div>
+              {log.notes && <p className="text-sm text-slate-500 border-t border-slate-800 pt-3">{log.notes}</p>}
+            </motion.div>
+          ))}
+        </div>
+      )}
 
-      {/* Auto-Save Status */}
-      <div className="mt-6 text-sm text-gray-400 text-center">{autoSaveStatus}</div>
-    
-      {/* Previous Logs Section */}
-      <h3 className="text-2xl font-bold text-blue-400 mt-8">📜 Previous Shift Logs</h3>
-      {previousLogs.length > 0 ? (
-  <div className="space-y-6 mt-4">
-    {previousLogs.map((log) => (
-      <div key={log._id} className="bg-gray-800 p-4 rounded-lg shadow-md text-white">
-        <p><strong>Shift Details:</strong> {log.shiftDetails}</p>
-        <p><strong>Safety Issues:</strong> {log.safetyIssues}</p>
-        <p><strong>Next Shift Tasks:</strong> {log.nextShiftTasks}</p>
-        <p><strong>Status:</strong> {log.status}</p>
-        <p><strong>Start Time:</strong> {log.shiftStartTime}</p>
-        <p><strong>End Time:</strong> {log.shiftEndTime}</p>
-        <p><strong>Notes:</strong> {log.notes}</p>
-
-        {/* Optional file preview */}
-        {log.fileUrl && (
-          <div className="mt-2">
-            <a
-              href={log.fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 underline"
-            >
-              View Attached File
-            </a>
+      <Modal
+        open={editModalOpen}
+        onClose={resetForm}
+        title="Edit shift log"
+        footer={
+          <>
+            <Button variant="secondary" onClick={resetForm}>Cancel</Button>
+            <Button onClick={updateLog} disabled={loading}>{loading ? 'Saving…' : 'Save'}</Button>
+          </>
+        }
+      >
+        <div className="grid gap-4">
+          <FormField label="Shift details">
+            <textarea name="shiftDetails" value={logData.shiftDetails} onChange={handleInputChange} rows={3} className="input-field" />
+          </FormField>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Start"><input type="time" name="shiftStartTime" value={logData.shiftStartTime} onChange={handleInputChange} className="input-field" /></FormField>
+            <FormField label="End"><input type="time" name="shiftEndTime" value={logData.shiftEndTime} onChange={handleInputChange} className="input-field" /></FormField>
           </div>
-        )}
-
-        {/* Actions */}
-        <div className="mt-3 flex gap-4">
-          <button
-            onClick={() => editLog(log._id)}
-            className="bg-yellow-600 px-3 py-1 rounded-lg hover:bg-yellow-700"
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => deleteLog(log._id)}
-            className="bg-red-600 px-3 py-1 rounded-lg hover:bg-red-700"
-          >
-            Delete
-          </button>
+          <FormField label="Status">
+            <select name="status" value={logData.status} onChange={handleInputChange} className="input-field">
+              <option value="pending">Pending</option>
+              <option value="in-progress">In progress</option>
+              <option value="completed">Completed</option>
+            </select>
+          </FormField>
+          <FormField label="Notes">
+            <textarea name="notes" value={logData.notes} onChange={handleInputChange} rows={2} className="input-field" />
+          </FormField>
         </div>
-      </div>
-    ))}
-  </div>
-) : (
-  <p className="text-gray-400 mt-4">No previous logs found.</p>
-)}
+      </Modal>
 
-    </div>
+      <ToastContainer position="top-right" autoClose={3000} />
+    </PageShell>
   );
-    
 };
 
 export default ShiftHandoverLog;

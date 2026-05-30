@@ -1,328 +1,210 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { AlertTriangle, TrendingUp, TrendingDown, Activity, Shield, Users, Tool } from 'lucide-react';
-import { toast } from 'react-toastify';
+import api from '../services/axios';
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { AlertTriangle, TrendingUp, Activity, Shield, Sparkles, RefreshCw } from 'lucide-react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import Button from './ui/Button';
+import LoadingBlock from './ui/LoadingBlock';
+import EmptyState from './ui/EmptyState';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const riskPill = (level) => {
+  const l = (level || '').toLowerCase();
+  if (l === 'critical' || l === 'high') return 'risk-pill--high';
+  if (l === 'medium') return 'risk-pill--medium';
+  return 'risk-pill--low';
+};
 
 const PredictiveAnalyticsDashboard = ({ mineId }) => {
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [analyticsData, setAnalyticsData] = useState(null);
 
-  useEffect(() => {
-    if (mineId) {
-      fetchAnalytics();
-      fetchPrediction();
+  const loadData = useCallback(async () => {
+    if (!mineId) return;
+    try {
+      const [analyticsRes, predRes] = await Promise.all([
+        api.get(`/mines/${mineId}/analytics`).catch(() => ({ data: {} })),
+        api.get(`/mines/${mineId}/predictions`, { params: { limit: 1 } }).catch(() => ({ data: { predictions: [] } })),
+      ]);
+      setAnalyticsData(analyticsRes.data?.analytics ?? analyticsRes.data ?? null);
+      const preds = predRes.data?.predictions ?? [];
+      if (preds.length > 0) setPrediction(preds[0]);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setInitialLoad(false);
     }
   }, [mineId]);
 
-  const fetchAnalytics = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/mines/${mineId}/analytics`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setAnalyticsData(response.data.analytics);
-    } catch (error) {
-      console.error('Error fetching analytics:', error);
-    }
-  };
-
-  const fetchPrediction = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/mines/${mineId}/predictions?limit=1`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.data.predictions.length > 0) {
-        setPrediction(response.data.predictions[0]);
-      }
-    } catch (error) {
-      console.error('Error fetching prediction:', error);
-    }
-  };
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const generateNewPrediction = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(`${API_URL}/mines/${mineId}/predict`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setPrediction(response.data.prediction);
-      toast.success('New prediction generated successfully');
-    } catch (error) {
-      console.error('Error generating prediction:', error);
+      const { data } = await api.post(`/mines/${mineId}/predict`, {});
+      setPrediction(data.prediction ?? data);
+      toast.success('New AI analysis complete');
+      loadData();
+    } catch {
       toast.error('Failed to generate prediction');
     } finally {
       setLoading(false);
     }
   };
 
-  const getRiskColor = (level) => {
-    switch (level) {
-      case 'low': return '#10b981';
-      case 'medium': return '#f59e0b';
-      case 'high': return '#ef4444';
-      case 'critical': return '#dc2626';
-      default: return '#6b7280';
-    }
-  };
-
-  const getRiskIcon = (level) => {
-    if (level === 'critical' || level === 'high') {
-      return <AlertTriangle className="text-red-500" size={24} />;
-    }
-    return <Shield className="text-green-500" size={24} />;
-  };
+  if (initialLoad) return <LoadingBlock label="Loading AI analytics…" />;
 
   if (!prediction && !analyticsData) {
     return (
-      <div className="p-6 bg-white rounded-lg shadow-md">
-        <div className="text-center">
-          <Activity className="mx-auto mb-4 text-gray-400" size={48} />
-          <h3 className="text-xl font-semibold mb-2">No Analytics Data Available</h3>
-          <p className="text-gray-600 mb-4">Generate your first prediction to get started</p>
-          <button
-            onClick={generateNewPrediction}
-            disabled={loading}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? 'Generating...' : 'Generate Prediction'}
-          </button>
-        </div>
-      </div>
+      <EmptyState
+        title="No predictions yet"
+        message="Run your first AI risk analysis for this mine site."
+        action={
+          <Button onClick={generateNewPrediction} disabled={loading}>
+            <Sparkles className="w-4 h-4 inline mr-1" />
+            {loading ? 'Analyzing…' : 'Run AI analysis'}
+          </Button>
+        }
+      />
     );
   }
 
+  const formatLabel = (s) => (s || '').replace(/_/g, ' ');
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">🔮 Predictive Analytics Dashboard</h2>
-        <button
-          onClick={generateNewPrediction}
-          disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-        >
-          <Activity size={18} />
-          {loading ? 'Generating...' : 'Run New Analysis'}
-        </button>
+      <ToastContainer position="top-right" autoClose={3000} />
+
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <p className="text-sm text-slate-400">ML-powered risk scoring and incident forecasts</p>
+        <Button variant="secondary" onClick={generateNewPrediction} disabled={loading}>
+          <RefreshCw className={`w-4 h-4 inline mr-1 ${loading ? 'animate-spin' : ''}`} />
+          {loading ? 'Running…' : 'Run new analysis'}
+        </Button>
       </div>
 
-      {/* Risk Score Card */}
       {prediction && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="col-span-2 bg-gradient-to-br from-blue-500 to-purple-600 text-white p-6 rounded-lg shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90 mb-1">Overall Risk Score</p>
-                <h1 className="text-5xl font-bold">{prediction.riskScore}</h1>
-                <p className="text-lg mt-2 capitalize">
-                  Risk Level: <span className="font-semibold">{prediction.riskLevel}</span>
-                </p>
+        <>
+          <div className="ops-kpi-grid">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="ops-kpi col-span-full md:col-span-2 border-violet-500/30 bg-gradient-to-br from-violet-950/60 to-slate-900/80"
+            >
+              <span className="ops-kpi-label">Overall risk score</span>
+              <p className="ops-kpi-value !text-4xl text-white">{prediction.riskScore ?? '—'}</p>
+              <div className="flex items-center gap-2 mt-2">
+                <span className={riskPill(prediction.riskLevel)}>{prediction.riskLevel || 'unknown'}</span>
+                <span className="text-xs text-slate-400">{prediction.confidence ?? 0}% confidence</span>
               </div>
-              <div className="text-6xl opacity-20">
-                {getRiskIcon(prediction.riskLevel)}
-              </div>
-            </div>
-            <div className="mt-4 flex items-center gap-2">
-              <div className="flex-1 bg-white bg-opacity-20 rounded-full h-2">
+              <div className="mt-3 h-2 rounded-full bg-slate-800 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-white"
-                  style={{ width: `${prediction.riskScore}%` }}
+                  className="h-full bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 rounded-full transition-all"
+                  style={{ width: `${Math.min(100, prediction.riskScore || 0)}%` }}
                 />
               </div>
-              <span className="text-sm font-semibold">{prediction.confidence}% Confidence</span>
+            </motion.div>
+            <div className="ops-kpi border-slate-700/70 bg-slate-900/50">
+              <Shield className="text-emerald-400 w-5 h-5 mb-2" />
+              <span className="ops-kpi-label">Safety status</span>
+              <p className="ops-kpi-value !text-lg capitalize">{analyticsData?.currentRiskLevel || prediction.riskLevel}</p>
+            </div>
+            <div className="ops-kpi border-slate-700/70 bg-slate-900/50">
+              <AlertTriangle className="text-amber-400 w-5 h-5 mb-2" />
+              <span className="ops-kpi-label">Open alerts</span>
+              <p className="ops-kpi-value !text-lg">{analyticsData?.unresolvedAlerts ?? 0}</p>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="flex items-center gap-3 mb-2">
-              <Shield className="text-green-500" size={24} />
-              <h3 className="font-semibold">Safety Status</h3>
-            </div>
-            <p className="text-3xl font-bold text-gray-800">
-              {analyticsData?.currentRiskLevel || prediction.riskLevel}
-            </p>
-            <p className="text-sm text-gray-600 mt-1">Current Status</p>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="flex items-center gap-3 mb-2">
-              <AlertTriangle className="text-orange-500" size={24} />
-              <h3 className="font-semibold">Alerts</h3>
-            </div>
-            <p className="text-3xl font-bold text-gray-800">
-              {analyticsData?.unresolvedAlerts || 0}
-            </p>
-            <p className="text-sm text-gray-600 mt-1">Unresolved</p>
-          </div>
-        </div>
-      )}
-
-      {/* Predicted Incidents */}
-      {prediction?.predictedIncidents && prediction.predictedIncidents.length > 0 && (
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <AlertTriangle className="text-red-500" />
-            Predicted Incidents
-          </h3>
-          <div className="space-y-4">
-            {prediction.predictedIncidents.map((incident, index) => (
-              <div key={index} className="border-l-4 border-red-500 pl-4 py-2 bg-red-50 rounded">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-semibold capitalize">
-                      {incident.type.replace('_', ' ')}
-                    </h4>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Probability: <span className="font-semibold text-red-600">{incident.probability}%</span>
+          {prediction.predictedIncidents?.length > 0 && (
+            <section className="ops-panel">
+              <div className="ops-panel-header">
+                <h3 className="font-semibold text-white flex items-center gap-2">
+                  <AlertTriangle className="text-red-400 w-5 h-5" /> Predicted incidents
+                </h3>
+              </div>
+              <div className="ops-panel-body space-y-3">
+                {prediction.predictedIncidents.map((incident, index) => (
+                  <div key={index} className="rounded-xl border border-red-500/20 bg-red-950/20 p-4">
+                    <h4 className="font-semibold text-white capitalize">{formatLabel(incident.type)}</h4>
+                    <p className="text-sm text-slate-400 mt-1">
+                      {incident.probability}% probability · {formatLabel(incident.estimatedTimeframe)}
+                      {incident.affectedArea && ` · ${incident.affectedArea}`}
                     </p>
-                    <p className="text-sm text-gray-600">
-                      Timeframe: <span className="font-semibold">{incident.estimatedTimeframe.replace('_', ' ')}</span>
-                    </p>
-                    {incident.affectedArea && (
-                      <p className="text-sm text-gray-600">
-                        Area: <span className="font-semibold">{incident.affectedArea}</span>
-                      </p>
+                    {incident.recommendedActions?.length > 0 && (
+                      <ul className="mt-2 text-sm text-slate-300 space-y-1 list-disc list-inside">
+                        {incident.recommendedActions.map((action, idx) => (
+                          <li key={idx}>{action}</li>
+                        ))}
+                      </ul>
                     )}
                   </div>
-                </div>
-                {incident.recommendedActions && incident.recommendedActions.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-sm font-semibold mb-1">Recommended Actions:</p>
-                    <ul className="text-sm space-y-1">
-                      {incident.recommendedActions.map((action, idx) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <span className="text-red-500 mt-0.5">•</span>
-                          <span>{action}</span>
-                        </li>
-                      ))}
-                    </ul>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {prediction.recommendations?.length > 0 && (
+            <section className="ops-panel">
+              <div className="ops-panel-header">
+                <h3 className="font-semibold text-white flex items-center gap-2">
+                  <TrendingUp className="text-emerald-400 w-5 h-5" /> Recommendations
+                </h3>
+              </div>
+              <div className="ops-panel-body grid gap-3 md:grid-cols-2">
+                {prediction.recommendations.map((rec, index) => (
+                  <div key={index} className="rounded-xl border border-slate-700 bg-slate-800/40 p-4">
+                    <span className={riskPill(rec.priority)}>{rec.priority} priority</span>
+                    <p className="font-medium text-white mt-2">{rec.action}</p>
+                    <p className="text-xs text-emerald-400 mt-1">−{rec.potentialRiskReduction}% risk</p>
                   </div>
-                )}
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            </section>
+          )}
 
-      {/* Recommendations */}
-      {prediction?.recommendations && prediction.recommendations.length > 0 && (
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <TrendingUp className="text-green-500" />
-            Safety Recommendations
-          </h3>
-          <div className="space-y-3">
-            {prediction.recommendations.map((rec, index) => (
-              <div key={index} className={`p-4 rounded-lg border-l-4 ${
-                rec.priority === 'critical' ? 'border-red-500 bg-red-50' :
-                rec.priority === 'high' ? 'border-orange-500 bg-orange-50' :
-                rec.priority === 'medium' ? 'border-yellow-500 bg-yellow-50' :
-                'border-blue-500 bg-blue-50'
-              }`}>
-                <div className="flex justify-between items-start mb-2">
-                  <span className={`text-xs font-bold uppercase px-2 py-1 rounded ${
-                    rec.priority === 'critical' ? 'bg-red-200 text-red-800' :
-                    rec.priority === 'high' ? 'bg-orange-200 text-orange-800' :
-                    rec.priority === 'medium' ? 'bg-yellow-200 text-yellow-800' :
-                    'bg-blue-200 text-blue-800'
-                  }`}>
-                    {rec.priority} Priority
-                  </span>
-                  <span className="text-sm text-gray-600">
-                    Risk Reduction: <span className="font-semibold text-green-600">{rec.potentialRiskReduction}%</span>
-                  </span>
+          {prediction.factors && (
+            <div className="grid gap-4 md:grid-cols-3">
+              {[
+                { title: 'Weather', icon: '🌦️', data: prediction.factors.weatherConditions, rows: [
+                  ['Temperature', prediction.factors.weatherConditions?.temperature?.toFixed(1) + '°C'],
+                  ['Humidity', prediction.factors.weatherConditions?.humidity?.toFixed(1) + '%'],
+                ]},
+                { title: 'Operations', icon: '⚙️', data: prediction.factors.operationalFactors, rows: [
+                  ['Hours operated', prediction.factors.operationalFactors?.hoursOperated + 'h'],
+                  ['Overdue maintenance', prediction.factors.operationalFactors?.maintenanceOverdue],
+                ]},
+                { title: 'History', icon: '📊', data: prediction.factors.historicalData, rows: [
+                  ['Past incidents', prediction.factors.historicalData?.pastIncidents],
+                  ['Days safe', prediction.factors.historicalData?.daysWithoutIncident],
+                ]},
+              ].filter((f) => f.data).map((block) => (
+                <div key={block.title} className="ops-panel">
+                  <div className="ops-panel-body">
+                    <h4 className="font-semibold text-white mb-3">{block.icon} {block.title}</h4>
+                    <dl className="space-y-2 text-sm">
+                      {block.rows.map(([k, v]) => (
+                        <div key={k} className="flex justify-between">
+                          <dt className="text-slate-500">{k}</dt>
+                          <dd className="text-white font-medium">{v ?? '—'}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
                 </div>
-                <p className="font-semibold mb-2">{rec.action}</p>
-                <div className="flex gap-4 text-sm text-gray-600">
-                  <span>💰 Cost: ${rec.estimatedCost?.toLocaleString() || 'N/A'}</span>
-                  <span>⏱️ Time: {rec.estimatedTimeToImplement || 'N/A'}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Factors Analysis */}
-      {prediction?.factors && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {prediction.factors.weatherConditions && (
-            <div className="bg-white p-4 rounded-lg shadow-md">
-              <h4 className="font-semibold mb-3">🌦️ Weather Conditions</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Temperature:</span>
-                  <span className="font-semibold">{prediction.factors.weatherConditions.temperature?.toFixed(1)}°C</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Humidity:</span>
-                  <span className="font-semibold">{prediction.factors.weatherConditions.humidity?.toFixed(1)}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Rainfall:</span>
-                  <span className="font-semibold">{prediction.factors.weatherConditions.rainfall?.toFixed(1)}mm</span>
-                </div>
-              </div>
+              ))}
             </div>
           )}
 
-          {prediction.factors.operationalFactors && (
-            <div className="bg-white p-4 rounded-lg shadow-md">
-              <h4 className="font-semibold mb-3">⚙️ Operational Factors</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Hours Operated:</span>
-                  <span className="font-semibold">{prediction.factors.operationalFactors.hoursOperated}h</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Overdue Tasks:</span>
-                  <span className="font-semibold text-red-600">{prediction.factors.operationalFactors.maintenanceOverdue}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Equipment Age:</span>
-                  <span className="font-semibold">{prediction.factors.operationalFactors.equipmentAge?.toFixed(1)}y</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {prediction.factors.historicalData && (
-            <div className="bg-white p-4 rounded-lg shadow-md">
-              <h4 className="font-semibold mb-3">📊 Historical Data</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Past Incidents:</span>
-                  <span className="font-semibold">{prediction.factors.historicalData.pastIncidents}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Days Without Incident:</span>
-                  <span className="font-semibold text-green-600">{prediction.factors.historicalData.daysWithoutIncident}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Avg Response Time:</span>
-                  <span className="font-semibold">{prediction.factors.historicalData.averageResponseTime?.toFixed(0)}min</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Analysis Metadata */}
-      {prediction && (
-        <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-600">
-          <div className="flex justify-between items-center">
-            <span>Analysis Date: {new Date(prediction.analysisDate).toLocaleString()}</span>
-            <span>ML Model Version: {prediction.mlModelVersion}</span>
-            <span>Confidence: {prediction.confidence}%</span>
-          </div>
-        </div>
+          <p className="text-xs text-slate-500 text-center">
+            {prediction.analysisDate && `Analysis: ${new Date(prediction.analysisDate).toLocaleString()}`}
+            {prediction.mlModelVersion && ` · Model ${prediction.mlModelVersion}`}
+          </p>
+        </>
       )}
     </div>
   );

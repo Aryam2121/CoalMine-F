@@ -1,6 +1,5 @@
+import api from '../services/axios';
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
-
 // Mock function for GPS tracking
 const getUserLocation = () => {
   return new Promise((resolve, reject) => {
@@ -8,16 +7,8 @@ const getUserLocation = () => {
   });
 };
 
-const authenticateUser = () => {
-  return { id: 1, name: "John Doe" };
-};
-
 const SafetyProtocol = () => {
-  const [hazards, setHazards] = useState([
-    { id: 1, name: "Slip Hazard", completed: false, timestamp: null },
-    { id: 2, name: "Fire Risk", completed: false, timestamp: null },
-    { id: 3, name: "Electrical Risk", completed: false, timestamp: null },
-  ]);
+  const [hazards, setHazards] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
   const [gpsHistory, setGpsHistory] = useState([]);
   const [signature, setSignature] = useState("");
@@ -38,7 +29,7 @@ const SafetyProtocol = () => {
       }
 
       try {
-        const res = await axios.get(`https://${import.meta.env.VITE_BACKEND}/api/users/me`, {
+        const res = await api.get(`/users/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Cache-Control": "no-cache",
@@ -54,6 +45,28 @@ const SafetyProtocol = () => {
     };
     fetchProfile();
   }, []);
+
+  useEffect(() => {
+    const loadHazards = async () => {
+      try {
+        const { data } = await api.get('/getAllSafety');
+        const list = Array.isArray(data) ? data : [];
+        setHazards(
+          list.map((plan) => ({
+            id: plan._id,
+            name: plan.hazardDetails,
+            riskLevel: plan.riskLevel,
+            completed: plan.status === 'approved',
+            timestamp: plan.createdAt || null,
+          }))
+        );
+      } catch (err) {
+        console.error('Failed to load safety plans:', err);
+      }
+    };
+    loadHazards();
+  }, []);
+
   useEffect(() => {
     if (!hasFetchedLocation.current) {
       hasFetchedLocation.current = true;
@@ -70,13 +83,11 @@ const SafetyProtocol = () => {
         });
     }
 
-    const userData = authenticateUser();
-    setUser(userData);
   }, []);
 
-  const completionProgress =
-    (hazards.filter((hazard) => hazard.completed).length / hazards.length) *
-    100;
+  const completionProgress = hazards.length
+    ? (hazards.filter((hazard) => hazard.completed).length / hazards.length) * 100
+    : 0;
 
   const toggleTaskCompletion = (id) => {
     const currentTime = new Date().toISOString();
@@ -105,7 +116,7 @@ const SafetyProtocol = () => {
       };
 
       axios
-        .post(`https://${import.meta.env.VITE_BACKEND}/api/safety-check`, formData)
+        .post(`/safety-check`, formData)
         .then(() => setIsModalOpen(true))
         .catch((error) =>
           console.error("Error submitting safety check", error)
