@@ -8,11 +8,15 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('react-dom') || id.includes('react-router') || id.includes('/react/')) {
+            if (
+              id.includes('node_modules/react/') ||
+              id.includes('node_modules/react-dom/') ||
+              id.includes('node_modules/react-router') ||
+              id.includes('node_modules/react-chartjs-2') ||
+              id.includes('node_modules/recharts') ||
+              id.includes('node_modules/chart.js')
+            ) {
               return 'vendor-react';
-            }
-            if (id.includes('chart.js') || id.includes('react-chartjs') || id.includes('recharts')) {
-              return 'vendor-charts';
             }
             if (id.includes('@mui/') || id.includes('@emotion/')) {
               return 'vendor-mui';
