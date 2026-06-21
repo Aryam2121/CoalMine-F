@@ -1,5 +1,5 @@
 import api from '../services/axios';
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { requestNotificationPermission, onMessageListener } from "../firebaseConfig";
 const NotificationsFire = () => {
   const [token, setToken] = useState(null);

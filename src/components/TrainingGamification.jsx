@@ -1,5 +1,5 @@
 import api from '../services/axios';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Star, Award, TrendingUp, BookOpen, Medal, Play } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';

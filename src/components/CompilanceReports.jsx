@@ -1,5 +1,5 @@
 import api from '../services/axios';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { FiDownload, FiSearch, FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { MdCheckCircle, MdPending, MdCancel } from 'react-icons/md';
@@ -38,7 +38,7 @@ export default function ComplianceReports() {
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await api.get('/getReports', {
@@ -52,11 +52,11 @@ export default function ComplianceReports() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, statusFilter, page]);
 
   useEffect(() => {
     fetchReports();
-  }, [search, statusFilter, page]);
+  }, [fetchReports]);
 
   const stats = useMemo(() => ({
     total: reports.length,

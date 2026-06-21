@@ -1,14 +1,20 @@
-import React, { useState, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { useLocation } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
+import EmergencyBroadcastModal from './realtime/EmergencyBroadcastModal';
+import ShiftGateModal from './realtime/ShiftGateModal';
 import { AuthContext } from '../context/AuthContext';
+import { isManager } from '../utils/roles';
 const Layout = ({ children }) => {
   const [activePage, setActivePage] = useState('Dashboard');
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
   const location = useLocation();
 
   const hideLayout = ['/login', '/signup'].includes(location.pathname);
+  const showShiftGate = isAuthenticated && !isManager(user?.role) && location.pathname !== '/safety-check-in';
 
   if (!isAuthenticated || hideLayout) {
     return <div className="app-shell-bg min-h-screen">{children}</div>;
@@ -29,6 +35,9 @@ const Layout = ({ children }) => {
           {children}
         </div>
       </main>
+      <EmergencyBroadcastModal />
+      {showShiftGate && <ShiftGateModal />}
+      <ToastContainer position="top-right" autoClose={5000} newestOnTop />
     </div>
   );
 };

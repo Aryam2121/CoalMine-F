@@ -1,5 +1,5 @@
 import api from '../services/axios';
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { FiSearch, FiDownload } from 'react-icons/fi';
 import { toast, ToastContainer } from 'react-toastify';

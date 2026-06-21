@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import Confetti from "react-confetti"; // Import Confetti for achievement celebration
-import { FaRegClock, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
 const triviaCategories = {
   Weather: [
@@ -88,7 +88,7 @@ const WeatherTrivia = () => {
   const [timer, setTimer] = useState(20);
   const [showHint, setShowHint] = useState(false);
   const [hintsUsed, setHintsUsed] = useState(0);
-  const [maxHints, setMaxHints] = useState(3);
+  const [maxHints] = useState(3);
   const [badges, setBadges] = useState([]);
   const [showConfetti, setShowConfetti] = useState(false); // State for confetti animation
   const [isTimerActive, setIsTimerActive] = useState(true);

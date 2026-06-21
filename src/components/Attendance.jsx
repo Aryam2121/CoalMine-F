@@ -1,5 +1,5 @@
 import api from '../services/axios';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { Doughnut } from 'react-chartjs-2';

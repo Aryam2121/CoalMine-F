@@ -1,4 +1,3 @@
-import React from 'react';
 import PageShell from '../components/ui/PageShell';
 import TrainingGamification from '../components/TrainingGamification';
 

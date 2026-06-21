@@ -1,5 +1,5 @@
 import api from '../services/axios';
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { motion } from 'framer-motion';

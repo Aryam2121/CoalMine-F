@@ -1,5 +1,5 @@
 import api from '../services/axios';
-import React, { useState, useEffect, useContext, useMemo } from 'react';
+import { useState, useEffect, useContext, useMemo } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { motion } from 'framer-motion';
 import { toast, ToastContainer } from 'react-toastify';

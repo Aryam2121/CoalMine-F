@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useContext } from 'react';
+import { useState, useEffect, useMemo, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Star, Target, Award } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';

@@ -74,7 +74,7 @@ const Settings = () => {
       const payload = { name: user.name, email: user.email };
       if (user.password?.trim()) payload.password = user.password;
       const { data } = await api.put(`/users/profile/${user._id}`, payload);
-      setUser((u) => ({ ...data, password: '' }));
+      setUser(() => ({ ...data, password: '' }));
       login(data, localStorage.getItem('token'));
       toast.success('Profile updated');
     } catch (e) {

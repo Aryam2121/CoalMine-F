@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Trash2, CheckCircle, Bell, RefreshCw } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';

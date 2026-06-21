@@ -1,5 +1,5 @@
 import api from '../services/axios';
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 // Mock function for GPS tracking
 const getUserLocation = () => {
   return new Promise((resolve, reject) => {
@@ -16,8 +16,8 @@ const SafetyProtocol = () => {
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [user, setUser] = useState(null);
  
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [, setLoading] = useState(true);
+  const [, setError] = useState("");
   const hasFetchedLocation = useRef(false);
   useEffect(() => {
     const fetchProfile = async () => {
@@ -115,7 +115,7 @@ const SafetyProtocol = () => {
         signature,
       };
 
-      axios
+      api
         .post(`/safety-check`, formData)
         .then(() => setIsModalOpen(true))
         .catch((error) =>

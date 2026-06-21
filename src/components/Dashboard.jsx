@@ -1,5 +1,5 @@
 import api from '../services/axios';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -43,7 +43,7 @@ import Button from './ui/Button';
 import LoadingBlock from './ui/LoadingBlock';
 import EmptyState from './ui/EmptyState';
 import Modal from './ui/Modal';
-import useSocket from '../hooks/useSocket';
+import { useSocketContext } from '../context/SocketContext';
 import { toast } from 'react-toastify';
 
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -454,7 +454,7 @@ const Dashboard = () => {
     api.get('/getallloc').then((r) => setLocations(r.data || [])).catch(() => {});
   }, []);
 
-  const { socket, connected: socketConnected } = useSocket(true);
+  const { socket, connected: socketConnected } = useSocketContext();
 
   useEffect(() => {
     if (!socket) return undefined;

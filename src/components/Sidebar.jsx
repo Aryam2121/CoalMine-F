@@ -1,4 +1,4 @@
-import React, { useMemo, useContext } from 'react';
+import { useMemo, useContext } from 'react';
 
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
@@ -47,16 +47,49 @@ import {
   FaBrain,
 
   FaHistory,
-
+  FaBroadcastTower,
+  FaWrench,
+  FaComments,
+  FaChartLine,
+  FaShieldAlt,
   FaClipboardList,
-
 } from 'react-icons/fa';
 
 import { AuthContext } from '../context/AuthContext';
 
 import { filterMenuForRole, getRoleInfo, getRoleBadgeClass, MENU_SECTIONS } from '../utils/roles';
 
-
+const ICONS = {
+  '/': <FaTachometerAlt />,
+  '/live-operations': <FaBroadcastTower />,
+  '/coal-mines': <FaHardHat />,
+  '/shift-logs': <FaTasks />,
+  '/attendance': <FaClipboardCheck />,
+  '/safety-check-in': <FaClipboardCheck />,
+  '/maintenance': <FaWrench />,
+  '/team-chat': <FaComments />,
+  '/safety-plan': <FaCalendarAlt />,
+  '/alerts': <FaExclamationCircle />,
+  '/emergency': <FaAmbulance />,
+  '/safety-report': <FaFileAlt />,
+  '/capa': <FaShieldAlt />,
+  '/compliance-reports': <FaFileAlt />,
+  '/compliance-center': <FaShieldAlt />,
+  '/training': <FaGraduationCap />,
+  '/resources': <FaRegBuilding />,
+  '/inventory': <FaTools />,
+  '/weather': <FaCloud />,
+  '/executive': <FaChartLine />,
+  '/predictive-analytics': <FaBrain />,
+  '/predictive-maintenance': <FaWrench />,
+  '/data-visualization': <FaChartBar />,
+  '/report-generation': <FaClipboardList />,
+  '/audit-logs': <FaHistory />,
+  '/notifications': <FaBell />,
+  '/achievements': <FaTrophy />,
+  '/chatbot': <FaRobot />,
+  '/user-management': <FaUsers />,
+};
 
 const Sidebar = ({ setActivePage }) => {
 
@@ -67,30 +100,6 @@ const Sidebar = ({ setActivePage }) => {
   const location = useLocation();
 
   const roleInfo = getRoleInfo(user?.role);
-
-  const ICONS = {
-    '/': <FaTachometerAlt />,
-    '/coal-mines': <FaHardHat />,
-    '/shift-logs': <FaTasks />,
-    '/attendance': <FaClipboardCheck />,
-    '/safety-plan': <FaCalendarAlt />,
-    '/alerts': <FaExclamationCircle />,
-    '/emergency': <FaAmbulance />,
-    '/safety-report': <FaFileAlt />,
-    '/compliance-reports': <FaFileAlt />,
-    '/training': <FaGraduationCap />,
-    '/resources': <FaRegBuilding />,
-    '/inventory': <FaTools />,
-    '/weather': <FaCloud />,
-    '/predictive-analytics': <FaBrain />,
-    '/data-visualization': <FaChartBar />,
-    '/report-generation': <FaClipboardList />,
-    '/audit-logs': <FaHistory />,
-    '/notifications': <FaBell />,
-    '/achievements': <FaTrophy />,
-    '/chatbot': <FaRobot />,
-    '/user-management': <FaUsers />,
-  };
 
   const menuSections = useMemo(() => {
     const withIcons = MENU_SECTIONS.map((section) => ({

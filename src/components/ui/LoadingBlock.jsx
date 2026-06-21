@@ -1,4 +1,3 @@
-import React from 'react';
 
 const LoadingBlock = ({ label = 'Loading…' }) => (
   <div className="flex flex-col items-center justify-center py-16 gap-3">

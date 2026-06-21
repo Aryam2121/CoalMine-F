@@ -17,9 +17,13 @@ export const MENU_SECTIONS = [
     label: 'Operations',
     items: [
       { to: '/', label: 'Dashboard' },
+      { to: '/live-operations', label: 'Live Ops', minTier: 'manager' },
       { to: '/coal-mines', label: 'Coal Mines', minTier: 'manager' },
       { to: '/shift-logs', label: 'Shift Logs' },
       { to: '/attendance', label: 'Attendance' },
+      { to: '/safety-check-in', label: 'Safety Check-In' },
+      { to: '/maintenance', label: 'Maintenance', minTier: 'manager' },
+      { to: '/team-chat', label: 'Team Chat' },
     ],
   },
   {
@@ -29,7 +33,9 @@ export const MENU_SECTIONS = [
       { to: '/alerts', label: 'Alerts' },
       { to: '/emergency', label: 'Emergency' },
       { to: '/safety-report', label: 'Safety Reports' },
-      { to: '/compliance-reports', label: 'Compliance', minTier: 'manager' },
+      { to: '/capa', label: 'CAPA' },
+      { to: '/compliance-reports', label: 'Compliance Reports', minTier: 'manager' },
+      { to: '/compliance-center', label: 'Compliance Center', minTier: 'manager' },
       { to: '/training', label: 'Training' },
     ],
   },
@@ -44,7 +50,9 @@ export const MENU_SECTIONS = [
   {
     label: 'Insights',
     items: [
+      { to: '/executive', label: 'Executive', minTier: 'manager' },
       { to: '/predictive-analytics', label: 'AI Analytics', minTier: 'manager' },
+      { to: '/predictive-maintenance', label: 'Predictive Maint.', minTier: 'manager' },
       { to: '/data-visualization', label: 'Analytics', minTier: 'manager' },
       { to: '/report-generation', label: 'Reports', minTier: 'manager' },
       { to: '/audit-logs', label: 'Audit Logs', minTier: 'admin' },
@@ -59,7 +67,6 @@ export const MENU_SECTIONS = [
   },
 ];
 
-/** Routes not in sidebar but still gated */
 const EXTRA_ROUTES = [
   { paths: ['/profile', '/settings'], minTier: 'all' },
   { paths: ['/safety-protocol', '/voicedictation', '/weatherquiz', '/notificationsfire'], minTier: 'all' },
@@ -248,6 +255,9 @@ export const PERMISSIONS = {
   EMERGENCY_SOS: 'emergency:sos',
   EMERGENCY_MANAGE: 'emergency:manage',
   DASHBOARD_MAINTENANCE: 'dashboard:maintenance',
+  RESOURCE_MANAGE: 'resource:manage',
+  ANALYTICS_VIEW: 'analytics:view',
+  NOTIFICATION_SEND: 'notification:send',
 };
 
 const PERMISSION_MAP = {
@@ -269,6 +279,9 @@ const PERMISSION_MAP = {
   [PERMISSIONS.EMERGENCY_SOS]: () => true,
   [PERMISSIONS.EMERGENCY_MANAGE]: (r) => isManager(r),
   [PERMISSIONS.DASHBOARD_MAINTENANCE]: (r) => isManager(r),
+  [PERMISSIONS.RESOURCE_MANAGE]: (r) => isManager(r),
+  [PERMISSIONS.ANALYTICS_VIEW]: (r) => isManager(r),
+  [PERMISSIONS.NOTIFICATION_SEND]: (r) => isManager(r),
 };
 
 export const hasPermission = (role, permission) => {
@@ -290,6 +303,10 @@ export const SERVER_SYNCED_PERMISSIONS = new Set([
   PERMISSIONS.COMPLIANCE_WRITE,
   PERMISSIONS.COAL_MINE_WRITE,
   PERMISSIONS.EMERGENCY_MANAGE,
+  PERMISSIONS.DASHBOARD_MAINTENANCE,
+  PERMISSIONS.RESOURCE_MANAGE,
+  PERMISSIONS.ANALYTICS_VIEW,
+  PERMISSIONS.NOTIFICATION_SEND,
 ]);
 
 export const getRoleBadgeClass = (role) => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { FaSun, FaCloud, FaCloudRain, FaTemperatureHigh, FaTemperatureLow, FaWind } from "react-icons/fa";
 import { toast } from "react-toastify";
@@ -8,6 +8,9 @@ import PageShell from "./ui/PageShell";
 import LoadingBlock from "./ui/LoadingBlock";
 import Button from "./ui/Button";
 import Card from "./ui/Card";
+
+const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
+
 const WeatherAlerts = () => {
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -18,8 +21,6 @@ const WeatherAlerts = () => {
   const [forecast, setForecast] = useState(null);
   const [citySuggestions, setCitySuggestions] = useState([]);
   
-  const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
-
   // Fetch city suggestions as the user types
   const fetchCitySuggestions = debounce(async (query) => {
     if (query.length < 2) {

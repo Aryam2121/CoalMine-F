@@ -1,14 +1,16 @@
-import React, { Suspense, lazy } from 'react';
+import { Suspense, lazy } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { ResourceProvider } from './context/ResourceContext';
 import { WeatherProvider } from './context/WeatherContext';
 import { AuthProvider } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import PageNotFound from './components/PageNotFound';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import WeatherTrivia from './components/weatherQuiz';
+
+const WeatherTrivia = lazy(() => import('./components/weatherQuiz'));
 
 const Notifications = lazy(() => import('./components/Notificationweb'));
 const SafetyProtocol = lazy(() => import('./components/Safetyprotocol'));
@@ -38,6 +40,14 @@ const Settings = lazy(() => import('./components/Settings'));
 const EmergencyPage = lazy(() => import('./pages/EmergencyPage'));
 const TrainingPage = lazy(() => import('./pages/TrainingPage'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
+const LiveOperationsPage = lazy(() => import('./pages/LiveOperationsPage'));
+const MaintenancePage = lazy(() => import('./pages/MaintenancePage'));
+const TeamChatPage = lazy(() => import('./pages/TeamChatPage'));
+const SafetyCheckInPage = lazy(() => import('./pages/SafetyCheckInPage'));
+const CAPAPage = lazy(() => import('./pages/CAPAPage'));
+const ComplianceCenterPage = lazy(() => import('./pages/ComplianceCenterPage'));
+const PredictiveMaintenancePage = lazy(() => import('./pages/PredictiveMaintenancePage'));
+const ExecutiveDashboardPage = lazy(() => import('./pages/ExecutiveDashboardPage'));
 
 const PageLoader = () => (
   <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 page-wrap">
@@ -55,6 +65,7 @@ function App() {
     <GoogleOAuthProvider clientId={googleClientId || ''}>
       <Router>
         <AuthProvider>
+          <SocketProvider>
           <ResourceProvider>
             <WeatherProvider>
               <Layout>
@@ -89,6 +100,14 @@ function App() {
                     <Route path="/attendance" element={<Guard><Attendance /></Guard>} />
                     <Route path="/emergency" element={<Guard><EmergencyPage /></Guard>} />
                     <Route path="/training" element={<Guard><TrainingPage /></Guard>} />
+                    <Route path="/live-operations" element={<Guard><LiveOperationsPage /></Guard>} />
+                    <Route path="/maintenance" element={<Guard><MaintenancePage /></Guard>} />
+                    <Route path="/team-chat" element={<Guard><TeamChatPage /></Guard>} />
+                    <Route path="/safety-check-in" element={<Guard><SafetyCheckInPage /></Guard>} />
+                    <Route path="/capa" element={<Guard><CAPAPage /></Guard>} />
+                    <Route path="/compliance-center" element={<Guard><ComplianceCenterPage /></Guard>} />
+                    <Route path="/predictive-maintenance" element={<Guard><PredictiveMaintenancePage /></Guard>} />
+                    <Route path="/executive" element={<Guard><ExecutiveDashboardPage /></Guard>} />
                     <Route path="/predictive-analytics" element={<Guard><AnalyticsPage /></Guard>} />
                     <Route path="/profile" element={<Guard><Profile /></Guard>} />
                     <Route path="/settings" element={<Guard><Settings /></Guard>} />
@@ -105,6 +124,7 @@ function App() {
               </Layout>
             </WeatherProvider>
           </ResourceProvider>
+          </SocketProvider>
         </AuthProvider>
       </Router>
     </GoogleOAuthProvider>

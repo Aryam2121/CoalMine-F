@@ -167,7 +167,7 @@
 // };
 
 // export default CreateCoalMines;
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import api from "../services/axios";
 import PageShell from "./ui/PageShell";
@@ -197,7 +197,7 @@ const CoalMineCards = () => {
         setSelectedMine(JSON.parse(storedMine));
       }
     }
-  }, [showWorkerModal]);
+  }, [showWorkerModal, selectedMine]);
   
   
   useEffect(() => {
@@ -233,7 +233,7 @@ const CoalMineCards = () => {
       }
       setShowModal(false);
       fetchMines(); // Latest mines list fetch karo
-    } catch (error) {
+    } catch (_error) {
       alert("Error processing request");
     }
   };
@@ -245,7 +245,7 @@ const CoalMineCards = () => {
         await api.delete(`/deleteMine/${id}`);
         alert("Coal Mine Deleted Successfully");
         fetchMines();
-      } catch (error) {
+      } catch (_error) {
         alert("Error deleting coal mine");
       }
     }
@@ -273,8 +273,6 @@ const CoalMineCards = () => {
       }
     }
   
-    console.log("🔍 Selected Mine before adding worker:", mineToUpdate);
-  
     if (!mineToUpdate || !mineToUpdate._id) {
       alert("⚠️ No mine selected for adding a worker.");
       return;
@@ -285,8 +283,6 @@ const CoalMineCards = () => {
         ...mineToUpdate, 
         workers: [...(mineToUpdate.workers || []), workerForm] 
       };
-  
-      console.log("🚀 Updated Mine Data before API call:", updatedMine);
   
       await api.put(`/updateMine/${mineToUpdate._id}`, updatedMine);
   

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import api from '../services/axios';
 import PageShell from '../components/ui/PageShell';
 import LoadingBlock from '../components/ui/LoadingBlock';

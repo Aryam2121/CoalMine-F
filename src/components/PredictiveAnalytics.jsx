@@ -1,7 +1,7 @@
 import api from '../services/axios';
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, TrendingUp, Activity, Shield, Sparkles, RefreshCw } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Shield, Sparkles, RefreshCw } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Button from './ui/Button';

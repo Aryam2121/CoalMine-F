@@ -1,5 +1,5 @@
 import api from '../services/axios';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, Tooltip } from "recharts";
 
 import { motion } from 'framer-motion';
@@ -113,7 +113,6 @@ const Resources = () => {
   useEffect(() => {
     api.get(`/getAllRes`)
       .then((response) => {
-        console.log('Fetched resources:', response.data); // Debugging
         if (Array.isArray(response.data)) {
           setResources(response.data);
         } else {

@@ -1,5 +1,5 @@
 import api from '../services/axios';
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Line, Bar } from 'react-chartjs-2';
 import {
@@ -53,7 +53,7 @@ const DataVisualization = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const response = await api.get('/prod/getData', {
@@ -75,11 +75,11 @@ const DataVisualization = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [startDate, endDate, page]);
 
   useEffect(() => {
     fetchData();
-  }, [startDate, endDate, page]);
+  }, [fetchData]);
 
   const chartData = useMemo(() => {
     const values = data.map((item) => {

@@ -1,4 +1,3 @@
-import React from 'react';
 
 const EmptyState = ({ icon = '📭', title = 'No data yet', message, action }) => (
   <div className="empty-state">

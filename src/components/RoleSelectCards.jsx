@@ -1,4 +1,3 @@
-import React from 'react';
 import { ROLE_CATALOG, getRoleAccessList } from '../utils/roles';
 import { Check } from 'lucide-react';
 

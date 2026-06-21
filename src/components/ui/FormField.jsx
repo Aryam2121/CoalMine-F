@@ -1,4 +1,3 @@
-import React from 'react';
 
 const FormField = ({ label, children, hint, error, className = '' }) => (
   <div className={`space-y-1.5 ${className}`}>

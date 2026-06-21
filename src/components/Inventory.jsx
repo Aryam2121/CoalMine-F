@@ -1,26 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import api from "../services/axios";
 import {
   Button,
   TextField,
   Tooltip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   IconButton,
-  Pagination,
   InputAdornment,
   Modal,
   Box,
   Typography,
-  createTheme,
- 
- 
-  ThemeProvider,
 } from "@mui/material";
 import SortIcon from "@mui/icons-material/Sort";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -29,26 +17,13 @@ import { CSVLink } from "react-csv";
 import { motion } from "framer-motion";
 import SearchIcon from "@mui/icons-material/Search";
 import PageShell from "./ui/PageShell";
-// Define Material-UI dark theme
-const darkTheme = createTheme({
-  palette: {
-    mode: "dark",
-    primary: { main: "#90caf9" },
-    secondary: { main: "#f48fb1" },
-    background: { default: "#121212", paper: "#1E1E1E" },
-    text: { primary: "#fff" },
-  },
-});
 
 const Inventory = () => {
   const [resources, setResources] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [openModal, setOpenModal] = useState(false);
   const [selectedResource, setSelectedResource] = useState(null);
-  const inventoryRef = useRef(null);
 
   useEffect(() => {
     api
@@ -73,19 +48,8 @@ const Inventory = () => {
     return comparison !== 0 ? comparison : a.name.localeCompare(b.name);
   });
 
-  const totalQuantity = sortedResources.reduce((total, item) => total + item.available, 0);
-
   const handleSortToggle = () => {
     setSortOrder((prevOrder) => (prevOrder === "asc" ? "desc" : "asc"));
-  };
-
-  const handleChangePage = (event, newPage) => {
-    setCurrentPage(newPage);
-  };
-
-  const handleRowsPerPageChange = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setCurrentPage(1);
   };
 
   const handleOpenModal = (resource) => {

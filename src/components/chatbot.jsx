@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Bot, Sparkles, Trash2, WifiOff, Cpu } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
@@ -7,6 +7,7 @@ import api from '../services/axios';
 import { getClientOfflineReply } from '../utils/mineSafetyKnowledge';
 import PageShell from './ui/PageShell';
 import Button from './ui/Button';
+import { useSocketContext } from '../context/SocketContext';
 
 const SUGGESTED_PROMPTS = [
   'What should I check during shift handover?',
@@ -15,9 +16,19 @@ const SUGGESTED_PROMPTS = [
   'List PPE requirements for coal face workers',
 ];
 
+const OPS_PROMPTS = [
+  'Summarize current open alerts and risks',
+  'Which maintenance tasks are overdue?',
+  'What is our current safety risk score?',
+  'Generate a shift handover safety briefing',
+];
+
 const Chatbot = () => {
+  const { activeMineId } = useSocketContext();
   const [message, setMessage] = useState('');
   const [language, setLanguage] = useState('en');
+  const [opsMode, setOpsMode] = useState(true);
+  const [liveContext, setLiveContext] = useState(null);
   const [conversation, setConversation] = useState([]);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState('offline'); // online | offline | error
@@ -36,12 +47,15 @@ const Chatbot = () => {
     setLoading(true);
     setConversation((prev) => [...prev, { sender: 'user', text: userText }]);
     try {
-      const { data } = await api.post('/chat', {
+      const endpoint = opsMode ? '/chat/operations' : '/chat';
+      const { data } = await api.post(endpoint, {
         message: userText,
         language,
+        mineId: activeMineId,
       });
       const reply = data.reply || 'No response received.';
       const isOffline = Boolean(data.offline);
+      if (data.context) setLiveContext(data.context);
       setMode(isOffline ? 'offline' : 'online');
       if (!isOffline) lastHintRef.current = '';
       setStatusHint(
@@ -91,13 +105,38 @@ const Chatbot = () => {
 
   return (
     <PageShell
-      title="AI assistant"
-      subtitle="Mine safety, compliance, and operations guidance"
+      title="AI Operations Assistant"
+      subtitle="Query live system data, generate reports, and surface risks"
       variant="dark"
     >
       <ToastContainer position="top-right" autoClose={4000} />
 
       <div className="max-w-3xl mx-auto space-y-4">
+        <div className="flex flex-wrap gap-2 items-center">
+          <button
+            type="button"
+            onClick={() => setOpsMode(true)}
+            className={`text-xs px-3 py-1.5 rounded-lg border ${opsMode ? 'border-amber-500 bg-amber-500/20 text-amber-200' : 'border-slate-700 text-slate-400'}`}
+          >
+            Live operations
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpsMode(false)}
+            className={`text-xs px-3 py-1.5 rounded-lg border ${!opsMode ? 'border-violet-500 bg-violet-500/20 text-violet-200' : 'border-slate-700 text-slate-400'}`}
+          >
+            Safety knowledge
+          </button>
+        </div>
+
+        {opsMode && liveContext && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-xs">
+            <div className="rounded-lg border border-slate-700 p-2"><span className="text-slate-500 block">Open alerts</span><strong className="text-amber-400">{liveContext.openAlerts}</strong></div>
+            <div className="rounded-lg border border-slate-700 p-2"><span className="text-slate-500 block">Critical</span><strong className="text-red-400">{liveContext.criticalAlerts}</strong></div>
+            <div className="rounded-lg border border-slate-700 p-2"><span className="text-slate-500 block">Overdue maint.</span><strong className="text-violet-400">{liveContext.overdueMaintenance}</strong></div>
+            <div className="rounded-lg border border-slate-700 p-2"><span className="text-slate-500 block">Risk</span><strong className="text-emerald-400">{liveContext.riskLevel || '—'}</strong></div>
+          </div>
+        )}
         <div
           className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm ${
             mode === 'online'
@@ -149,7 +188,7 @@ const Chatbot = () => {
                     <Sparkles className="w-3 h-3" /> Try asking:
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {SUGGESTED_PROMPTS.map((prompt) => (
+                    {(opsMode ? OPS_PROMPTS : SUGGESTED_PROMPTS).map((prompt) => (
                       <button
                         key={prompt}
                         type="button"
