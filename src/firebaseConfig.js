@@ -19,7 +19,12 @@ export const requestNotificationPermission = async () => {
   try {
     const permission = await Notification.requestPermission();
     if (permission === "granted") {
-      const token = await getToken(messaging, { vapidKey: "BD0bKqJ-QIjUzZfKUsQuaQL0IX8uhf4OwGOxU4vwdz-2l2D53cZykCq-aXKcZAUITSNIXhrXWrNyxp8H7f3UA1g" });
+      const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+      if (!vapidKey) {
+        console.warn("VITE_FIREBASE_VAPID_KEY is not set; push notifications disabled.");
+        return null;
+      }
+      const token = await getToken(messaging, { vapidKey });
       console.log("FCM Token:", token);
       return token;
     }

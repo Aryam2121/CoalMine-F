@@ -18,12 +18,15 @@ const WeatherAlerts = () => {
   const [forecast, setForecast] = useState(null);
   const [citySuggestions, setCitySuggestions] = useState([]);
   
-  const API_KEY = "1274d7780f57033ed9118ea96db99182";
+  const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
 
   // Fetch city suggestions as the user types
   const fetchCitySuggestions = debounce(async (query) => {
     if (query.length < 2) {
       setCitySuggestions([]);
+      return;
+    }
+    if (!API_KEY) {
       return;
     }
     try {
@@ -57,6 +60,11 @@ const WeatherAlerts = () => {
     const fetchWeather = async () => {
       setLoading(true);
       setError(null); // Reset error on new fetch
+      if (!API_KEY) {
+        setLoading(false);
+        setError("Weather API key is not configured.");
+        return;
+      }
       try {
         let url = `https://api.openweathermap.org/data/2.5/weather?appid=${API_KEY}&units=${unit}`;
         if (location) {

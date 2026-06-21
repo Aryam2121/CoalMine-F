@@ -276,6 +276,22 @@ export const hasPermission = (role, permission) => {
   return fn ? fn(role) : false;
 };
 
+/** Permissions enforced on the API — use server list from /auth/me when present */
+export const SERVER_SYNCED_PERMISSIONS = new Set([
+  PERMISSIONS.USER_MANAGE,
+  PERMISSIONS.AUDIT_READ,
+  PERMISSIONS.ATTENDANCE_MANAGE_ALL,
+  PERMISSIONS.SAFETY_REPORT_APPROVE,
+  PERMISSIONS.SAFETY_PLAN_CREATE,
+  PERMISSIONS.SAFETY_PLAN_DELETE,
+  PERMISSIONS.ALERT_CREATE,
+  PERMISSIONS.ALERT_RESOLVE,
+  PERMISSIONS.ALERT_RESOLVE_ALL,
+  PERMISSIONS.COMPLIANCE_WRITE,
+  PERMISSIONS.COAL_MINE_WRITE,
+  PERMISSIONS.EMERGENCY_MANAGE,
+]);
+
 export const getRoleBadgeClass = (role) => {
   if (isAdmin(role)) return 'bg-violet-500/20 text-violet-300 border-violet-500/30';
   if (isManager(role)) return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
