@@ -17,6 +17,9 @@ import { CSVLink } from "react-csv";
 import { motion } from "framer-motion";
 import SearchIcon from "@mui/icons-material/Search";
 import PageShell from "./ui/PageShell";
+import LoadingBlock from "./ui/LoadingBlock";
+import EmptyState from "./ui/EmptyState";
+import { toast } from "react-toastify";
 
 const Inventory = () => {
   const [resources, setResources] = useState([]);
@@ -24,18 +27,31 @@ const Inventory = () => {
   const [sortOrder, setSortOrder] = useState("asc");
   const [openModal, setOpenModal] = useState(false);
   const [selectedResource, setSelectedResource] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
+  const loadResources = () => {
+    setLoading(true);
+    setError("");
     api
       .get('/getAllRes')
       .then((response) => {
         if (Array.isArray(response.data)) {
           setResources(response.data);
         } else {
-          console.error("Expected an array but got:", response.data);
+          setResources([]);
+          setError("Unexpected response from server");
         }
       })
-      .catch((error) => console.error("Error fetching resources:", error));
+      .catch((err) => {
+        setError(err.response?.data?.message || "Failed to load inventory");
+        setResources([]);
+      })
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadResources();
   }, []);
 
   const filteredResources = resources?.filter((resource) =>
@@ -67,11 +83,20 @@ const Inventory = () => {
       .delete(`/deleteRes/${id}`)
       .then(() => {
         setResources(resources.filter((resource) => resource._id !== id));
+        toast.success("Resource deleted");
       })
-      .catch((error) => console.error("Error deleting resource:", error));
+      .catch((err) => toast.error(err.response?.data?.message || "Error deleting resource"));
   };
   return (
     <PageShell title="Inventory" subtitle="Equipment and supplies on hand" variant="dark">
+      {loading ? (
+        <LoadingBlock label="Loading inventory…" />
+      ) : error ? (
+        <div className="text-center py-12">
+          <p className="text-red-400 mb-4">{error}</p>
+          <Button onClick={loadResources} variant="contained">Retry</Button>
+        </div>
+      ) : (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
 
         {/* Search Bar */}
@@ -128,9 +153,13 @@ const Inventory = () => {
 
         {/* Inventory Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {sortedResources.map((item) => (
+          {sortedResources.length === 0 ? (
+            <div className="col-span-full">
+              <EmptyState title="No inventory items" description="Try adjusting your search or add resources from the Resources page." />
+            </div>
+          ) : sortedResources.map((item) => (
             <motion.div
-              key={item.id}
+              key={item._id || item.id}
               className="relative p-6 rounded-xl shadow-lg transition-transform transform hover:scale-105 bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 bg-opacity-80 backdrop-blur-md"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -187,6 +216,7 @@ const Inventory = () => {
           </Box>
         </Modal>
       </motion.div>
+      )}
     </PageShell>
   );
 };

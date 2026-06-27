@@ -1,5 +1,5 @@
 import api from '../services/axios';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -44,6 +44,8 @@ import LoadingBlock from './ui/LoadingBlock';
 import EmptyState from './ui/EmptyState';
 import Modal from './ui/Modal';
 import { useSocketContext } from '../context/SocketContext';
+import { AuthContext } from '../context/AuthContext';
+import { canAccessPath, hasPermission, PERMISSIONS } from '../utils/roles';
 import { toast } from 'react-toastify';
 
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -361,6 +363,18 @@ function Panel({ title, icon, action, children, className = '' }) {
   );
 }
 
+const QUICK_LINKS = [
+  { to: '/live-operations', label: 'Live ops', icon: FaMapMarkedAlt },
+  { to: '/evacuation', label: 'Evacuation', icon: FaShieldAlt },
+  { to: '/near-miss', label: 'Near-miss', icon: FaExclamationTriangle },
+  { to: '/incident-forecast', label: 'Risk forecast', icon: FaChartLine },
+  { to: '/alerts', label: 'Alerts', icon: FaBell },
+  { to: '/emergency', label: 'Emergency', icon: FaExclamationTriangle },
+  { to: '/shift-logs', label: 'Shift logs', icon: FaClipboardList },
+  { to: '/coal-mines', label: 'Mines', icon: FaHardHat },
+  { to: '/report-generation', label: 'Reports', icon: FaFileAlt },
+];
+
 const Dashboard = () => {
   const [startDate, setStartDate] = useState(daysAgo(30));
   const [endDate, setEndDate] = useState(new Date());
@@ -455,6 +469,12 @@ const Dashboard = () => {
   }, []);
 
   const { socket, connected: socketConnected } = useSocketContext();
+  const { user } = useContext(AuthContext);
+  const quickLinks = useMemo(
+    () => QUICK_LINKS.filter((link) => canAccessPath(user?.role, link.to)),
+    [user?.role]
+  );
+  const canCreateTask = hasPermission(user?.role, PERMISSIONS.DASHBOARD_MAINTENANCE);
 
   useEffect(() => {
     if (!socket) return undefined;
@@ -592,30 +612,22 @@ const Dashboard = () => {
               Real-time safety, productivity, and maintenance across all mine sites — powered by your database.
             </p>
             <div className="flex flex-wrap gap-2 mt-5">
-              <Link to="/alerts" className="dash-quick-link">
-                <FaBell /> Alerts
-              </Link>
-              <Link to="/emergency" className="dash-quick-link">
-                <FaExclamationTriangle /> Emergency
-              </Link>
-              <Link to="/shift-logs" className="dash-quick-link">
-                <FaClipboardList /> Shift logs
-              </Link>
-              <Link to="/coal-mines" className="dash-quick-link">
-                <FaHardHat /> Mines
-              </Link>
-              <Link to="/report-generation" className="dash-quick-link">
-                <FaFileAlt /> Reports
-              </Link>
+              {quickLinks.map(({ to, label, icon: Icon }) => (
+                <Link key={to} to={to} className="dash-quick-link">
+                  <Icon /> {label}
+                </Link>
+              ))}
             </div>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
             <Button variant="secondary" onClick={loadDashboard} className="!bg-white/10 !text-white !border-white/20 hover:!bg-white/20">
               <FaSyncAlt className={loading ? 'animate-spin' : ''} /> Refresh
             </Button>
-            <Button onClick={() => setIsModalOpen(true)} className="shadow-lg shadow-amber-500/25">
-              <FaPlus /> New task
-            </Button>
+            {canCreateTask && (
+              <Button onClick={() => setIsModalOpen(true)} className="shadow-lg shadow-amber-500/25">
+                <FaPlus /> New task
+              </Button>
+            )}
           </div>
         </div>
       </motion.div>
@@ -669,6 +681,24 @@ const Dashboard = () => {
             ].map((kpi, i) => (
               <KpiCard key={kpi.label} {...kpi} index={i} />
             ))}
+          </div>
+        )}
+
+        {stats && (stats.activeEvacuations > 0 || stats.nearMissOpen > 0) && (
+          <div className="mb-6 rounded-xl border border-red-500/40 bg-red-500/10 p-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-semibold text-red-400">Safety operations status</p>
+              <p className="text-sm text-slate-400">
+                {stats.activeEvacuations > 0 && `${stats.activeEvacuations} active evacuation(s) · `}
+                {stats.nearMissOpen} open near-miss reports · {stats.contractorsOnSite} on-site visitors
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {stats.activeEvacuations > 0 && (
+                <Link to="/evacuation" className="dash-quick-link !border-red-500/50">Open evacuation center</Link>
+              )}
+              <Link to="/near-miss" className="dash-quick-link">Review near-miss</Link>
+            </div>
           </div>
         )}
 

@@ -20,6 +20,8 @@ import Modal from './ui/Modal';
 import FormField from './ui/FormField';
 import EmptyState from './ui/EmptyState';
 import LoadingBlock from './ui/LoadingBlock';
+import { usePermissions } from '../hooks/usePermissions';
+import { isManager } from '../utils/roles';
 
 const emptyLog = {
   shiftDetails: '',
@@ -36,7 +38,18 @@ const statusClass = (s) => {
   return 'status-pill--pending';
 };
 
+const normalizeTime = (value) => {
+  if (!value) return '';
+  const str = String(value);
+  if (/^\d{2}:\d{2}$/.test(str)) return str;
+  const match = str.match(/(\d{1,2}):(\d{2})/);
+  if (match) return `${match[1].padStart(2, '0')}:${match[2]}`;
+  return str;
+};
+
 const ShiftHandoverLog = () => {
+  const { role } = usePermissions();
+  const canDelete = isManager(role);
   const [logData, setLogData] = useState(emptyLog);
   const [file, setFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
@@ -138,8 +151,8 @@ const ShiftHandoverLog = () => {
   const openEdit = (log) => {
     setLogData({
       shiftDetails: log.shiftDetails || '',
-      shiftStartTime: log.shiftStartTime || '',
-      shiftEndTime: log.shiftEndTime || '',
+      shiftStartTime: normalizeTime(log.shiftStartTime),
+      shiftEndTime: normalizeTime(log.shiftEndTime),
       status: log.status || 'pending',
       notes: log.notes || '',
     });
@@ -149,6 +162,10 @@ const ShiftHandoverLog = () => {
 
   const updateLog = async () => {
     if (!editLogId) return;
+    if (!logData.shiftDetails?.trim() || !logData.shiftStartTime || !logData.shiftEndTime) {
+      toast.error('Shift details, start time, and end time are required');
+      return;
+    }
     setLoading(true);
     try {
       const { data } = await api.put(`/updateLog/${editLogId}`, {
@@ -158,11 +175,12 @@ const ShiftHandoverLog = () => {
         status: logData.status,
         notes: logData.notes,
       });
-      setPreviousLogs((prev) => prev.map((l) => (l._id === editLogId ? data : l)));
+      const updated = data?.shiftLog || data;
+      setPreviousLogs((prev) => prev.map((l) => (l._id === editLogId ? updated : l)));
       toast.success('Log updated');
       resetForm();
-    } catch {
-      toast.error('Update failed');
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.response?.data?.error || 'Update failed');
     } finally {
       setLoading(false);
     }
@@ -294,7 +312,9 @@ const ShiftHandoverLog = () => {
                     </a>
                   )}
                   <button type="button" onClick={() => openEdit(log)} className="btn-ghost !text-xs !text-blue-400"><FaEdit /> Edit</button>
-                  <button type="button" onClick={() => deleteLog(log._id)} className="btn-ghost !text-xs !text-red-400"><FaTrash /></button>
+                  {canDelete && (
+                    <button type="button" onClick={() => deleteLog(log._id)} className="btn-ghost !text-xs !text-red-400"><FaTrash /></button>
+                  )}
                 </div>
               </div>
               {log.notes && <p className="text-sm text-slate-500 border-t border-slate-800 pt-3">{log.notes}</p>}

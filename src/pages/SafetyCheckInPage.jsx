@@ -65,17 +65,42 @@ const SafetyCheckInPage = () => {
     drawing.current = false;
     if (canvasRef.current) setSignature(canvasRef.current.toDataURL());
   };
-  const draw = (e) => {
+  const getCanvasPoint = (clientX, clientY) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    return { x: clientX - rect.left, y: clientY - rect.top };
+  };
+  const draw = (clientX, clientY) => {
     if (!drawing.current || !canvasRef.current) return;
     const ctx = canvasRef.current.getContext('2d');
-    const rect = canvasRef.current.getBoundingClientRect();
+    const { x, y } = getCanvasPoint(clientX, clientY);
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.strokeStyle = '#0f172a';
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.lineTo(x, y);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.moveTo(x, y);
+  };
+  const onMouseMove = (e) => draw(e.clientX, e.clientY);
+  const onTouchMove = (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    if (touch) draw(touch.clientX, touch.clientY);
+  };
+  const onTouchStart = (e) => {
+    e.preventDefault();
+    drawing.current = true;
+    const touch = e.touches[0];
+    if (touch && canvasRef.current) {
+      const ctx = canvasRef.current.getContext('2d');
+      const { x, y } = getCanvasPoint(touch.clientX, touch.clientY);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
+  };
+  const onTouchEnd = (e) => {
+    e.preventDefault();
+    endDraw();
   };
 
   const clearSig = () => {
@@ -111,6 +136,7 @@ const SafetyCheckInPage = () => {
 
       await api.post('/safety-check', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       toast.success('Safety check-in submitted — shift cleared');
+      window.dispatchEvent(new Event('safety-check-completed'));
       setHistory((prev) => [{ submittedAt: new Date(), tasks }, ...prev]);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Submission failed');
@@ -167,7 +193,10 @@ const SafetyCheckInPage = () => {
               onMouseDown={startDraw}
               onMouseUp={endDraw}
               onMouseLeave={endDraw}
-              onMouseMove={draw}
+              onMouseMove={onMouseMove}
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
             />
           </div>
 

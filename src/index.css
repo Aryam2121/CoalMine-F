@@ -732,6 +732,114 @@
     @apply ops-panel p-5 space-y-3 hover:border-amber-500/20 transition-colors;
   }
 
+  .maint-kpi-grid {
+    @apply grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6;
+  }
+
+  .maint-kpi {
+    @apply rounded-xl border border-slate-700/70 bg-slate-900/60 p-4;
+  }
+
+  .maint-kpi-label {
+    @apply text-[10px] font-bold uppercase tracking-widest text-slate-500;
+  }
+
+  .maint-kpi-value {
+    @apply text-2xl font-bold text-white mt-1;
+  }
+
+  .maint-kanban {
+    @apply grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4;
+  }
+
+  .maint-column {
+    @apply flex flex-col rounded-2xl border border-slate-700/80 bg-slate-900/40 min-h-[420px] overflow-hidden;
+  }
+
+  .maint-column-head {
+    @apply flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-700/80;
+  }
+
+  .maint-column-title {
+    @apply flex items-center gap-2 text-sm font-semibold text-white;
+  }
+
+  .maint-column-count {
+    @apply inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-slate-800 px-2 text-xs font-bold text-slate-300;
+  }
+
+  .maint-column-body {
+    @apply flex-1 p-3 space-y-3 overflow-y-auto max-h-[560px] scrollbar-hidden;
+  }
+
+  .maint-card {
+    @apply rounded-xl border border-slate-700/80 bg-slate-800/70 p-4 shadow-sm
+      hover:border-amber-500/30 hover:bg-slate-800 transition-all;
+  }
+
+  .maint-card-title {
+    @apply font-semibold text-sm text-white leading-snug;
+  }
+
+  .maint-card-meta {
+    @apply text-xs text-slate-400 mt-2 space-y-1;
+  }
+
+  .maint-card-actions {
+    @apply flex flex-wrap items-center gap-1.5 mt-3 pt-3 border-t border-slate-700/60;
+  }
+
+  .maint-action-btn {
+    @apply inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium
+      border transition-colors;
+  }
+
+  .maint-action-btn--edit {
+    @apply maint-action-btn border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20;
+  }
+
+  .maint-action-btn--delete {
+    @apply maint-action-btn border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20;
+  }
+
+  .maint-action-btn--complete {
+    @apply maint-action-btn border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20;
+  }
+
+  .maint-action-btn--start {
+    @apply maint-action-btn border-blue-500/30 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20;
+  }
+
+  .maint-priority {
+    @apply inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide;
+  }
+
+  .maint-priority--1 {
+    @apply maint-priority bg-red-500/15 text-red-300 border-red-500/40;
+  }
+
+  .maint-priority--2 {
+    @apply maint-priority bg-amber-500/15 text-amber-300 border-amber-500/40;
+  }
+
+  .maint-priority--3 {
+    @apply maint-priority bg-blue-500/15 text-blue-300 border-blue-500/40;
+  }
+
+  .maint-priority--low {
+    @apply maint-priority bg-slate-500/15 text-slate-400 border-slate-600;
+  }
+
+  .maint-category {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium capitalize
+      bg-slate-700/80 text-slate-300;
+  }
+
+  .maint-empty-col {
+    @apply flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-700
+      bg-slate-900/30 py-10 px-4 text-center;
+  }
+
   /* Hide scrollbars but keep scroll (sidebar + main) */
   .scrollbar-hidden {
     scrollbar-width: none;

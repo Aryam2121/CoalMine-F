@@ -475,8 +475,12 @@ const CoalMineCards = () => {
           onChange={(e) => handleWorkerChange("contact", e.target.value)}
         />
         <button
+          type="button"
           className="w-full py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-500 transition-all duration-300 shadow-lg hover:shadow-green-400"
-          onClick={handleAddWorker}
+          onClick={(e) => {
+            e.preventDefault();
+            handleAddWorker();
+          }}
         >
           Add Worker
         </button>

@@ -3,6 +3,7 @@ import { io } from 'socket.io-client';
 import { toast } from 'react-toastify';
 import { getApiBaseUrl } from '../services/axios';
 import api from '../services/axios';
+import { fetchOperationalMines, resolveActiveMineId } from '../utils/minesApi';
 
 const SocketContext = createContext(null);
 
@@ -17,6 +18,7 @@ export function SocketProvider({ children, enabled = true }) {
   const [activeMineId, setActiveMineId] = useState(null);
   const [mines, setMines] = useState([]);
   const [emergency, setEmergency] = useState(null);
+  const [activeEvacuation, setActiveEvacuation] = useState(null);
   const [liveNotifications, setLiveNotifications] = useState([]);
   const joinedMine = useRef(null);
 
@@ -25,13 +27,10 @@ export function SocketProvider({ children, enabled = true }) {
     const token = localStorage.getItem('token');
     if (!token) return undefined;
 
-    api
-      .get('/getallMines')
-      .then((res) => {
-        const list = res.data?.data ?? res.data ?? [];
-        const arr = Array.isArray(list) ? list : [];
+    fetchOperationalMines()
+      .then((arr) => {
         setMines(arr);
-        setActiveMineId((current) => current || arr[0]?._id || null);
+        setActiveMineId((current) => resolveActiveMineId(arr, current));
       })
       .catch(() => {});
 
@@ -81,6 +80,28 @@ export function SocketProvider({ children, enabled = true }) {
 
     instance.on('equipment:alert', (payload) => {
       toast.warn(`Equipment alert: ${payload.equipmentId} — ${payload.status}`, { autoClose: 8000 });
+    });
+
+    instance.on('evacuation:initiated', (payload) => {
+      const e = payload?.emergency || payload;
+      setEmergency(e);
+      setActiveEvacuation(e);
+      toast.error('⚠️ EVACUATION ORDER — Proceed to muster point immediately', { autoClose: false });
+    });
+
+    instance.on('evacuation:completed', () => {
+      setActiveEvacuation(null);
+    });
+
+    instance.on('muster:updated', () => {
+      setLiveNotifications((prev) => [
+        { id: `muster-${Date.now()}`, type: 'muster', data: {}, at: new Date() },
+        ...prev,
+      ].slice(0, 50));
+    });
+
+    instance.on('geofence:violation', (payload) => {
+      toast.warn(payload.violations?.[0]?.message || 'Geofence violation detected', { autoClose: 8000 });
     });
 
     setSocket(instance);
@@ -141,6 +162,8 @@ export function SocketProvider({ children, enabled = true }) {
     setActiveMineId,
     mines,
     emergency,
+    activeEvacuation,
+    setActiveEvacuation,
     dismissEmergency,
     liveNotifications,
     setLiveNotifications,

@@ -16,7 +16,7 @@ const AccessDenied = ({ title = 'Access restricted', message }) => {
       <h1 className="text-xl font-bold text-slate-900 dark:text-white">{title}</h1>
       <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
         {message ||
-          `Your role (${roleInfo.label}) cannot open this page. Use the sidebar or the areas below that your account allows.`}
+          `Your role (${roleInfo.label}) cannot open this page. Use the menu or the areas below that your account allows.`}
       </p>
       {allowed.length > 0 && (
         <div className="mt-4 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4 text-left">
@@ -28,7 +28,7 @@ const AccessDenied = ({ title = 'Access restricted', message }) => {
               <li key={line}>{line}</li>
             ))}
             {allowed.length > 8 && (
-              <li className="text-slate-500">+ {allowed.length - 8} more in the sidebar</li>
+              <li className="text-slate-500">+ {allowed.length - 8} more in the menu</li>
             )}
           </ul>
         </div>

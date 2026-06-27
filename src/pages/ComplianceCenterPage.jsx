@@ -37,11 +37,17 @@ const ComplianceCenterPage = () => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const params = activeMineId ? { mineId: activeMineId } : {};
       const [recRes, remRes] = await Promise.all([
-        api.get('/compliance-center', { params: activeMineId ? { mineId: activeMineId } : {} }),
+        api.get('/compliance-center', { params }),
         api.get('/compliance-center/reminders'),
       ]);
-      setRecords(recRes.data.records || []);
+      let records = recRes.data.records || [];
+      if (!records.length && activeMineId) {
+        const allRes = await api.get('/compliance-center');
+        records = allRes.data.records || [];
+      }
+      setRecords(records);
       setReminders(remRes.data.reminders || []);
     } catch {
       toast.error('Failed to load compliance data');

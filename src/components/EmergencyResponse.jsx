@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { Link } from 'react-router-dom';
 import Button from './ui/Button';
 import Modal from './ui/Modal';
 import LoadingBlock from './ui/LoadingBlock';
@@ -179,6 +180,14 @@ const EmergencyResponsePanel = ({ mineId }) => {
           </motion.div>
         ))}
       </div>
+
+      {canManage && stats.active > 0 && (
+        <div className="flex justify-end">
+          <Link to="/evacuation">
+            <Button variant="danger">Open Evacuation Command Center</Button>
+          </Link>
+        </div>
+      )}
 
       {canSOS && (
         <div className="flex flex-wrap gap-3 justify-between items-center">

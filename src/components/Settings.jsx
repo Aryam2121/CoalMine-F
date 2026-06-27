@@ -59,6 +59,7 @@ const Settings = () => {
     const isDark = next === 'dark';
     document.documentElement.classList.toggle('dark', isDark);
     localStorage.setItem('darkMode', String(isDark));
+    window.dispatchEvent(new Event('app-theme-change'));
     toast.info(`${isDark ? 'Dark' : 'Light'} mode enabled`);
   };
 
@@ -68,7 +69,10 @@ const Settings = () => {
   };
 
   const handleSave = async () => {
-    if (!user._id) return;
+    if (!user._id) {
+      toast.error('Profile not loaded yet — please refresh and try again');
+      return;
+    }
     setSaving(true);
     try {
       const payload = { name: user.name, email: user.email };

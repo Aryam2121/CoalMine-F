@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import api from '../services/axios';
+import { fetchOperationalMines } from '../utils/minesApi';
 import PageShell from '../components/ui/PageShell';
 import LoadingBlock from '../components/ui/LoadingBlock';
 import EmergencyResponsePanel from '../components/EmergencyResponse';
@@ -10,11 +10,8 @@ const EmergencyPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api
-      .get('/getallMines')
-      .then((res) => {
-        const list = res.data?.data ?? res.data ?? [];
-        const arr = Array.isArray(list) ? list : [];
+    fetchOperationalMines()
+      .then((arr) => {
         setMines(arr);
         if (arr[0]?._id) setMineId(arr[0]._id);
       })

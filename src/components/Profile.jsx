@@ -1,6 +1,6 @@
 import api from '../services/axios';
 import { useEffect, useState, useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiMail, FiShield, FiSettings, FiAward, FiCalendar } from 'react-icons/fi';
 import PageShell from './ui/PageShell';
@@ -11,6 +11,7 @@ import { getRoleInfo, getRoleBadgeClass } from '../utils/roles';
 
 const Profile = () => {
   const { user: authUser } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -65,9 +66,9 @@ const Profile = () => {
       title="Profile"
       subtitle="Account details, role, and training summary"
       action={
-        <Link to="/settings">
-          <Button variant="secondary"><FiSettings className="inline mr-1" /> Edit settings</Button>
-        </Link>
+        <Button variant="secondary" onClick={() => navigate('/settings')}>
+          <FiSettings className="inline mr-1" /> Edit settings
+        </Button>
       }
     >
       <div className="grid gap-6 lg:grid-cols-3">
@@ -147,9 +148,9 @@ const Profile = () => {
 
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="ops-panel">
             <div className="ops-panel-body flex flex-wrap gap-3">
-              <Link to="/settings"><Button variant="secondary">Account settings</Button></Link>
-              <Link to="/attendance"><Button variant="ghost">Attendance</Button></Link>
-              <Link to="/safety-report"><Button variant="ghost">Safety reports</Button></Link>
+              <Button variant="secondary" onClick={() => navigate('/settings')}>Account settings</Button>
+              <Button variant="ghost" onClick={() => navigate('/attendance')}>Attendance</Button>
+              <Button variant="ghost" onClick={() => navigate('/safety-report')}>Safety reports</Button>
             </div>
           </motion.div>
         </div>

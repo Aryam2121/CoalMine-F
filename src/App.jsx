@@ -48,6 +48,14 @@ const CAPAPage = lazy(() => import('./pages/CAPAPage'));
 const ComplianceCenterPage = lazy(() => import('./pages/ComplianceCenterPage'));
 const PredictiveMaintenancePage = lazy(() => import('./pages/PredictiveMaintenancePage'));
 const ExecutiveDashboardPage = lazy(() => import('./pages/ExecutiveDashboardPage'));
+const EvacuationCommandPage = lazy(() => import('./pages/EvacuationCommandPage'));
+const IncidentForecastPage = lazy(() => import('./pages/IncidentForecastPage'));
+const WorkPermitPage = lazy(() => import('./pages/WorkPermitPage'));
+const EquipmentRegistryPage = lazy(() => import('./pages/EquipmentRegistryPage'));
+const HazardZonesPage = lazy(() => import('./pages/HazardZonesPage'));
+const NearMissPage = lazy(() => import('./pages/NearMissPage'));
+const SafetyDrillPage = lazy(() => import('./pages/SafetyDrillPage'));
+const ContractorVisitorPage = lazy(() => import('./pages/ContractorVisitorPage'));
 
 const PageLoader = () => (
   <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 page-wrap">
@@ -99,6 +107,7 @@ function App() {
                     <Route path="/Safety-Report" element={<Navigate to="/safety-report" replace />} />
                     <Route path="/attendance" element={<Guard><Attendance /></Guard>} />
                     <Route path="/emergency" element={<Guard><EmergencyPage /></Guard>} />
+                    <Route path="/evacuation" element={<Guard><EvacuationCommandPage /></Guard>} />
                     <Route path="/training" element={<Guard><TrainingPage /></Guard>} />
                     <Route path="/live-operations" element={<Guard><LiveOperationsPage /></Guard>} />
                     <Route path="/maintenance" element={<Guard><MaintenancePage /></Guard>} />
@@ -107,6 +116,13 @@ function App() {
                     <Route path="/capa" element={<Guard><CAPAPage /></Guard>} />
                     <Route path="/compliance-center" element={<Guard><ComplianceCenterPage /></Guard>} />
                     <Route path="/predictive-maintenance" element={<Guard><PredictiveMaintenancePage /></Guard>} />
+                    <Route path="/incident-forecast" element={<Guard><IncidentForecastPage /></Guard>} />
+                    <Route path="/work-permits" element={<Guard><WorkPermitPage /></Guard>} />
+                    <Route path="/equipment-registry" element={<Guard><EquipmentRegistryPage /></Guard>} />
+                    <Route path="/hazard-zones" element={<Guard><HazardZonesPage /></Guard>} />
+                    <Route path="/near-miss" element={<Guard><NearMissPage /></Guard>} />
+                    <Route path="/safety-drills" element={<Guard><SafetyDrillPage /></Guard>} />
+                    <Route path="/contractors" element={<Guard><ContractorVisitorPage /></Guard>} />
                     <Route path="/executive" element={<Guard><ExecutiveDashboardPage /></Guard>} />
                     <Route path="/predictive-analytics" element={<Guard><AnalyticsPage /></Guard>} />
                     <Route path="/profile" element={<Guard><Profile /></Guard>} />

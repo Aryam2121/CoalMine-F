@@ -30,6 +30,11 @@ const EmergencyBroadcastModal = () => {
           <Link to="/emergency">
             <Button variant="danger">Open Emergency Center</Button>
           </Link>
+          {(e.evacuationStatus?.initiated || e.evacuationStatus === true) && (
+            <Link to="/evacuation">
+              <Button variant="primary">Evacuation / Muster</Button>
+            </Link>
+          )}
           <Button variant="secondary" onClick={dismissEmergency}>Acknowledge</Button>
         </div>
       </div>

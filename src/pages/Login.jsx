@@ -1,5 +1,5 @@
 import { useState, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import loginImage from '../assets/login.png';
 import { GoogleLogin } from '@react-oauth/google';
@@ -25,6 +25,7 @@ const Login = () => {
   const [pendingGoogleToken, setPendingGoogleToken] = useState(null);
   const [googleRole, setGoogleRole] = useState(ROLES.WORKER);
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useContext(AuthContext);
 
   const sendOtp = async (emailAddress) => {
@@ -58,7 +59,8 @@ const Login = () => {
       name: data.name || userEmail?.split('@')[0] || 'User',
     };
     login(userData, data.token);
-    navigate('/', { replace: true });
+    const redirectTo = location.state?.from?.pathname || '/';
+    navigate(redirectTo, { replace: true });
   };
 
   const handleLogin = async (values, mode = 'password') => {

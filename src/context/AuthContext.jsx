@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useCallback } from 'react';
 import api from '../services/axios';
+import { registerPushToken } from '../utils/pushNotifications';
 
 export const AuthContext = createContext(null);
 
@@ -68,6 +69,7 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
     }
     setAuthReady(true);
+    registerPushToken();
   }, []);
 
   const logout = useCallback(() => {

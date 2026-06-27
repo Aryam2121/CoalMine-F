@@ -11,6 +11,42 @@ import Card from "./ui/Card";
 
 const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
 
+const DEMO_CITIES = [
+  { name: 'Dhanbad', country: 'IN', lat: 23.7957, lon: 86.4304, temp: 32, desc: 'Haze', main: 'Clouds', humidity: 68, wind: 2.4 },
+  { name: 'Bokaro', country: 'IN', lat: 23.6693, lon: 86.1511, temp: 31, desc: 'Partly cloudy', main: 'Clouds', humidity: 62, wind: 3.1 },
+  { name: 'Singrauli', country: 'IN', lat: 24.1991, lon: 82.6745, temp: 34, desc: 'Clear sky', main: 'Clear', humidity: 55, wind: 1.8 },
+  { name: 'Korba', country: 'IN', lat: 22.3595, lon: 82.7501, temp: 33, desc: 'Scattered clouds', main: 'Clouds', humidity: 58, wind: 2.9 },
+];
+
+const buildDemoWeather = (cityName) => {
+  const match = DEMO_CITIES.find((c) => c.name.toLowerCase() === (cityName || '').toLowerCase()) || DEMO_CITIES[0];
+  const now = Math.floor(Date.now() / 1000);
+  return {
+    name: match.name,
+    sys: { country: match.country, sunrise: now - 3600 * 4, sunset: now + 3600 * 6 },
+    weather: [{ main: match.main, description: match.desc }],
+    main: { temp: match.temp, temp_min: match.temp - 3, temp_max: match.temp + 4, humidity: match.humidity, pressure: 1012 },
+    wind: { speed: match.wind },
+    visibility: 8000,
+    coord: { lat: match.lat, lon: match.lon },
+    _demo: true,
+  };
+};
+
+const buildDemoForecast = (cityName) => {
+  const base = DEMO_CITIES.find((c) => c.name.toLowerCase() === (cityName || '').toLowerCase()) || DEMO_CITIES[0];
+  const now = Date.now();
+  return {
+    list: Array.from({ length: 5 }, (_, i) => ({
+      dt: Math.floor((now + i * 86400000) / 1000),
+      main: { temp: base.temp + randOffset(i) },
+      weather: [{ main: i % 2 ? 'Clouds' : 'Clear' }],
+    })),
+  };
+};
+
+const randOffset = (i) => (i % 2 === 0 ? 2 : -1);
+
 const WeatherAlerts = () => {
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,6 +64,8 @@ const WeatherAlerts = () => {
       return;
     }
     if (!API_KEY) {
+      const names = DEMO_CITIES.filter((c) => c.name.toLowerCase().includes(query.toLowerCase()));
+      setCitySuggestions(names.map((c) => ({ name: c.name, country: c.country, lat: c.lat, lon: c.lon })));
       return;
     }
     try {
@@ -40,16 +78,18 @@ const WeatherAlerts = () => {
     }
   }, 400);
 
-  // Get the user's location
+  // Get the user's location (only when API key is configured)
   useEffect(() => {
-    if (navigator.geolocation && !city) {
+    if (!API_KEY || city) return;
+    if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
           setLocation({ latitude, longitude });
         },
-        (err) => {
-          setError(`Failed to get location: ${err.message}`);
+        () => {
+          setWeather(buildDemoWeather('Dhanbad'));
+          setForecast(buildDemoForecast('Dhanbad'));
           setLoading(false);
         }
       );
@@ -60,10 +100,12 @@ const WeatherAlerts = () => {
   useEffect(() => {
     const fetchWeather = async () => {
       setLoading(true);
-      setError(null); // Reset error on new fetch
+      setError(null);
       if (!API_KEY) {
+        const demoCity = city || 'Dhanbad';
+        setWeather(buildDemoWeather(demoCity));
+        setForecast(buildDemoForecast(demoCity));
         setLoading(false);
-        setError("Weather API key is not configured.");
         return;
       }
       try {
@@ -98,7 +140,7 @@ const WeatherAlerts = () => {
       }
     };
 
-    if (location || city) {
+    if (location || city || !API_KEY) {
       fetchWeather();
     }
   }, [location, city, unit]);
@@ -106,7 +148,8 @@ const WeatherAlerts = () => {
   // Fetch 5-day forecast
   useEffect(() => {
     const fetchForecast = async () => {
-      if (!weather) return;
+      if (!weather || weather._demo) return;
+      if (!API_KEY) return;
       try {
         const url = `https://api.openweathermap.org/data/2.5/forecast?appid=${API_KEY}&units=${unit}&q=${weather.name}`;
         const res = await axios.get(url);
@@ -153,8 +196,13 @@ const WeatherAlerts = () => {
   }
 
   return (
-    <PageShell title="Weather" subtitle="Conditions and forecast for mine sites">
-      {error && <div className="alert-banner-error mb-4">{error}</div>}
+    <PageShell title="Weather" subtitle="Conditions and forecast for mine sites" variant="dark">
+      {weather?._demo && (
+        <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          Showing demo weather for Indian coalfield cities. Add <code className="text-amber-100">VITE_OPENWEATHER_API_KEY</code> to <code className="text-amber-100">CoalMine-F/.env</code> for live data.
+        </div>
+      )}
+      {error && !weather?._demo && <div className="alert-banner-error mb-4">{error}</div>}
 
       <div className="toolbar max-w-xl">
         <input

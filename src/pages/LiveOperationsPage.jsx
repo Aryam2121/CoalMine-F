@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 
-import { MapContainer, TileLayer, Marker, Popup, CircleMarker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker, Circle, useMap } from 'react-leaflet';
 
 import L from 'leaflet';
 
@@ -129,6 +130,9 @@ const LiveOperationsPage = () => {
   });
 
   const [updatingEq, setUpdatingEq] = useState(null);
+  const [hazardZones, setHazardZones] = useState([]);
+  const [opsSummary, setOpsSummary] = useState({ contractors: 0, permits: 0, evacuations: 0 });
+  const [geofenceAlerts, setGeofenceAlerts] = useState([]);
 
 
 
@@ -140,11 +144,19 @@ const LiveOperationsPage = () => {
 
     try {
 
-      const [monRes, heatRes] = await Promise.all([
+      const [monRes, heatRes, zoneRes, contractorRes, permitRes, evacRes] = await Promise.all([
 
         api.get(`/monitoring/${activeMineId}`),
 
         api.get('/monitoring/heatmap/alerts', { params: { mineId: activeMineId } }),
+
+        api.get('/hazard-zones', { params: { mineId: activeMineId } }).catch(() => ({ data: { items: [] } })),
+
+        api.get('/contractors', { params: { mineId: activeMineId, status: 'checked_in' } }).catch(() => ({ data: { items: [] } })),
+
+        api.get('/work-permits', { params: { mineId: activeMineId, status: 'active' } }).catch(() => ({ data: { items: [] } })),
+
+        api.get('/emergencies/active').catch(() => ({ data: { emergencies: [] } })),
 
       ]);
 
@@ -153,6 +165,18 @@ const LiveOperationsPage = () => {
       setMonitoring(mon);
 
       setHeatmap(heatRes.data?.points || []);
+
+      setHazardZones(zoneRes.data?.items || []);
+
+      setOpsSummary({
+
+        contractors: contractorRes.data?.items?.length || 0,
+
+        permits: permitRes.data?.items?.length || 0,
+
+        evacuations: (evacRes.data?.emergencies || []).filter((e) => e.evacuationStatus?.initiated && !e.evacuationStatus?.completedAt).length,
+
+      });
 
       const gas = mon?.environmentalConditions?.gasLevels || {};
 
@@ -266,6 +290,16 @@ const LiveOperationsPage = () => {
 
     socket.on('environment:updated', onEnvironment);
 
+    const onGeofence = (payload) => {
+
+      setGeofenceAlerts((prev) => [payload, ...prev].slice(0, 8));
+
+      toast.warn(payload.violations?.[0]?.message || 'Geofence violation', { autoClose: 6000 });
+
+    };
+
+    socket.on('geofence:violation', onGeofence);
+
 
 
     return () => {
@@ -275,6 +309,8 @@ const LiveOperationsPage = () => {
       socket.off('equipment:updated', onEquipment);
 
       socket.off('environment:updated', onEnvironment);
+
+      socket.off('geofence:violation', onGeofence);
 
     };
 
@@ -465,6 +501,30 @@ const LiveOperationsPage = () => {
       ) : (
 
         <div className="space-y-6">
+          {(opsSummary.evacuations > 0 || opsSummary.contractors > 0 || geofenceAlerts.length > 0) && (
+            <div className="flex flex-wrap gap-2">
+              {opsSummary.evacuations > 0 && (
+                <Link to="/evacuation" className="text-xs px-3 py-1.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/40">
+                  {opsSummary.evacuations} active evacuation(s)
+                </Link>
+              )}
+              {opsSummary.contractors > 0 && (
+                <Link to="/contractors" className="text-xs px-3 py-1.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40">
+                  {opsSummary.contractors} on-site visitor(s)
+                </Link>
+              )}
+              {opsSummary.permits > 0 && (
+                <Link to="/work-permits" className="text-xs px-3 py-1.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                  {opsSummary.permits} active permit(s)
+                </Link>
+              )}
+              {geofenceAlerts.length > 0 && (
+                <span className="text-xs px-3 py-1.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/40">
+                  {geofenceAlerts.length} geofence alert(s)
+                </span>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
 
@@ -524,6 +584,64 @@ const LiveOperationsPage = () => {
 
                 )}
 
+                {(monitoring?.equipmentStatus || []).map((eq) =>
+
+                  eq.metrics?.latitude && eq.metrics?.longitude ? (
+
+                    <CircleMarker
+
+                      key={`eq-${eq.equipmentId}`}
+
+                      center={[eq.metrics.latitude, eq.metrics.longitude]}
+
+                      radius={6}
+
+                      pathOptions={{
+
+                        color: eq.status === 'operational' ? '#3b82f6' : '#f59e0b',
+
+                        fillColor: eq.status === 'operational' ? '#3b82f6' : '#f59e0b',
+
+                        fillOpacity: 0.7,
+
+                      }}
+
+                    >
+
+                      <Popup>{eq.name} — {eq.status}</Popup>
+
+                    </CircleMarker>
+
+                  ) : null
+
+                )}
+
+                {hazardZones.filter((z) => z.active !== false).map((z) => (
+
+                  <Circle
+
+                    key={z._id}
+
+                    center={[z.center.latitude, z.center.longitude]}
+
+                    radius={z.radiusMeters || 100}
+
+                    pathOptions={{
+
+                      color: z.status === 'evacuation' ? '#ef4444' : '#f97316',
+
+                      fillOpacity: 0.12,
+
+                    }}
+
+                  >
+
+                    <Popup>{z.name} — {z.zoneType?.replace(/_/g, ' ')}</Popup>
+
+                  </Circle>
+
+                ))}
+
               </MapContainer>
 
             </div>
@@ -540,7 +658,11 @@ const LiveOperationsPage = () => {
 
                   {(monitoring?.equipmentStatus || []).length === 0 && (
 
-                    <li className="text-sm text-slate-500">No equipment registered — add equipment resources for this site</li>
+                    <li className="text-sm text-slate-500">
+
+                      No equipment — <Link to="/equipment-registry" className="text-amber-400 hover:underline">register assets</Link>
+
+                    </li>
 
                   )}
 

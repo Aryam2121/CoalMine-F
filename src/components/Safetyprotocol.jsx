@@ -1,6 +1,7 @@
 import api from '../services/axios';
 import { useState, useEffect, useRef } from "react";
-// Mock function for GPS tracking
+import { toast } from 'react-toastify';
+// GPS capture for safety protocol check-in
 const getUserLocation = () => {
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(resolve, reject);
@@ -45,6 +46,10 @@ const SafetyProtocol = () => {
     };
     fetchProfile();
   }, []);
+
+  useEffect(() => {
+    if (user?.name && !signature) setSignature(user.name);
+  }, [user?.name, signature]);
 
   useEffect(() => {
     const loadHazards = async () => {
@@ -102,25 +107,38 @@ const SafetyProtocol = () => {
 
   const clearSignature = () => setSignature("");
 
-  const handleSubmit = () => {
-    if (hazards.every((hazard) => hazard.completed) && signature) {
-      const formData = {
-        userId: user.id,
-        tasks: hazards.map((hazard) => ({
-          taskName: hazard.name,
-          completed: hazard.completed,
-          timestamp: hazard.timestamp,
-        })),
-        gpsHistory,
-        signature,
-      };
+  const handleSubmit = async () => {
+    const signOff = signature.trim();
+    if (!hazards.every((hazard) => hazard.completed)) {
+      toast.error('Complete all checklist items first');
+      return;
+    }
+    if (!signOff) {
+      toast.error('Enter your signature');
+      return;
+    }
+    if (!gpsHistory.length) {
+      toast.error('GPS location is required');
+      return;
+    }
 
-      api
-        .post(`/safety-check`, formData)
-        .then(() => setIsModalOpen(true))
-        .catch((error) =>
-          console.error("Error submitting safety check", error)
-        );
+    const tasks = hazards.map((hazard) => ({
+      taskName: hazard.name,
+      completed: hazard.completed,
+      timestamp: hazard.timestamp,
+    }));
+
+    try {
+      const fd = new FormData();
+      fd.append('tasks', JSON.stringify(tasks));
+      fd.append('gpsHistory', JSON.stringify(gpsHistory));
+      fd.append('signature', signOff);
+      await api.post('/safety-check', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      window.dispatchEvent(new Event('safety-check-completed'));
+      setIsModalOpen(true);
+      toast.success('Safety checklist submitted');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error submitting safety check');
     }
   };
 
@@ -190,12 +208,13 @@ const SafetyProtocol = () => {
   </label>
   <input
     type="text"
-    value={user?.name || signature}
+    value={signature}
     onChange={(e) => setSignature(e.target.value)}
-    placeholder="Enter your name"
+    placeholder={user?.name || 'Enter your name'}
     className="w-full p-3 border border-gray-300 rounded-md text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
   />
   <button
+    type="button"
     onClick={clearSignature}
     className="mt-2 text-sm text-red-600 font-medium hover:text-red-700 transition"
   >
@@ -255,9 +274,10 @@ const SafetyProtocol = () => {
 
       {/* Submit button */}
       <button
+        type="button"
         onClick={handleSubmit}
         className="mt-6 px-6 py-3 w-full bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition"
-        disabled={!hazards.every((hazard) => hazard.completed) || !signature}
+        disabled={!hazards.every((hazard) => hazard.completed) || !signature.trim() || !gpsHistory.length}
       >
         Submit Safety Check
       </button>
@@ -273,6 +293,7 @@ const SafetyProtocol = () => {
               Your safety checklist has been successfully submitted.
             </p>
             <button
+              type="button"
               onClick={() => setIsModalOpen(false)}
               className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition"
             >

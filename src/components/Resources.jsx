@@ -4,6 +4,9 @@ import { PieChart, Pie, Cell, Tooltip } from "recharts";
 
 import { motion } from 'framer-motion';
 import PageShell from './ui/PageShell';
+import LoadingBlock from './ui/LoadingBlock';
+import EmptyState from './ui/EmptyState';
+import { toast } from 'react-toastify';
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 import {
@@ -13,7 +16,6 @@ import {
   AiOutlineSortAscending,
   AiOutlineSortDescending,
   AiOutlineUndo,
-  AiOutlineBulb,
 } from 'react-icons/ai';
 const COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
 
@@ -107,25 +109,32 @@ const Resources = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [sortOrder, setSortOrder] = useState('asc');
-  const [darkMode, setDarkMode] = useState(false);
   const [deletedResource, setDeletedResource] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
+  const loadResources = () => {
+    setLoading(true);
+    setError('');
     api.get(`/getAllRes`)
       .then((response) => {
         if (Array.isArray(response.data)) {
           setResources(response.data);
         } else {
-          console.error('Unexpected response format:', response);
+          setResources([]);
+          setError('Unexpected response from server');
         }
       })
-      .catch((error) => {
-        console.error('Error fetching resources:', error);
-      });
+      .catch((err) => {
+        setError(err.response?.data?.message || 'Failed to load resources');
+        setResources([]);
+      })
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadResources();
   }, []);
-  
-  
-  
   const handleAddResource = () => {
     const { name, used, available } = newResource;
     const usedValue = newResource.used ? parseFloat(newResource.used) : 0;
@@ -151,14 +160,16 @@ const Resources = () => {
             resource._id === editingId ? response.data : resource
           ));
           setEditingId(null);
+          toast.success('Resource updated');
         })
-        .catch((error) => console.error('Error updating resource:', error));
+        .catch((err) => toast.error(err.response?.data?.message || 'Error updating resource'));
     } else {
       api.post(`/addRes`, resourceData)
         .then((response) => {
           setResources([...resources, response.data]);
+          toast.success('Resource added');
         })
-        .catch((error) => console.error('Error adding resource:', error));
+        .catch((err) => toast.error(err.response?.data?.message || 'Error adding resource'));
     }
 
     setNewResource({ name: '', used: '', available: '' });
@@ -170,8 +181,9 @@ const Resources = () => {
     api.delete(`/deleteRes/${id}`)
       .then(() => {
         setResources(resources.filter((resource) => resource._id !== id));
+        toast.success('Resource deleted');
       })
-      .catch((error) => console.error('Error deleting resource:', error));
+      .catch((err) => toast.error(err.response?.data?.message || 'Error deleting resource'));
   };
   
 
@@ -181,8 +193,9 @@ const Resources = () => {
         .then(() => {
           setResources([...resources, deletedResource]);
           setDeletedResource(null);
+          toast.success('Delete undone');
         })
-        .catch((error) => console.error('Error undoing delete:', error));
+        .catch((err) => toast.error(err.response?.data?.message || 'Error undoing delete'));
     }
   };
 
@@ -217,6 +230,14 @@ const Resources = () => {
 
   return (
     <PageShell title="Resources" subtitle="Track equipment and material availability across sites" variant="dark">
+      {loading ? (
+        <LoadingBlock label="Loading resources…" />
+      ) : error ? (
+        <div className="text-center py-12">
+          <p className="text-red-400 mb-4">{error}</p>
+          <button type="button" onClick={loadResources} className="btn-primary">Retry</button>
+        </div>
+      ) : (
       <motion.div
         className="w-full"
         initial={{ opacity: 0 }}
@@ -225,12 +246,11 @@ const Resources = () => {
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold text-white">Manage Resources</h2>
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="bg-gray-300 dark:bg-gray-700 p-2 rounded-md hover:bg-gray-400 dark:hover:bg-gray-600 transition"
-          >
-            <AiOutlineBulb size={20} />
-          </button>
+          {deletedResource && (
+            <button type="button" onClick={handleUndoDelete} className="btn-secondary !py-1.5 !px-3 !text-xs">
+              <AiOutlineUndo className="inline mr-1" /> Undo delete
+            </button>
+          )}
         </div>
 
         <div className="flex justify-between items-center mb-4">
@@ -329,7 +349,7 @@ const Resources = () => {
               </div>
             )}
           </Draggable>
-        ) : console.error("Invalid resource:", resource) 
+        ) : null
       )}
       {provided.placeholder}
     </div>
@@ -337,6 +357,7 @@ const Resources = () => {
 </Droppable>
         </DragDropContext>
       </motion.div>
+      )}
     </PageShell>
   );
 };

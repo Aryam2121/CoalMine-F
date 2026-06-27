@@ -23,17 +23,29 @@ const TeamChatPage = () => {
   const bottomRef = useRef(null);
 
   const loadHistory = useCallback(async () => {
-    if (!activeMineId) return;
+    const mineId = activeMineId || mines[0]?._id;
+    if (!mineId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
-      const { data } = await api.get('/chat/history', { params: { mineId: activeMineId, channel, limit: 80 } });
-      setMessages(data.messages || []);
+      const { data } = await api.get('/chat/history', { params: { mineId, channel, limit: 80 } });
+      const raw = data.messages || [];
+      setMessages(
+        raw.map((m) => ({
+          ...m,
+          from: m.from || m.userId?._id || m.userId,
+          userName: m.userName || m.userId?.name || 'Team member',
+          timestamp: m.timestamp || m.createdAt,
+        }))
+      );
     } catch {
       setMessages([]);
     } finally {
       setLoading(false);
     }
-  }, [activeMineId, channel]);
+  }, [activeMineId, mines, channel]);
 
   useEffect(() => {
     loadHistory();

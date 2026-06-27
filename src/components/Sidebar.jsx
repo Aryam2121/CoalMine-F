@@ -53,6 +53,10 @@ import {
   FaChartLine,
   FaShieldAlt,
   FaClipboardList,
+  FaRoute,
+  FaFireExtinguisher,
+  FaMapSigns,
+  FaUserFriends,
 } from 'react-icons/fa';
 
 import { AuthContext } from '../context/AuthContext';
@@ -89,9 +93,17 @@ const ICONS = {
   '/achievements': <FaTrophy />,
   '/chatbot': <FaRobot />,
   '/user-management': <FaUsers />,
+  '/evacuation': <FaRoute />,
+  '/near-miss': <FaExclamationCircle />,
+  '/safety-drills': <FaFireExtinguisher />,
+  '/work-permits': <FaClipboardList />,
+  '/equipment-registry': <FaTools />,
+  '/hazard-zones': <FaMapSigns />,
+  '/contractors': <FaUserFriends />,
+  '/incident-forecast': <FaChartBar />,
 };
 
-const Sidebar = ({ setActivePage }) => {
+const Sidebar = ({ setActivePage, onNavigate }) => {
 
   const { logout, user } = useContext(AuthContext);
 
@@ -164,7 +176,10 @@ const Sidebar = ({ setActivePage }) => {
 
                     to={item.to}
 
-                    onClick={() => setActivePage?.(item.label)}
+                    onClick={() => {
+                      setActivePage?.(item.label);
+                      onNavigate?.();
+                    }}
 
                     className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
 
@@ -203,6 +218,7 @@ const Sidebar = ({ setActivePage }) => {
         <Link
 
           to="/profile"
+          onClick={() => onNavigate?.()}
 
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:text-white hover:bg-white/5"
 
@@ -215,6 +231,7 @@ const Sidebar = ({ setActivePage }) => {
         <Link
 
           to="/settings"
+          onClick={() => onNavigate?.()}
 
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:text-white hover:bg-white/5"
 
